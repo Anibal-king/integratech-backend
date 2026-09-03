@@ -1,0 +1,24 @@
+# Dependencias
+node_modules/
+
+# Base de datos generada (se recrea con: node db/seed.js)
+db/*.db
+db/*.db-journal
+db/*.db-wal
+db/*.db-shm
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
