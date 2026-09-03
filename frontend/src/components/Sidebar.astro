@@ -1,0 +1,181 @@
+---
+const { pathname } = Astro.url;
+
+const links = [
+  { href: '/', label: 'Inicio' },
+  { href: '/servicios', label: 'Servicios' },
+  { href: '/proyectos', label: 'Proyectos' },
+  { href: '/clientes', label: 'Clientes' },
+  { href: '/nosotros', label: 'Nosotros' },
+  { href: '/contacto', label: 'Contacto' },
+];
+
+const isActive = (href: string) =>
+  href === '/' ? pathname === '/' : pathname.startsWith(href);
+---
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar__brand">
+    <a href="/" class="brand" aria-label="IntegraTech - Inicio">
+      <span class="brand__mark" aria-hidden="true">IT</span>
+      <span class="brand__text">
+        <strong>IntegraTech</strong>
+        <small>Servicios Integrales de Ingeniería</small>
+      </span>
+    </a>
+    <button class="sidebar__close" type="button" aria-label="Cerrar menú" data-nav-close>&times;</button>
+  </div>
+
+  <nav class="sidebar__nav" aria-label="Navegación principal">
+    <ul>
+      {links.map((l) => (
+        <li>
+          <a href={l.href} class:list={['sidebar__link', { 'is-active': isActive(l.href) }]}>
+            {l.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+
+  <div class="sidebar__foot">
+    <a href="/contacto" class="btn btn--primary btn--block">Solicitar cotización</a>
+  </div>
+</aside>
+
+<button class="nav-toggle" type="button" aria-label="Abrir menú" aria-controls="sidebar" data-nav-open>
+  <span></span><span></span><span></span>
+</button>
+<div class="nav-backdrop" data-nav-close hidden></div>
+
+<style>
+  .sidebar {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: var(--sidebar-width);
+    background: var(--color-primary);
+    color: var(--color-text-invert);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1.1rem;
+    z-index: 40;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: inherit;
+  }
+  .brand:hover { text-decoration: none; }
+
+  .brand__mark {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--color-accent);
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+  .brand__text { display: flex; flex-direction: column; line-height: 1.2; }
+  .brand__text strong { font-size: 1.05rem; }
+  .brand__text small { color: #9db6d0; font-size: 0.72rem; }
+
+  .sidebar__close {
+    display: none;
+    margin-inline-start: auto;
+    background: none;
+    border: 0;
+    color: inherit;
+    font-size: 1.8rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .sidebar__nav { margin-top: 2.25rem; flex: 1; }
+  .sidebar__nav ul { list-style: none; margin: 0; padding: 0; }
+  .sidebar__nav li { margin-bottom: 0.25rem; }
+
+  .sidebar__link {
+    display: block;
+    padding: 0.65rem 0.8rem;
+    border-radius: var(--radius);
+    color: #c6d6e8;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .sidebar__link:hover {
+    background: var(--color-primary-600);
+    color: #fff;
+    text-decoration: none;
+  }
+  .sidebar__link.is-active {
+    background: var(--color-primary-600);
+    color: #fff;
+    box-shadow: inset 3px 0 0 var(--color-accent);
+  }
+
+  .btn--block { width: 100%; justify-content: center; }
+
+  /* Botón hamburguesa (móvil) */
+  .nav-toggle {
+    position: fixed;
+    top: 1rem;
+    inset-inline-start: 1rem;
+    z-index: 45;
+    width: 44px;
+    height: 44px;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 10px;
+    background: var(--color-primary);
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .nav-toggle span {
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+  }
+
+  .nav-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 42, 74, 0.45);
+    z-index: 39;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+      box-shadow: var(--shadow-lg);
+    }
+    .sidebar.is-open { transform: translateX(0); }
+    .sidebar__close { display: block; }
+    .nav-toggle { display: flex; }
+  }
+</style>
+
+<script>
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.querySelector('.nav-backdrop') as HTMLElement | null;
+  const open = () => {
+    sidebar?.classList.add('is-open');
+    if (backdrop) backdrop.hidden = false;
+  };
+  const close = () => {
+    sidebar?.classList.remove('is-open');
+    if (backdrop) backdrop.hidden = true;
+  };
+  document.querySelector('[data-nav-open]')?.addEventListener('click', open);
+  document.querySelectorAll('[data-nav-close]').forEach((el) => el.addEventListener('click', close));
+</script>

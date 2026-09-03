@@ -1,0 +1,78 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { api } from '../../lib/api';
+
+export async function getStaticPaths() {
+  const servicios = await api.servicios();
+  return servicios.map((s) => ({ params: { id: String(s.id) } }));
+}
+
+const { id } = Astro.params;
+const servicio = await api.servicio(id!);
+
+if (!servicio) {
+  return Astro.redirect('/servicios');
+}
+---
+
+<Layout title={`${servicio.nombre} — IntegraTech`} description={servicio.descripcion}>
+  <section class="section">
+    <div class="container">
+      <p><a href="/servicios">← Volver a servicios</a></p>
+
+      <div class="section__head">
+        <span class="eyebrow">Servicio</span>
+        <h1>{servicio.nombre}</h1>
+        <p>{servicio.descripcion}</p>
+      </div>
+
+      <div class="detail">
+        <div>
+          <h2>Qué incluye</h2>
+          {servicio.items.length === 0 ? (
+            <p class="notice">Sin ítems registrados para esta categoría.</p>
+          ) : (
+            <ul class="detail__list">
+              {servicio.items.map((i) => <li>{i}</li>)}
+            </ul>
+          )}
+        </div>
+
+        <aside class="detail__aside">
+          <h3>¿Te interesa este servicio?</h3>
+          <p>Agenda una visita técnica o pide una cotización sin compromiso.</p>
+          <a href="/contacto" class="btn btn--primary btn--block">Solicitar cotización</a>
+        </aside>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .detail {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .detail__list {
+    columns: 2;
+    column-gap: 2rem;
+  }
+  .detail__list li { break-inside: avoid; }
+  .detail__aside {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.6rem;
+    position: sticky;
+    top: 1.5rem;
+  }
+  .btn--block { width: 100%; justify-content: center; }
+
+  @media (max-width: 820px) {
+    .detail { grid-template-columns: 1fr; }
+    .detail__list { columns: 1; }
+    .detail__aside { position: static; }
+  }
+</style>

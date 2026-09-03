@@ -1,0 +1,216 @@
+/* =========================================================
+   IntegraTech - Sistema de diseño global
+   ========================================================= */
+
+:root {
+  /* Marca */
+  --color-primary: #0b2a4a;       /* navy profundo */
+  --color-primary-600: #123a63;
+  --color-primary-400: #2f5f92;
+  --color-accent: #00a6a6;        /* teal técnico */
+  --color-accent-600: #008c8c;
+
+  /* Neutros */
+  --color-bg: #ffffff;
+  --color-surface: #f5f7fa;
+  --color-surface-2: #eef1f6;
+  --color-border: #dde3ec;
+  --color-text: #1a2733;
+  --color-text-muted: #5b6b7c;
+  --color-text-invert: #eef4fb;
+
+  /* Feedback */
+  --color-success: #1f9d55;
+  --color-error: #d64545;
+
+  /* Tipografía */
+  --font-sans: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+
+  /* Espaciado / radios / sombra */
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(11, 42, 74, 0.06), 0 1px 3px rgba(11, 42, 74, 0.1);
+  --shadow-md: 0 4px 12px rgba(11, 42, 74, 0.1);
+  --shadow-lg: 0 12px 32px rgba(11, 42, 74, 0.16);
+
+  --sidebar-width: 240px;
+  --content-max: 1120px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--color-primary);
+  line-height: 1.2;
+  margin: 0 0 0.5em;
+  font-weight: 700;
+}
+
+h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); }
+h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
+h3 { font-size: 1.2rem; }
+
+p { margin: 0 0 1rem; }
+
+a {
+  color: var(--color-accent-600);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+img { max-width: 100%; display: block; }
+
+ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+li { margin-bottom: 0.35rem; }
+
+/* ---------- Utilidades de layout ---------- */
+
+.container {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2.5rem);
+}
+
+.section {
+  padding-block: clamp(3rem, 7vw, 5rem);
+}
+
+.section--surface { background: var(--color-surface); }
+
+.section__head {
+  max-width: 640px;
+  margin-bottom: 2.5rem;
+}
+
+.section__head p {
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--color-accent-600);
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- Botones ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+.btn:hover { text-decoration: none; transform: translateY(-1px); }
+
+.btn--primary {
+  background: var(--color-accent);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.btn--primary:hover { background: var(--color-accent-600); }
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-primary);
+  border-color: var(--color-border);
+}
+.btn--ghost:hover { background: var(--color-surface-2); }
+
+.btn--light {
+  background: #fff;
+  color: var(--color-primary);
+}
+
+/* ---------- Tarjetas / grid ---------- */
+
+.grid {
+  display: grid;
+  gap: 1.5rem;
+}
+.grid--2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.grid--3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+.card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.6rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.card--link:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+.card h3 { margin-bottom: 0.4rem; }
+.card p { color: var(--color-text-muted); margin-bottom: 0; }
+
+.tag {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  color: var(--color-primary-400);
+}
+
+/* ---------- Aviso / estado vacío ---------- */
+
+.notice {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+/* ---------- Accesibilidad ---------- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}

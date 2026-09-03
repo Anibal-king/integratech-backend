@@ -1,11 +1,19 @@
 # Dependencias
 node_modules/
+**/node_modules/
 
 # Base de datos generada (se recrea con: node db/seed.js)
-db/*.db
-db/*.db-journal
-db/*.db-wal
-db/*.db-shm
+**/*.db
+**/*.db-journal
+**/*.db-wal
+**/*.db-shm
+
+# Build / salida
+frontend/dist/
+frontend/.astro/
+.output/
+.vercel/
+.netlify/
 
 # Variables de entorno
 .env
@@ -15,6 +23,9 @@ db/*.db-shm
 # Logs
 *.log
 npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Sistema operativo / editores
 .DS_Store

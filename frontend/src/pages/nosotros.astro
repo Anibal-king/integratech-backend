@@ -1,0 +1,123 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { api } from '../lib/api';
+
+const [empresa, marcas, legal] = await Promise.all([
+  api.empresa(),
+  api.marcas(),
+  api.legal(),
+]);
+---
+
+<Layout title="Nosotros — IntegraTech">
+  <section class="section">
+    <div class="container">
+      <div class="section__head">
+        <span class="eyebrow">Quiénes somos</span>
+        <h1>{empresa?.nombre ?? 'Servicios Integrales de Ingeniería El Salvador, S.A. de C.V.'}</h1>
+      </div>
+
+      {empresa ? (
+        <div class="prose">
+          {empresa.resena_historica && (
+            <>
+              <h2>Reseña</h2>
+              <p>{empresa.resena_historica}</p>
+            </>
+          )}
+
+          <div class="grid grid--2" style="margin:2rem 0;">
+            {empresa.mision && (
+              <article class="card">
+                <h3>Misión</h3>
+                <p>{empresa.mision}</p>
+              </article>
+            )}
+            {empresa.vision && (
+              <article class="card">
+                <h3>Visión</h3>
+                <p>{empresa.vision}</p>
+              </article>
+            )}
+          </div>
+
+          {empresa.valores?.length > 0 && (
+            <>
+              <h2>Valores</h2>
+              <div class="grid grid--3">
+                {empresa.valores.map((v) => (
+                  <article class="card">
+                    <h3>{v.nombre}</h3>
+                    <p>{v.descripcion}</p>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div class="notice">
+          No se pudo cargar la información de la empresa. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
+        </div>
+      )}
+    </div>
+  </section>
+
+  {marcas.length > 0 && (
+    <section class="section section--surface">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">Alianzas</span>
+          <h2>Marcas que representamos</h2>
+        </div>
+        <div class="grid grid--3">
+          {marcas.map((m) => (
+            <article class="card">
+              <h3>{m.nombre}</h3>
+              {m.funcion && <p>{m.funcion}</p>}
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {(legal.length > 0 || empresa) && (
+    <section class="section">
+      <div class="container">
+        <h2>Datos legales</h2>
+        <table class="legal">
+          <tbody>
+            {empresa?.nit && <tr><th>NIT</th><td>{empresa.nit}</td></tr>}
+            {empresa?.registro_fiscal && <tr><th>Registro fiscal (NRC)</th><td>{empresa.registro_fiscal}</td></tr>}
+            {empresa?.direccion && <tr><th>Dirección</th><td>{empresa.direccion}</td></tr>}
+            {empresa?.telefono && <tr><th>Teléfono</th><td>{empresa.telefono}</td></tr>}
+            {empresa?.celular && <tr><th>Celular</th><td>{empresa.celular}</td></tr>}
+            {legal.map((d) => (
+              <tr><th>{d.tipo}</th><td>{d.numero}{d.descripcion ? ` — ${d.descripcion}` : ''}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )}
+</Layout>
+
+<style>
+  .prose { max-width: 70ch; }
+  .prose h2 { margin-top: 2rem; }
+  .legal {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 640px;
+    margin-top: 1rem;
+  }
+  .legal th, .legal td {
+    text-align: left;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+  .legal th { width: 40%; color: var(--color-primary); }
+  code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style>

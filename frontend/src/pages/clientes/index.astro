@@ -1,0 +1,55 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { api } from '../../lib/api';
+
+const [clientes, otros] = await Promise.all([
+  api.clientes(),
+  api.otrosClientes(),
+]);
+---
+
+<Layout title="Clientes — IntegraTech">
+  <section class="section">
+    <div class="container">
+      <div class="section__head">
+        <span class="eyebrow">Referencias</span>
+        <h1>Clientes</h1>
+        <p>Empresas que han confiado en Servicios Integrales de Ingeniería para sus proyectos y mantenimientos.</p>
+      </div>
+
+      {clientes.length === 0 ? (
+        <div class="notice">
+          No se pudieron cargar los clientes. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
+        </div>
+      ) : (
+        <div class="grid grid--2">
+          {clientes.map((c) => (
+            <article class="card">
+              <h2 style="font-size:1.15rem;">{c.nombre}</h2>
+              {c.servicios.length > 0 && (
+                <ul>
+                  {c.servicios.map((s) => <li>{s}</li>)}
+                </ul>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+
+      {otros.length > 0 && (
+        <div style="margin-top:3rem;">
+          <h2>Otros clientes</h2>
+          <div class="chips">
+            {otros.map((o) => <span class="tag">{o.nombre}</span>)}
+          </div>
+        </div>
+      )}
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
+  .chips .tag { font-size: 0.85rem; padding: 0.35rem 0.75rem; }
+  code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style>

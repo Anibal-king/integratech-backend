@@ -1,0 +1,46 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { api } from '../../lib/api';
+
+const servicios = await api.servicios();
+---
+
+<Layout title="Servicios — IntegraTech">
+  <section class="section">
+    <div class="container">
+      <div class="section__head">
+        <span class="eyebrow">Catálogo</span>
+        <h1>Productos y servicios</h1>
+        <p>Nuestras líneas de trabajo. Cada categoría agrupa capacidades específicas que ejecutamos con personal propio y marcas representadas.</p>
+      </div>
+
+      {servicios.length === 0 ? (
+        <div class="notice">
+          No se pudo cargar el catálogo. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
+        </div>
+      ) : (
+        <div class="grid grid--2">
+          {servicios.map((s) => (
+            <article class="card">
+              <h2 style="font-size:1.25rem;">{s.nombre}</h2>
+              <p>{s.descripcion}</p>
+              {s.items.length > 0 && (
+                <ul class="svc-items">
+                  {s.items.slice(0, 5).map((i) => <li>{i}</li>)}
+                  {s.items.length > 5 && <li class="muted">+ {s.items.length - 5} más…</li>}
+                </ul>
+              )}
+              <a href={`/servicios/${s.id}`} class="btn btn--ghost" style="margin-top:0.75rem;">Ver detalle</a>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .svc-items { margin: 0.9rem 0 0; }
+  .svc-items .muted { color: var(--color-text-muted); list-style: none; margin-left: -1.2rem; }
+  code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style>

@@ -1,0 +1,61 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { api } from '../../lib/api';
+
+const [proyectos, contratos] = await Promise.all([
+  api.proyectos(),
+  api.contratosMantenimiento(),
+]);
+---
+
+<Layout title="Proyectos — IntegraTech">
+  <section class="section">
+    <div class="container">
+      <div class="section__head">
+        <span class="eyebrow">Trayectoria</span>
+        <h1>Proyectos destacados</h1>
+        <p>Una selección de trabajos ejecutados para clientes del sector industrial, financiero y de infraestructura.</p>
+      </div>
+
+      {proyectos.length === 0 ? (
+        <div class="notice">
+          No se pudieron cargar los proyectos. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
+        </div>
+      ) : (
+        <div class="grid grid--2">
+          {proyectos.map((p) => (
+            <article class="card">
+              {p.ejecucion && <span class="tag">{p.ejecucion}</span>}
+              <h2 style="font-size:1.2rem;margin-top:0.6rem;">{p.nombre_proyecto}</h2>
+              {p.descripcion && <p>{p.descripcion}</p>}
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+
+  {contratos.length > 0 && (
+    <section class="section section--surface">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">Servicio recurrente</span>
+          <h2>Contratos de mantenimiento</h2>
+        </div>
+        <div class="grid grid--2">
+          {contratos.map((c) => (
+            <article class="card">
+              {c.ejecucion && <span class="tag">{c.ejecucion}</span>}
+              <h3 style="margin-top:0.6rem;">{c.nombre_proyecto}</h3>
+              {c.descripcion && <p>{c.descripcion}</p>}
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+</Layout>
+
+<style>
+  code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style>

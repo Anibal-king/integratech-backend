@@ -1,0 +1,79 @@
+---
+import '../styles/global.css';
+import Sidebar from '../components/Sidebar.astro';
+import ChatWidget from '../components/ChatWidget.tsx';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'IntegraTech — Servicios Integrales de Ingeniería',
+  description = 'Servicios profesionales y especializados de ingeniería para el sector corporativo e industrial de El Salvador: automatización, energía, mantenimiento de infraestructura y más.',
+} = Astro.props;
+
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+  </head>
+  <body>
+    <Sidebar />
+
+    <div class="shell">
+      <main class="main">
+        <slot />
+      </main>
+
+      <footer class="footer">
+        <div class="container footer__inner">
+          <p><strong>Servicios Integrales de Ingeniería El Salvador, S.A. de C.V.</strong></p>
+          <p>
+            Av. Las Palmeras y Calle Las Azucenas, Políg. «F», Urb. La Sultana #21, Antiguo Cuscatlán.
+            &nbsp;·&nbsp; Tel. 2556-1756 &nbsp;·&nbsp; Cel. 7986-2065
+          </p>
+          <p class="footer__legal">© {year} IntegraTech / SIIE. Todos los derechos reservados.</p>
+        </div>
+      </footer>
+    </div>
+
+    <ChatWidget client:idle />
+
+    <style>
+      .shell {
+        margin-inline-start: var(--sidebar-width);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .main { flex: 1; }
+
+      .footer {
+        background: var(--color-primary);
+        color: #b9cbe0;
+        padding-block: 2.25rem;
+        font-size: 0.9rem;
+      }
+      .footer__inner p { margin: 0 0 0.35rem; }
+      .footer strong { color: #fff; }
+      .footer__legal { margin-top: 0.75rem; color: #8faac6; font-size: 0.82rem; }
+
+      @media (max-width: 900px) {
+        .shell { margin-inline-start: 0; }
+        .main { padding-top: 3.5rem; }
+      }
+    </style>
+  </body>
+</html>

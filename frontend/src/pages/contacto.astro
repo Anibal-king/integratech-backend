@@ -1,0 +1,52 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ContactForm from '../components/ContactForm.tsx';
+import { api } from '../lib/api';
+
+const empresa = await api.empresa();
+---
+
+<Layout title="Contacto — IntegraTech">
+  <section class="section">
+    <div class="container contacto">
+      <div>
+        <div class="section__head">
+          <span class="eyebrow">Hablemos</span>
+          <h1>Contáctanos</h1>
+          <p>Cuéntanos sobre tu proyecto o necesidad de mantenimiento y te responderemos con una propuesta.</p>
+        </div>
+        <ContactForm client:load />
+      </div>
+
+      <aside class="contacto__info">
+        <h2 style="font-size:1.1rem;">Datos de contacto</h2>
+        <ul>
+          <li><strong>Teléfono:</strong> {empresa?.telefono ?? '2556-1756'}</li>
+          <li><strong>Celular:</strong> {empresa?.celular ?? '7986-2065'}</li>
+          {empresa?.sitio_web && <li><strong>Sitio:</strong> {empresa.sitio_web}</li>}
+          <li><strong>Dirección:</strong> {empresa?.direccion ?? 'Antiguo Cuscatlán, La Libertad, El Salvador'}</li>
+        </ul>
+      </aside>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .contacto {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 3rem;
+    align-items: start;
+  }
+  .contacto__info {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.6rem;
+  }
+  .contacto__info ul { list-style: none; padding: 0; margin: 0; }
+  .contacto__info li { margin-bottom: 0.6rem; font-size: 0.92rem; }
+  @media (max-width: 860px) {
+    .contacto { grid-template-columns: 1fr; }
+  }
+</style>
