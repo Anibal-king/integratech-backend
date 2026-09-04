@@ -1,4 +1,7 @@
 ---
+import { Image } from 'astro:assets';
+import { logoHorizontal } from '../lib/imagenes';
+
 const { pathname } = Astro.url;
 
 const links = [
@@ -16,11 +19,9 @@ const isActive = (href: string) =>
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar__brand">
-    <a href="/" class="brand" aria-label="IntegraTech - Inicio">
-      <span class="brand__mark" aria-hidden="true">IT</span>
-      <span class="brand__text">
-        <strong>IntegraTech</strong>
-        <small>Servicios Integrales de Ingeniería</small>
+    <a href="/" class="brand" aria-label="Servicios Integrales de Ingeniería - Inicio">
+      <span class="brand__logo">
+        <Image src={logoHorizontal} alt="Servicios Integrales de Ingeniería" widths={[200, 400]} sizes="200px" loading="eager" />
       </span>
     </a>
     <button class="sidebar__close" type="button" aria-label="Cerrar menú" data-nav-close>&times;</button>
@@ -62,29 +63,27 @@ const isActive = (href: string) =>
     z-index: 40;
   }
 
-  .brand {
+  .sidebar__brand {
     display: flex;
-    align-items: center;
-    gap: 0.7rem;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .brand {
+    display: block;
+    flex: 1;
     color: inherit;
   }
   .brand:hover { text-decoration: none; }
 
-  .brand__mark {
-    display: grid;
-    place-items: center;
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: var(--color-accent);
-    color: #fff;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    flex-shrink: 0;
+  .brand__logo {
+    display: block;
+    background: #fff;
+    border-radius: 10px;
+    padding: 0.6rem 0.7rem;
+    box-shadow: var(--shadow-sm);
   }
-  .brand__text { display: flex; flex-direction: column; line-height: 1.2; }
-  .brand__text strong { font-size: 1.05rem; }
-  .brand__text small { color: #9db6d0; font-size: 0.72rem; }
+  .brand__logo img { width: 100%; height: auto; display: block; }
 
   .sidebar__close {
     display: none;

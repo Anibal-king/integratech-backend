@@ -1,6 +1,8 @@
 ---
+import { Image } from 'astro:assets';
 import Layout from '../layouts/Layout.astro';
 import { api } from '../lib/api';
+import { marcaLogo, documentosLegales } from '../lib/imagenes';
 
 const [empresa, marcas, legal] = await Promise.all([
   api.empresa(),
@@ -70,13 +72,25 @@ const [empresa, marcas, legal] = await Promise.all([
           <span class="eyebrow">Alianzas</span>
           <h2>Marcas que representamos</h2>
         </div>
-        <div class="grid grid--3">
-          {marcas.map((m) => (
-            <article class="card">
-              <h3>{m.nombre}</h3>
-              {m.funcion && <p>{m.funcion}</p>}
-            </article>
-          ))}
+        <div class="marcas">
+          {marcas.map((m) => {
+            const logo = marcaLogo(m.nombre);
+            return (
+              <article class="marca">
+                <div class="marca__logo">
+                  {logo ? (
+                    <Image src={logo} alt={m.nombre} widths={[160, 320]} sizes="200px" loading="lazy" />
+                  ) : (
+                    <span class="marca__nombre">{m.nombre}</span>
+                  )}
+                </div>
+                <div class="marca__txt">
+                  <h3>{m.nombre}</h3>
+                  {m.funcion && <p>{m.funcion}</p>}
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -98,6 +112,17 @@ const [empresa, marcas, legal] = await Promise.all([
             ))}
           </tbody>
         </table>
+
+        {documentosLegales.length > 0 && (
+          <div class="docs">
+            {documentosLegales.map((d) => (
+              <figure class="doc">
+                <Image src={d.img} alt={d.alt} widths={[240, 480]} sizes="240px" loading="lazy" />
+                <figcaption>{d.alt}</figcaption>
+              </figure>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )}
@@ -120,4 +145,60 @@ const [empresa, marcas, legal] = await Promise.all([
   }
   .legal th { width: 40%; color: var(--color-primary); }
   code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+
+  /* Marcas */
+  .marcas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+  }
+  .marca {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .marca__logo {
+    flex-shrink: 0;
+    width: 96px;
+    height: 64px;
+    display: grid;
+    place-items: center;
+    background: #fff;
+    border: 1px solid var(--color-surface-2);
+    border-radius: 8px;
+    padding: 6px;
+  }
+  .marca__logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .marca__nombre { font-weight: 700; font-size: 0.8rem; text-align: center; color: var(--color-primary); }
+  .marca__txt h3 { margin: 0 0 0.2rem; font-size: 1rem; }
+  .marca__txt p { margin: 0; color: var(--color-text-muted); font-size: 0.88rem; }
+
+  /* Documentos legales */
+  .docs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+  }
+  .doc {
+    margin: 0;
+    width: 240px;
+  }
+  .doc img {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+  }
+  .doc figcaption {
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    line-height: 1.35;
+  }
 </style>

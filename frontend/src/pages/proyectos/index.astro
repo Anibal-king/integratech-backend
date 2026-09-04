@@ -1,6 +1,8 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import Galeria from '../../components/Galeria.astro';
 import { api } from '../../lib/api';
+import { todasLasFotos } from '../../lib/imagenes';
 
 const [proyectos, contratos] = await Promise.all([
   api.proyectos(),
@@ -9,11 +11,23 @@ const [proyectos, contratos] = await Promise.all([
 ---
 
 <Layout title="Proyectos — IntegraTech">
+  <!-- Galería fotográfica -->
   <section class="section">
     <div class="container">
       <div class="section__head">
+        <span class="eyebrow">Nuestro trabajo</span>
+        <h1>Galería de proyectos</h1>
+        <p>{todasLasFotos.length} imágenes de instalaciones reales: data centers, subestaciones, tableros de automatización, iluminación, energía solar y cuartos de UPS. Haz clic para ampliar.</p>
+      </div>
+      <Galeria fotos={todasLasFotos} min={240} />
+    </div>
+  </section>
+
+  <section class="section section--surface">
+    <div class="container">
+      <div class="section__head">
         <span class="eyebrow">Trayectoria</span>
-        <h1>Proyectos destacados</h1>
+        <h2>Proyectos destacados</h2>
         <p>Una selección de trabajos ejecutados para clientes del sector industrial, financiero y de infraestructura.</p>
       </div>
 
@@ -36,7 +50,7 @@ const [proyectos, contratos] = await Promise.all([
   </section>
 
   {contratos.length > 0 && (
-    <section class="section section--surface">
+    <section class="section">
       <div class="container">
         <div class="section__head">
           <span class="eyebrow">Servicio recurrente</span>

@@ -1,6 +1,9 @@
 ---
+import { Image } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
+import Galeria from '../../components/Galeria.astro';
 import { api } from '../../lib/api';
+import { fotosDeCategoria } from '../../lib/imagenes';
 
 export async function getStaticPaths() {
   const servicios = await api.servicios();
@@ -13,19 +16,36 @@ const servicio = await api.servicio(id!);
 if (!servicio) {
   return Astro.redirect('/servicios');
 }
+
+const fotos = fotosDeCategoria(servicio.nombre);
+const portada = fotos[0]?.img ?? null;
+const galeria = fotos.slice(1);
 ---
 
 <Layout title={`${servicio.nombre} — IntegraTech`} description={servicio.descripcion}>
+  <!-- Encabezado con imagen -->
+  <section class="svc-hero">
+    {portada && (
+      <Image
+        class="svc-hero__bg"
+        src={portada}
+        alt={servicio.nombre}
+        widths={[600, 1000, 1600]}
+        sizes="100vw"
+        loading="eager"
+      />
+    )}
+    <div class="svc-hero__overlay"></div>
+    <div class="container svc-hero__inner">
+      <p><a href="/servicios" class="svc-hero__back">← Servicios</a></p>
+      <span class="eyebrow" style="color:#7fe3e3;">Servicio</span>
+      <h1>{servicio.nombre}</h1>
+      <p>{servicio.descripcion}</p>
+    </div>
+  </section>
+
   <section class="section">
     <div class="container">
-      <p><a href="/servicios">← Volver a servicios</a></p>
-
-      <div class="section__head">
-        <span class="eyebrow">Servicio</span>
-        <h1>{servicio.nombre}</h1>
-        <p>{servicio.descripcion}</p>
-      </div>
-
       <div class="detail">
         <div>
           <h2>Qué incluye</h2>
@@ -46,19 +66,58 @@ if (!servicio) {
       </div>
     </div>
   </section>
+
+  {galeria.length > 0 && (
+    <section class="section section--surface">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">Trabajos realizados</span>
+          <h2>Galería del servicio</h2>
+          <p>Ejemplos reales de proyectos ejecutados en esta línea.</p>
+        </div>
+        <Galeria fotos={galeria} />
+      </div>
+    </section>
+  )}
 </Layout>
 
 <style>
+  .svc-hero {
+    position: relative;
+    min-height: 340px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    background: var(--color-primary);
+  }
+  .svc-hero__bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .svc-hero__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(11, 42, 74, 0.35) 0%, rgba(11, 42, 74, 0.92) 100%);
+  }
+  .svc-hero__inner {
+    position: relative;
+    padding-block: 2.5rem 3rem;
+    color: #fff;
+  }
+  .svc-hero__inner h1 { color: #fff; }
+  .svc-hero__inner p { color: #d6e4f2; max-width: 60ch; margin-bottom: 0; }
+  .svc-hero__back { color: #bcd3ea; font-weight: 600; }
+
   .detail {
     display: grid;
     grid-template-columns: 1fr 320px;
     gap: 2.5rem;
     align-items: start;
   }
-  .detail__list {
-    columns: 2;
-    column-gap: 2rem;
-  }
+  .detail__list { columns: 2; column-gap: 2rem; }
   .detail__list li { break-inside: avoid; }
   .detail__aside {
     background: var(--color-surface);

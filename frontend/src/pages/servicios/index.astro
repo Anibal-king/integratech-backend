@@ -1,6 +1,8 @@
 ---
+import { Image } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
 import { api } from '../../lib/api';
+import { portadaDeCategoria } from '../../lib/imagenes';
 
 const servicios = await api.servicios();
 ---
@@ -19,20 +21,36 @@ const servicios = await api.servicios();
           No se pudo cargar el catálogo. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
         </div>
       ) : (
-        <div class="grid grid--2">
-          {servicios.map((s) => (
-            <article class="card">
-              <h2 style="font-size:1.25rem;">{s.nombre}</h2>
-              <p>{s.descripcion}</p>
-              {s.items.length > 0 && (
-                <ul class="svc-items">
-                  {s.items.slice(0, 5).map((i) => <li>{i}</li>)}
-                  {s.items.length > 5 && <li class="muted">+ {s.items.length - 5} más…</li>}
-                </ul>
-              )}
-              <a href={`/servicios/${s.id}`} class="btn btn--ghost" style="margin-top:0.75rem;">Ver detalle</a>
-            </article>
-          ))}
+        <div class="svc-grid">
+          {servicios.map((s) => {
+            const portada = portadaDeCategoria(s.nombre);
+            return (
+              <a href={`/servicios/${s.id}`} class="svc-card">
+                {portada && (
+                  <div class="svc-card__media">
+                    <Image
+                      src={portada}
+                      alt={s.nombre}
+                      widths={[320, 640]}
+                      sizes="(max-width: 700px) 90vw, 45vw"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+                <div class="svc-card__body">
+                  <h2>{s.nombre}</h2>
+                  <p>{s.descripcion}</p>
+                  {s.items.length > 0 && (
+                    <ul class="svc-items">
+                      {s.items.slice(0, 4).map((i) => <li>{i}</li>)}
+                      {s.items.length > 4 && <li class="muted">+ {s.items.length - 4} más…</li>}
+                    </ul>
+                  )}
+                  <span class="svc-card__cta">Ver detalle →</span>
+                </div>
+              </a>
+            );
+          })}
         </div>
       )}
     </div>
@@ -40,7 +58,44 @@ const servicios = await api.servicios();
 </Layout>
 
 <style>
-  .svc-items { margin: 0.9rem 0 0; }
+  .svc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.75rem;
+  }
+  .svc-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    color: inherit;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .svc-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+  }
+  .svc-card__media {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--color-surface-2);
+  }
+  .svc-card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .svc-card:hover .svc-card__media img { transform: scale(1.06); }
+  .svc-card__body { padding: 1.4rem 1.5rem 1.6rem; display: flex; flex-direction: column; flex: 1; }
+  .svc-card__body h2 { font-size: 1.2rem; margin-bottom: 0.4rem; }
+  .svc-card__body p { color: var(--color-text-muted); }
+  .svc-items { margin: 0.5rem 0 1rem; }
   .svc-items .muted { color: var(--color-text-muted); list-style: none; margin-left: -1.2rem; }
+  .svc-card__cta { margin-top: auto; font-weight: 700; color: var(--color-accent-600); }
   code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
 </style>
