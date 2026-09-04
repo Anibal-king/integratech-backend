@@ -114,3 +114,19 @@ CREATE TABLE IF NOT EXISTS mensajes_contacto (
   mensaje TEXT NOT NULL,
   fecha_creacion TEXT DEFAULT (datetime('now'))
 );
+
+-- Leads capturados por el chatbot de cotización del sitio web
+CREATE TABLE IF NOT EXISTS leads_chatbot (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tipo_servicio TEXT,
+  alcance TEXT,
+  ubicacion TEXT,
+  plazo TEXT,
+  nombre TEXT NOT NULL,
+  empresa TEXT,
+  correo TEXT,
+  telefono TEXT,
+  origen TEXT DEFAULT 'chatbot',        -- 'chatbot' | 'whatsapp'
+  correo_enviado INTEGER DEFAULT 0,     -- 1 si se logró notificar por email
+  fecha_creacion TEXT DEFAULT (datetime('now'))
+);
