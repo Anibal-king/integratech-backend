@@ -1,26 +1,34 @@
 ---
 import { Image } from 'astro:assets';
 import Layout from '../layouts/Layout.astro';
-import Galeria from '../components/Galeria.astro';
 import { api } from '../lib/api';
-import { heroHome, galeriaHome, portadaDeCategoria } from '../lib/imagenes';
+import {
+  heroHome,
+  bandaProyectos,
+  todasLasFotos,
+  portadaDeCategoria,
+  marcaLogo,
+} from '../lib/imagenes';
 
-const [empresa, servicios, proyectos] = await Promise.all([
+const [empresa, servicios, proyectos, marcas] = await Promise.all([
   api.empresa(),
   api.servicios(),
   api.proyectos(),
+  api.marcas(),
 ]);
 
-const serviciosDestacados = servicios.slice(0, 3);
+// Primeras 4 líneas de servicio para el "recorrido" foto/texto
+const soluciones = servicios.slice(0, 4);
 const proyectosDestacados = proyectos.slice(0, 3);
+const logos = marcas
+  .map((m) => ({ nombre: m.nombre, img: marcaLogo(m.nombre) }))
+  .filter((m): m is { nombre: string; img: NonNullable<typeof m.img> } => m.img !== null);
 ---
 
 <Layout>
-  <!-- Hero -->
+  <!-- ░░ Hero ░░ -->
   <section class="hero">
-    <Image class="hero__bg" src={heroHome} alt="" widths={[800, 1400, 2000]} sizes="100vw" loading="eager" />
-    <div class="hero__scrim"></div>
-    <div class="container hero__inner">
+    <div class="container hero__grid">
       <div class="hero__text">
         <span class="eyebrow" style="color:#7fe3e3;">Servicios Integrales de Ingeniería</span>
         <h1>Ingeniería especializada para la industria y el sector corporativo</h1>
@@ -34,73 +42,108 @@ const proyectosDestacados = proyectos.slice(0, 3);
         </div>
         <ul class="hero__stats">
           <li><strong>20+</strong><span>años de experiencia</span></li>
-          <li><strong>{servicios.length || '8'}</strong><span>líneas de servicio</span></li>
-          <li><strong>{proyectos.length || '30+'}</strong><span>proyectos destacados</span></li>
+          <li><strong>{servicios.length || 8}</strong><span>líneas de servicio</span></li>
+          <li><strong>{proyectos.length || '30'}+</strong><span>proyectos ejecutados</span></li>
         </ul>
       </div>
+
+      <figure class="hero__photo">
+        <Image src={heroHome.img} alt={heroHome.descripcion} widths={[480, 760, 1100]} sizes="(max-width: 900px) 92vw, 46vw" loading="eager" />
+        <figcaption>{heroHome.descripcion}</figcaption>
+      </figure>
     </div>
+    <a href="#soluciones" class="hero__scroll" aria-label="Ver soluciones">▾</a>
   </section>
 
-  <!-- Servicios -->
-  <section class="section section--surface">
+  <!-- ░░ Recorrido de soluciones (foto + texto alternado) ░░ -->
+  <section class="section" id="soluciones">
     <div class="container">
       <div class="section__head">
         <span class="eyebrow">Qué hacemos</span>
-        <h2>Descripción de servicios</h2>
-        <p>Soluciones de ingeniería en automatización, energía, infraestructura y calidad, ejecutadas por un staff especializado.</p>
+        <h2>Nuestras soluciones</h2>
+        <p>Cuatro líneas de trabajo que cubren automatización, energía, infraestructura y calidad — ejecutadas con personal propio y marcas representadas.</p>
       </div>
 
-      {serviciosDestacados.length === 0 ? (
+      {soluciones.length === 0 ? (
         <div class="notice">
-          No se pudo cargar el catálogo de servicios. Verifica que el backend esté corriendo en
-          <code>{api.baseUrl}</code>.
+          No se pudo cargar el catálogo de servicios. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
         </div>
       ) : (
-        <div class="svc-grid">
-          {serviciosDestacados.map((s) => {
+        <div class="soluciones">
+          {soluciones.map((s, i) => {
             const portada = portadaDeCategoria(s.nombre);
             return (
-              <a href={`/servicios/${s.id}`} class="svc-card">
-                {portada && (
-                  <div class="svc-card__media">
-                    <Image src={portada} alt={s.nombre} widths={[320, 640]} sizes="(max-width:700px) 90vw, 33vw" loading="lazy" />
-                  </div>
-                )}
-                <div class="svc-card__body">
+              <article class="sol">
+                <a class="sol__media" href={`/servicios/${s.id}`} aria-label={s.nombre}>
+                  {portada && (
+                    <Image src={portada} alt={s.nombre} widths={[420, 720]} sizes="(max-width: 860px) 92vw, 48vw" loading="lazy" />
+                  )}
+                </a>
+                <div class="sol__body">
+                  <span class="eyebrow">Servicio {String(i + 1).padStart(2, '0')}</span>
                   <h3>{s.nombre}</h3>
                   <p>{s.descripcion}</p>
-                  <span class="svc-card__cta">Ver detalle →</span>
+                  {s.items.length > 0 && (
+                    <ul class="sol__items">
+                      {s.items.slice(0, 4).map((it) => <li>{it}</li>)}
+                    </ul>
+                  )}
+                  <a href={`/servicios/${s.id}`} class="sol__link">Ver detalle del servicio →</a>
                 </div>
-              </a>
+              </article>
             );
           })}
         </div>
       )}
 
-      <p style="margin-top:1.75rem;">
-        <a href="/servicios" class="btn btn--ghost">Ver todos los servicios →</a>
+      <p class="center" style="margin-top:2.5rem;">
+        <a href="/servicios" class="btn btn--ghost">Ver todas las líneas de servicio →</a>
       </p>
     </div>
   </section>
 
-  <!-- Galería de proyectos -->
-  {galeriaHome.length > 0 && (
-    <section class="section">
+  <!-- ░░ Franja de proyectos ░░ -->
+  {bandaProyectos.length > 0 && (
+    <section class="band">
       <div class="container">
-        <div class="section__head">
-          <span class="eyebrow">Nuestro trabajo</span>
-          <h2>Proyectos en imágenes</h2>
-          <p>Data centers, subestaciones, automatización, iluminación y energía renovable en instalaciones reales.</p>
+        <div class="band__head">
+          <div>
+            <span class="eyebrow" style="color:#7fe3e3;">Nuestro trabajo</span>
+            <h2>Proyectos en instalaciones reales</h2>
+            <p>Data centers, subestaciones, tableros de automatización, iluminación y energía renovable.</p>
+          </div>
+          <a href="/proyectos" class="btn btn--light">Ver las {todasLasFotos.length} fotos →</a>
         </div>
-        <Galeria fotos={galeriaHome} min={280} />
-        <p style="margin-top:1.75rem;">
-          <a href="/proyectos" class="btn btn--ghost">Ver galería completa →</a>
-        </p>
+        <div class="band__grid">
+          {bandaProyectos.map((f, i) => (
+            <a href="/proyectos" class="band__item" style={`--i:${i}`} aria-label={f.descripcion}>
+              <Image src={f.img} alt={f.descripcion} widths={[320, 560]} sizes="(max-width: 700px) 45vw, 22vw" loading="lazy" />
+              <span>{f.descripcion}</span>
+            </a>
+          ))}
+        </div>
       </div>
     </section>
   )}
 
-  <!-- Proyectos destacados (texto) -->
+  <!-- ░░ Marcas ░░ -->
+  {logos.length > 0 && (
+    <section class="section marcas-strip">
+      <div class="container">
+        <p class="marcas-strip__title">Representamos marcas líderes en energía, automatización y protección eléctrica</p>
+        <div class="marcas-strip__logos">
+          {logos.map((m) => (
+            <span class="marcas-strip__logo" title={m.nombre}>
+              <Image src={m.img} alt={m.nombre} widths={[120, 240]} sizes="140px" loading="lazy" />
+            </span>
+          ))}
+        </div>
+        <p class="center"><a href="/nosotros" class="sol__link">Conocer más sobre la empresa →</a></p>
+      </div>
+    </section>
+  )}
+
+  <!-- ░░ Proyectos destacados (texto desde la API) ░░ -->
   {proyectosDestacados.length > 0 && (
     <section class="section section--surface">
       <div class="container">
@@ -117,11 +160,14 @@ const proyectosDestacados = proyectos.slice(0, 3);
             </article>
           ))}
         </div>
+        <p style="margin-top:1.75rem;">
+          <a href="/proyectos" class="btn btn--ghost">Ver todos los proyectos →</a>
+        </p>
       </div>
     </section>
   )}
 
-  <!-- CTA -->
+  <!-- ░░ CTA ░░ -->
   <section class="cta">
     <div class="container cta__inner">
       <div>
@@ -134,70 +180,173 @@ const proyectosDestacados = proyectos.slice(0, 3);
 </Layout>
 
 <style>
+  .center { text-align: center; }
+  code { background: rgba(0, 0, 0, 0.06); padding: 0.1rem 0.35rem; border-radius: 4px; }
+
+  /* ---------- Hero ---------- */
   .hero {
     position: relative;
+    background: linear-gradient(135deg, #0a1c2e 0%, var(--color-primary) 45%, var(--color-primary-400) 100%);
     color: #fff;
-    overflow: hidden;
-    background: var(--color-primary);
+    padding-block: clamp(3rem, 8vw, 5.5rem);
   }
-  .hero__bg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .hero__grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
   }
-  .hero__scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(105deg, rgba(8, 26, 46, 0.94) 0%, rgba(8, 26, 46, 0.78) 45%, rgba(8, 26, 46, 0.45) 100%);
-  }
-  .hero__inner {
-    position: relative;
-    padding-block: clamp(3rem, 8vw, 6rem);
-  }
-  .hero__text { max-width: 640px; }
   .hero__text h1 { color: #fff; }
-  .hero__text p { color: #d6e4f2; font-size: 1.1rem; }
+  .hero__text p { color: #d6e4f2; font-size: 1.1rem; max-width: 46ch; }
   .hero__actions { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 1.75rem; }
   .hero__stats {
     list-style: none;
-    margin: 2.5rem 0 0;
-    padding: 0;
+    margin: 2.25rem 0 0;
+    padding: 1.5rem 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
     display: flex;
     flex-wrap: wrap;
-    gap: 2.5rem;
+    gap: 2.25rem;
   }
   .hero__stats li { display: flex; flex-direction: column; }
-  .hero__stats strong { font-size: 1.9rem; color: #fff; }
-  .hero__stats span { color: #a9c1da; font-size: 0.85rem; }
+  .hero__stats strong { font-size: 1.7rem; color: #fff; }
+  .hero__stats span { color: #a9c1da; font-size: 0.82rem; }
 
-  /* Tarjetas de servicio (compartido con /servicios) */
-  .svc-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1.5rem;
-  }
-  .svc-card {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--color-border);
+  .hero__photo {
+    margin: 0;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    background: #fff;
-    box-shadow: var(--shadow-sm);
-    color: inherit;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #0a1c2e;
   }
-  .svc-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); text-decoration: none; }
-  .svc-card__media { aspect-ratio: 16 / 9; overflow: hidden; background: var(--color-surface-2); }
-  .svc-card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
-  .svc-card:hover .svc-card__media img { transform: scale(1.06); }
-  .svc-card__body { padding: 1.3rem 1.4rem 1.5rem; display: flex; flex-direction: column; flex: 1; }
-  .svc-card__body h3 { margin-bottom: 0.4rem; }
-  .svc-card__body p { color: var(--color-text-muted); }
-  .svc-card__cta { margin-top: auto; padding-top: 0.75rem; font-weight: 700; color: var(--color-accent-600); }
+  .hero__photo img { width: 100%; height: 100%; object-fit: cover; display: block; aspect-ratio: 4 / 3; }
+  .hero__photo figcaption {
+    padding: 0.7rem 1rem;
+    font-size: 0.8rem;
+    color: #bcd3ea;
+    background: rgba(0, 0, 0, 0.25);
+  }
 
+  .hero__scroll {
+    position: absolute;
+    left: 50%;
+    bottom: 0.75rem;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.3rem;
+    text-decoration: none;
+    animation: bob 1.8s ease-in-out infinite;
+  }
+  @keyframes bob { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(5px); } }
+
+  /* ---------- Recorrido de soluciones ---------- */
+  .soluciones { display: flex; flex-direction: column; gap: clamp(2.5rem, 6vw, 4.5rem); }
+  .sol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+  }
+  .sol:nth-child(even) .sol__media { order: 2; }
+
+  .sol__media {
+    display: block;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    background: var(--color-surface-2);
+    box-shadow: var(--shadow-md);
+  }
+  .sol__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+  .sol__media:hover img { transform: scale(1.05); }
+
+  .sol__body h3 { font-size: 1.4rem; margin: 0.3rem 0 0.5rem; }
+  .sol__body p { color: var(--color-text-muted); }
+  .sol__items { margin: 0.75rem 0 1rem; padding-left: 1.1rem; }
+  .sol__items li { margin-bottom: 0.3rem; color: var(--color-text); }
+  .sol__link { font-weight: 700; color: var(--color-accent-600); }
+
+  /* ---------- Franja de proyectos ---------- */
+  .band {
+    background: linear-gradient(180deg, var(--color-primary) 0%, #0a2038 100%);
+    color: #fff;
+    padding-block: clamp(3rem, 7vw, 4.5rem);
+  }
+  .band__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .band__head h2 { color: #fff; margin-bottom: 0.35rem; }
+  .band__head p { color: #bcd3ea; margin: 0; }
+
+  .band__grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.9rem;
+  }
+  .band__item {
+    position: relative;
+    display: block;
+    border-radius: var(--radius);
+    overflow: hidden;
+    aspect-ratio: 3 / 4;
+    background: #0a1c2e;
+  }
+  .band__item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; opacity: 0.9; }
+  .band__item:hover img { transform: scale(1.06); opacity: 1; }
+  .band__item span {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    padding: 1.4rem 0.7rem 0.6rem;
+    font-size: 0.72rem;
+    line-height: 1.3;
+    color: #fff;
+    background: linear-gradient(to top, rgba(6, 20, 35, 0.95), transparent);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .band__item:hover span { opacity: 1; }
+
+  /* ---------- Marcas ---------- */
+  .marcas-strip { padding-block: clamp(2.5rem, 5vw, 3.5rem); }
+  .marcas-strip__title {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    max-width: 52ch;
+    margin: 0 auto 1.75rem;
+  }
+  .marcas-strip__logos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem 2.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .marcas-strip__logo {
+    display: grid;
+    place-items: center;
+    width: 120px;
+    height: 52px;
+  }
+  .marcas-strip__logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: grayscale(1);
+    opacity: 0.6;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+  }
+  .marcas-strip__logo:hover img { filter: grayscale(0); opacity: 1; }
+
+  /* ---------- CTA ---------- */
   .cta { background: var(--color-primary-600); padding-block: 3rem; }
   .cta__inner {
     display: flex;
@@ -206,5 +355,19 @@ const proyectosDestacados = proyectos.slice(0, 3);
     gap: 1.5rem;
     flex-wrap: wrap;
   }
-  code { background: rgba(0,0,0,0.06); padding: 0.1rem 0.35rem; border-radius: 4px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    .hero__grid { grid-template-columns: 1fr; }
+    .hero__photo { order: -1; max-width: 520px; }
+    .band__grid { grid-template-columns: repeat(3, 1fr); }
+    .band__item:nth-child(4), .band__item:nth-child(5) { display: none; }
+  }
+  @media (max-width: 720px) {
+    .sol { grid-template-columns: 1fr; }
+    .sol:nth-child(even) .sol__media { order: 0; }
+    .band__grid { grid-template-columns: repeat(2, 1fr); }
+    .band__item:nth-child(3) { display: none; }
+    .band__head .btn { width: 100%; justify-content: center; }
+  }
 </style>

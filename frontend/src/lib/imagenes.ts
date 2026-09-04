@@ -192,7 +192,15 @@ export function portadaDeCategoria(nombre: string): ImageMetadata | null {
 
 // ---------- Selección para la portada ----------
 
-export const heroHome = PROYECTOS.get('proyecto_001')!;
+/** Foto principal del héroe (panel enmarcado). */
+export const heroHome = foto('proyecto_001')!;
+
+/** Miniaturas de la franja "nuestro trabajo" del inicio (enlazan a /proyectos). */
+export const bandaProyectos: FotoProyecto[] = ['proyecto_009', 'proyecto_043', 'proyecto_030', 'proyecto_036', 'proyecto_017']
+  .map(foto)
+  .filter((f): f is FotoProyecto => f !== null);
+
+/** Galería de 6 fotos (se usa donde haga falta un grid con lightbox). */
 export const galeriaHome: FotoProyecto[] = ['proyecto_017', 'proyecto_043', 'proyecto_030', 'proyecto_009', 'proyecto_036', 'proyecto_028']
   .map(foto)
   .filter((f): f is FotoProyecto => f !== null);
