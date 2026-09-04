@@ -38,7 +38,7 @@ const { fotos, min = 260 } = Astro.props;
 }
 
 <!-- Lightbox (una sola instancia por página) -->
-<div class="lightbox" data-lightbox-modal hidden aria-hidden="true">
+<div class="lightbox" data-lightbox-modal aria-hidden="true">
   <button class="lightbox__close" type="button" data-lightbox-close aria-label="Cerrar">&times;</button>
   <figure class="lightbox__figure">
     <img src="" alt="" data-lightbox-img />
@@ -97,11 +97,14 @@ const { fotos, min = 260 } = Astro.props;
     position: fixed;
     inset: 0;
     z-index: 80;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 2rem;
     background: rgba(6, 20, 35, 0.9);
+  }
+  .lightbox.is-open {
+    display: flex;
   }
   .lightbox__figure {
     margin: 0;
@@ -151,12 +154,12 @@ const { fotos, min = 260 } = Astro.props;
       img.src = src;
       img.alt = caption;
       cap.textContent = caption;
-      modal.hidden = false;
+      modal.classList.add('is-open');
       modal.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
     };
     const cerrar = () => {
-      modal.hidden = true;
+      modal.classList.remove('is-open');
       modal.setAttribute('aria-hidden', 'true');
       img.src = '';
       document.body.style.overflow = '';
@@ -168,10 +171,11 @@ const { fotos, min = 260 } = Astro.props;
       });
     });
     modal.addEventListener('click', (e) => {
-      if (e.target === modal || (e.target as HTMLElement).hasAttribute('data-lightbox-close')) cerrar();
+      const target = e.target as HTMLElement;
+      if (target === modal || target.closest('[data-lightbox-close]')) cerrar();
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !modal.hidden) cerrar();
+      if (e.key === 'Escape' && modal.classList.contains('is-open')) cerrar();
     });
   })();
 </script>
