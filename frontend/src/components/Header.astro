@@ -1,0 +1,285 @@
+---
+import { Image } from 'astro:assets';
+import { logoHorizontal } from '../lib/imagenes';
+import { NAV_LINKS, CTA_LINK, sectionForPath } from '../lib/navegacion';
+import MobileMenu from './MobileMenu.tsx';
+
+const { pathname } = Astro.url;
+const activeSection = sectionForPath(pathname);
+---
+
+<header class="header" transition:name="site-header" transition:animate="none">
+  <div class="container header__inner">
+    <a href="/#inicio" class="header__brand" aria-label="Servicios Integrales de Ingeniería - Inicio">
+      <Image src={logoHorizontal} alt="Servicios Integrales de Ingeniería" widths={[220, 440]} sizes="(max-width: 1023px) 170px, 212px" loading="eager" />
+    </a>
+
+    <nav class="header__nav" aria-label="Navegación principal">
+      <ul>
+        {NAV_LINKS.map((l) => {
+          const active = l.id === activeSection;
+          return (
+            <li>
+              <a
+                href={l.href}
+                class:list={['header__link', { 'is-active': active }]}
+                data-nav-link={l.id}
+                aria-current={active ? 'page' : undefined}
+              >
+                {l.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+
+    <a href={CTA_LINK.href} class="btn header__cta">{CTA_LINK.label}</a>
+
+    <MobileMenu client:media="(max-width: 1023px)" links={NAV_LINKS} cta={CTA_LINK} pathname={pathname} />
+  </div>
+</header>
+
+<style>
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    height: var(--header-height);
+    background: var(--color-header-bg);
+    border-bottom: 1px solid var(--color-header-divider);
+    box-shadow: var(--shadow-header);
+  }
+
+  .header__inner {
+    height: 100%;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .header__brand { display: block; border-radius: var(--radius); }
+  .header__brand img { height: 48px; width: auto; }
+
+  .header__brand:focus-visible,
+  .header__link:focus-visible,
+  .header__cta:focus-visible {
+    outline: 2px solid var(--color-brand-blue);
+    outline-offset: 2px;
+  }
+
+  .header__nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+  .header__nav li { margin: 0; }
+
+  .header__link {
+    display: block;
+    padding: 0.5rem 0.9rem;
+    border-radius: var(--radius);
+    color: var(--color-brand-blue);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    transition: background-color 0.18s ease;
+  }
+  .header__link:hover {
+    background: var(--color-brand-blue-tint);
+    text-decoration: none;
+  }
+  .header__link[aria-current='page'] {
+    background: var(--color-brand-blue-tint);
+    font-weight: 600;
+  }
+
+  .header__cta {
+    white-space: nowrap;
+    background: var(--color-brand-blue);
+    color: var(--color-on-brand-blue);
+    font-weight: 600;
+  }
+  .header__cta:hover,
+  .header__cta:active { background: var(--color-brand-blue-hover); }
+
+  /* Entre 1024 y 1279px el logo de 212px no deja sitio: se compacta un poco */
+  @media (max-width: 1279px) {
+    .header__inner { gap: 1rem; }
+    .header__brand img { height: 44px; }
+    .header__link { padding-inline: 0.65rem; }
+  }
+
+  @media (max-width: 1023px) {
+    .header__brand img { height: 38px; }
+    .header__inner { grid-template-columns: auto 1fr; }
+    .header__nav,
+    .header__cta { display: none; }
+  }
+</style>
+
+<script>
+  import { NAV_LINKS, SECTION_CHANGE_EVENT, SECTION_GOTO_EVENT, sectionForPath } from '../lib/navegacion';
+
+  /*
+   * Navegación de la landing (sin React):
+   *  - clic en "/#seccion" estando en "/": scroll suave sin recarga y foco en la sección
+   *  - scrollspy con IntersectionObserver: enlace activo + URL con replaceState
+   *  - aparición de secciones (.reveal → .is-visible)
+   * Se reinicializa en cada `astro:page-load` (View Transitions).
+   */
+
+  const LANDING = '/';
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let current: string | null = null;
+  // Mientras dura un scroll programado, el scrollspy no cambia el activo (evita recorrer los enlaces intermedios).
+  let spyLocked = false;
+  let teardown: Array<() => void> = [];
+
+  function setActive(id: string | null, updateUrl = false) {
+    if (id !== current) {
+      current = id;
+      document.documentElement.dataset.activeSection = id ?? '';
+      document.querySelectorAll<HTMLAnchorElement>('[data-nav-link]').forEach((a) => {
+        const on = a.dataset.navLink === id;
+        a.classList.toggle('is-active', on);
+        if (on) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
+      });
+      window.dispatchEvent(new CustomEvent(SECTION_CHANGE_EVENT, { detail: id }));
+    }
+    if (updateUrl && id) {
+      // Sin entradas nuevas en el historial; se conserva history.state (lo usa el router de Astro).
+      const url = id === 'inicio' ? LANDING : `#${id}`;
+      if (location.pathname + location.hash !== (id === 'inicio' ? LANDING : `${LANDING}#${id}`)) {
+        history.replaceState(history.state, '', url);
+      }
+    }
+  }
+
+  /** Llama a `done` cuando termina el scroll en curso (o de inmediato si no hay nada que desplazar). */
+  function afterScroll(target: HTMLElement, done: () => void) {
+    const header = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+    const distance = Math.abs(target.getBoundingClientRect().top - header);
+    if (distance < 2) return done();
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      window.removeEventListener('scrollend', finish);
+      clearTimeout(timer);
+      done();
+    };
+    window.addEventListener('scrollend', finish);
+    const timer = window.setTimeout(finish, 1500); // navegadores sin `scrollend`
+  }
+
+  function goTo(id: string) {
+    const section = document.getElementById(id);
+    if (!section) return;
+    spyLocked = true;
+    setActive(id, true);
+    section.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    afterScroll(section, () => {
+      spyLocked = false;
+      section.focus({ preventScroll: true });
+    });
+  }
+
+  // Clic en enlaces "/#seccion" dentro de la landing: se gestiona aquí (fase de captura,
+  // antes que el router de Astro). Los del menú móvil los gestiona su isla.
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (location.pathname !== LANDING) return;
+      const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      if (!a || a.closest('[data-mnav]') || a.target === '_blank') return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin || url.pathname !== LANDING || !url.hash) return;
+      const id = decodeURIComponent(url.hash.slice(1));
+      if (!document.getElementById(id)) return;
+      e.preventDefault();
+      goTo(id);
+    },
+    true
+  );
+
+  // El menú móvil pide el desplazamiento cuando ya cerró el panel y liberó el scroll del body.
+  window.addEventListener(SECTION_GOTO_EVENT, (e) => goTo((e as CustomEvent<string>).detail));
+
+  function initScrollSpy() {
+    const sections = NAV_LINKS.map((l) => document.getElementById(l.id)).filter(
+      (s): s is HTMLElement => s !== null
+    );
+    if (sections.length === 0 || !('IntersectionObserver' in window)) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (spyLocked) return;
+        for (const entry of entries) if (entry.isIntersecting) setActive(entry.target.id, true);
+      },
+      // Activa la sección que cruza la franja superior de la pantalla (40%–45%).
+      { rootMargin: '-40% 0px -55% 0px' }
+    );
+    sections.forEach((s) => io.observe(s));
+
+    // La última sección puede no llegar a la franja: al tocar fondo, se activa.
+    const last = sections[sections.length - 1];
+    const onScroll = () => {
+      if (spyLocked) return;
+      const bottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      if (bottom) setActive(last.id, true);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    teardown.push(() => io.disconnect(), () => window.removeEventListener('scroll', onScroll));
+  }
+
+  function initReveal() {
+    const items = Array.from(document.querySelectorAll<HTMLElement>('.reveal:not(.is-visible)'));
+    if (items.length === 0) return;
+    if (reducedMotion() || !('IntersectionObserver' in window)) {
+      items.forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target); // una sola vez por sección
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px' }
+    );
+    items.forEach((el) => io.observe(el));
+    teardown.push(() => io.disconnect());
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    teardown.forEach((fn) => fn());
+    teardown = [];
+    current = null;
+    spyLocked = false;
+
+    initReveal();
+
+    if (location.pathname !== LANDING) {
+      // Subpágina de detalle: sin scrollspy, activo = sección padre.
+      setActive(sectionForPath(location.pathname));
+      return;
+    }
+
+    initScrollSpy();
+    // Llegada a "/#seccion" (desde una subpágina o un enlace externo): asegurar el
+    // aterrizaje (no-op si el navegador ya está ahí) y enfocar la sección.
+    const hashId = decodeURIComponent(location.hash.slice(1));
+    if (hashId && document.getElementById(hashId)) goTo(hashId);
+  });
+</script>

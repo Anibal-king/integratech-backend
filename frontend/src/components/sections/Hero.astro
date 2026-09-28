@@ -1,0 +1,111 @@
+---
+import { Image } from 'astro:assets';
+import { heroHome } from '../../lib/imagenes';
+
+interface Props {
+  descripcion?: string | null;
+}
+
+const {
+  descripcion = 'Satisfacemos la demanda de servicios profesionales y especializados que requiere el mercado corporativo y empresarial de El Salvador.',
+} = Astro.props;
+---
+
+<section id="inicio" class="hero theme-dark" aria-labelledby="inicio-title" tabindex="-1">
+  <div class="container hero__grid">
+    <div class="hero__text">
+      <span class="hero__eyebrow">Servicios Integrales de Ingeniería</span>
+      <h1 id="inicio-title">Ingeniería especializada para la industria y el sector corporativo</h1>
+      <p>{descripcion}</p>
+      <div class="hero__actions">
+        <a href="/#servicios" class="btn btn--primary">Ver servicios</a>
+        <a href="/#contacto" class="btn hero__btn-light">Solicitar cotización</a>
+      </div>
+    </div>
+
+    <figure class="hero__photo">
+      <Image
+        src={heroHome.img}
+        alt="Pasillo de un data center con racks de servidores y bandejas de cableado en el techo"
+        widths={[480, 760, 1100]}
+        sizes="(max-width: 767px) 92vw, 560px"
+        loading="eager"
+      />
+      <figcaption>Diseño y construcción de data center</figcaption>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding-block: clamp(3rem, 7vw, 5rem);
+  }
+
+  .hero__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+  }
+
+  .hero__eyebrow {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+  }
+
+  .hero__text h1 {
+    font-size: clamp(2rem, 1.2rem + 3vw, 3rem);
+    color: var(--color-text);
+    margin-bottom: 1rem;
+  }
+
+  .hero__text p {
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
+    max-width: 48ch;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    margin-top: 1.75rem;
+  }
+
+  .hero__btn-light {
+    background: var(--color-btn-light);
+    color: var(--color-on-light);
+  }
+
+  .hero__photo {
+    margin: 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--color-surface-nav);
+    border: 1px solid var(--color-border-dark);
+    box-shadow: var(--shadow-lg);
+  }
+  .hero__photo img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
+  .hero__photo figcaption {
+    padding: 0.7rem 1rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    background: var(--color-surface-nav);
+  }
+
+  @media (max-width: 767px) {
+    .hero__grid { grid-template-columns: 1fr; }
+    .hero__actions { flex-direction: column; }
+    .hero__actions .btn { justify-content: center; }
+  }
+</style>

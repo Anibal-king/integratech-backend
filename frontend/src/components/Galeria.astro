@@ -37,15 +37,6 @@ const { fotos, min = 260 } = Astro.props;
   )
 }
 
-<!-- Lightbox (una sola instancia por página) -->
-<div class="lightbox" data-lightbox-modal aria-hidden="true">
-  <button class="lightbox__close" type="button" data-lightbox-close aria-label="Cerrar">&times;</button>
-  <figure class="lightbox__figure">
-    <img src="" alt="" data-lightbox-img />
-    <figcaption data-lightbox-cap></figcaption>
-  </figure>
-</div>
-
 <style>
   .galeria {
     display: grid;
@@ -92,90 +83,4 @@ const { fotos, min = 260 } = Astro.props;
     opacity: 1;
     transform: translateY(0);
   }
-
-  .lightbox {
-    position: fixed;
-    inset: 0;
-    z-index: 80;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    background: rgba(6, 20, 35, 0.9);
-  }
-  .lightbox.is-open {
-    display: flex;
-  }
-  .lightbox__figure {
-    margin: 0;
-    max-width: min(1100px, 92vw);
-    max-height: 88vh;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-  .lightbox__figure img {
-    max-width: 100%;
-    max-height: 78vh;
-    object-fit: contain;
-    border-radius: 8px;
-    background: #000;
-  }
-  .lightbox__figure figcaption {
-    color: #dCE6F2;
-    font-size: 0.9rem;
-    text-align: center;
-  }
-  .lightbox__close {
-    position: absolute;
-    top: 1rem;
-    right: 1.25rem;
-    width: 44px;
-    height: 44px;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    font-size: 1.6rem;
-    line-height: 1;
-    cursor: pointer;
-  }
-  .lightbox__close:hover { background: rgba(255, 255, 255, 0.22); }
 </style>
-
-<script>
-  (() => {
-    const modal = document.querySelector('[data-lightbox-modal]') as HTMLElement | null;
-    if (!modal) return;
-    const img = modal.querySelector('[data-lightbox-img]') as HTMLImageElement;
-    const cap = modal.querySelector('[data-lightbox-cap]') as HTMLElement;
-
-    const abrir = (src: string, caption: string) => {
-      img.src = src;
-      img.alt = caption;
-      cap.textContent = caption;
-      modal.classList.add('is-open');
-      modal.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
-    };
-    const cerrar = () => {
-      modal.classList.remove('is-open');
-      modal.setAttribute('aria-hidden', 'true');
-      img.src = '';
-      document.body.style.overflow = '';
-    };
-
-    document.querySelectorAll('[data-lightbox]').forEach((el) => {
-      el.addEventListener('click', () => {
-        abrir(el.getAttribute('data-src') || '', el.getAttribute('data-caption') || '');
-      });
-    });
-    modal.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      if (target === modal || target.closest('[data-lightbox-close]')) cerrar();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modal.classList.contains('is-open')) cerrar();
-    });
-  })();
-</script>

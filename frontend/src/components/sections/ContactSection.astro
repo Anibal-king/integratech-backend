@@ -1,0 +1,67 @@
+---
+import ContactForm from '../ContactForm.tsx';
+import { api } from '../../lib/api';
+
+const empresa = await api.empresa();
+---
+
+<section id="contacto" class="section theme-dark reveal" aria-labelledby="contacto-title" tabindex="-1">
+  <div class="container contacto">
+    <div>
+      <div class="section__head">
+        <span class="eyebrow">Hablemos</span>
+        <h2 id="contacto-title">Contáctanos</h2>
+        <p>Cuéntanos sobre tu proyecto o necesidad de mantenimiento y te responderemos con una propuesta.</p>
+      </div>
+      <ContactForm client:visible />
+    </div>
+
+    <aside class="contacto__info">
+      <h3>Datos de contacto</h3>
+      <ul>
+        <li><strong>Teléfono:</strong> {empresa?.telefono ?? '2556-1756'}</li>
+        <li><strong>Celular:</strong> {empresa?.celular ?? '7986-2065'}</li>
+        {empresa?.sitio_web && <li><strong>Sitio:</strong> {empresa.sitio_web}</li>}
+        <li><strong>Dirección:</strong> {empresa?.direccion ?? 'Antiguo Cuscatlán, La Libertad, El Salvador'}</li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<style>
+  .contacto {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 3rem;
+    align-items: start;
+  }
+  .contacto__info {
+    background: var(--color-surface-nav);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.6rem;
+  }
+  .contacto__info h3 { font-size: 1.1rem; }
+  .contacto__info li { color: var(--color-text-muted); }
+  .contacto__info strong { color: var(--color-text); }
+
+  /* El formulario (isla React) trae estilos pensados para fondo claro: se adaptan al fondo azul */
+  .contacto :global(.cform label) { color: var(--color-text); }
+  .contacto :global(.cform input),
+  .contacto :global(.cform textarea) {
+    background: var(--white);
+    color: var(--navy-900);
+    border-color: transparent;
+  }
+  .contacto :global(.cform__feedback) {
+    align-self: flex-start;
+    background: var(--white);
+    padding: 0.5rem 0.9rem;
+    border-radius: var(--radius);
+  }
+  .contacto__info ul { list-style: none; padding: 0; margin: 0; }
+  .contacto__info li { margin-bottom: 0.6rem; font-size: 0.92rem; }
+  @media (max-width: 860px) {
+    .contacto { grid-template-columns: 1fr; }
+  }
+</style>

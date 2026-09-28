@@ -14,7 +14,7 @@ const { id } = Astro.params;
 const servicio = await api.servicio(id!);
 
 if (!servicio) {
-  return Astro.redirect('/servicios');
+  return Astro.redirect('/#servicios');
 }
 
 const fotos = fotosDeCategoria(servicio.nombre);
@@ -37,7 +37,7 @@ const galeria = fotos.slice(1);
     )}
     <div class="svc-hero__overlay"></div>
     <div class="container svc-hero__inner">
-      <p><a href="/servicios" class="svc-hero__back">← Servicios</a></p>
+      <p><a href="/#servicios" class="svc-hero__back">← Volver a servicios</a></p>
       <span class="eyebrow" style="color:#7fe3e3;">Servicio</span>
       <h1>{servicio.nombre}</h1>
       <p>{servicio.descripcion}</p>
@@ -61,7 +61,7 @@ const galeria = fotos.slice(1);
         <aside class="detail__aside">
           <h3>¿Te interesa este servicio?</h3>
           <p>Agenda una visita técnica o pide una cotización sin compromiso.</p>
-          <a href="/contacto" class="btn btn--primary btn--block">Solicitar cotización</a>
+          <a href="/#contacto" class="btn btn--primary btn--block">Solicitar cotización</a>
         </aside>
       </div>
     </div>
@@ -125,7 +125,7 @@ const galeria = fotos.slice(1);
     border-radius: var(--radius-lg);
     padding: 1.6rem;
     position: sticky;
-    top: 1.5rem;
+    top: calc(var(--header-height) + 1.5rem);
   }
   .btn--block { width: 100%; justify-content: center; }
 

@@ -2,26 +2,86 @@
 import Layout from '../../layouts/Layout.astro';
 import Galeria from '../../components/Galeria.astro';
 import { api } from '../../lib/api';
-import { todasLasFotos } from '../../lib/imagenes';
+import { fotosDeCategoria } from '../../lib/imagenes';
 
-const [proyectos, contratos] = await Promise.all([
+const [servicios, proyectos, contratos] = await Promise.all([
+  api.servicios(),
   api.proyectos(),
   api.contratosMantenimiento(),
 ]);
+
+const slug = (nombre: string) =>
+  nombre
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+
+const categorias = servicios
+  .map((s) => ({ ...s, fotos: fotosDeCategoria(s.nombre), slug: slug(s.nombre) }))
+  .filter((c) => c.fotos.length > 0);
+
+const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
 ---
 
 <Layout title="Proyectos — IntegraTech">
-  <!-- Galería fotográfica -->
-  <section class="section">
+  <!-- Encabezado + navegación por categoría -->
+  <section class="section section--tight">
     <div class="container">
+      <p><a href="/#proyectos" class="back-link">← Volver a proyectos</a></p>
       <div class="section__head">
         <span class="eyebrow">Nuestro trabajo</span>
         <h1>Galería de proyectos</h1>
-        <p>{todasLasFotos.length} imágenes de instalaciones reales: data centers, subestaciones, tableros de automatización, iluminación, energía solar y cuartos de UPS. Haz clic para ampliar.</p>
+        <p>{totalFotos} imágenes de instalaciones reales, organizadas por línea de servicio. Elige una categoría o recorre la página.</p>
       </div>
-      <Galeria fotos={todasLasFotos} min={240} />
+
+      {categorias.length > 0 && (
+        <nav class="cat-nav" aria-label="Ir a categoría">
+          {categorias.map((c) => (
+            <a href={`#${c.slug}`} class="cat-nav__link">
+              {c.nombre} <span class="cat-nav__count">{c.fotos.length}</span>
+            </a>
+          ))}
+        </nav>
+      )}
     </div>
   </section>
+
+  <!-- Una sección por categoría: fotos a la izquierda, descripción legible a la derecha -->
+  {categorias.length === 0 ? (
+    <section class="section">
+      <div class="container">
+        <div class="notice">
+          No se pudieron cargar las categorías de servicio. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
+        </div>
+      </div>
+    </section>
+  ) : (
+    categorias.map((c, i) => (
+      <section id={c.slug} class:list={['section', 'cat', { 'cat--surface': i % 2 === 1 }]}>
+        <div class="container cat__grid">
+          <div class="cat__photos">
+            <Galeria fotos={c.fotos} min={220} />
+          </div>
+
+          <aside class="cat__aside">
+            <span class="eyebrow">Categoría {String(i + 1).padStart(2, '0')}</span>
+            <h2>{c.nombre}</h2>
+            {c.descripcion && <p class="cat__desc">{c.descripcion}</p>}
+
+            {c.items.length > 0 && (
+              <ul class="cat__items">
+                {c.items.slice(0, 6).map((it) => <li>{it}</li>)}
+              </ul>
+            )}
+
+            <a href={`/servicios/${c.id}`} class="btn btn--outline btn--block">Ver servicio completo →</a>
+          </aside>
+        </div>
+      </section>
+    ))
+  )}
 
   <section class="section section--surface">
     <div class="container">
@@ -72,4 +132,75 @@ const [proyectos, contratos] = await Promise.all([
 
 <style>
   code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+
+  .section--tight { padding-bottom: 0.5rem; }
+  .back-link { font-weight: 600; }
+
+  /* Navegación rápida por categoría */
+  .cat-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+  }
+  .cat-nav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface);
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  .cat-nav__link:hover {
+    background: var(--color-primary);
+    color: #fff;
+    text-decoration: none;
+    border-color: var(--color-primary);
+  }
+  .cat-nav__count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.4em;
+    height: 1.4em;
+    padding: 0 0.3em;
+    border-radius: 999px;
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+    font-size: 0.75em;
+  }
+  .cat-nav__link:hover .cat-nav__count { background: rgba(255, 255, 255, 0.25); color: #fff; }
+
+  /* Sección por categoría */
+  .cat { scroll-margin-top: calc(var(--header-height) + 1rem); }
+  .cat--surface { background: var(--color-surface); }
+  .cat__grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .cat__aside {
+    position: sticky;
+    top: calc(var(--header-height) + 1.5rem);
+  }
+  .cat__aside h2 { margin: 0.35rem 0 0.75rem; font-size: 1.4rem; }
+  .cat__desc { color: var(--color-text-muted); line-height: 1.55; }
+  .cat__items {
+    margin: 1rem 0 1.5rem;
+    padding-left: 1.1rem;
+    color: var(--color-text-muted);
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+  .cat__items li { margin-bottom: 0.2rem; }
+  .btn--block { width: 100%; justify-content: center; }
+
+  @media (max-width: 900px) {
+    .cat__grid { grid-template-columns: 1fr; }
+    .cat__aside { position: static; order: -1; }
+  }
 </style>

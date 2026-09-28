@@ -3,11 +3,18 @@
    ========================================================= */
 
 :root {
+  /* Paleta base (los componentes usan los tokens semánticos de abajo) */
+  --navy-950: #081b31;            /* Dark Deep Blue */
+  --navy-900: #062341;            /* Main Navy Blue */
+  --navy-700: #12385c;            /* Dark Resaltado */
+  --white: #ffffff;
+  --blue-100: #c3d4e6;            /* texto secundario sobre navy */
+
   /* Marca */
   --color-primary: #0b2a4a;       /* navy profundo */
   --color-primary-600: #123a63;
   --color-primary-400: #2f5f92;
-  --color-accent: #00a6a6;        /* teal técnico */
+  --color-accent: #00a3a6;        /* teal técnico */
   --color-accent-600: #008c8c;
 
   /* Neutros */
@@ -18,6 +25,15 @@
   --color-text: #1a2733;
   --color-text-muted: #5b6b7c;
   --color-text-invert: #eef4fb;
+
+  /* Superficies oscuras (header, hero, estadísticas) */
+  --color-surface-nav: var(--navy-950);
+  --color-nav-active: var(--navy-700);
+  --color-border-dark: rgba(255, 255, 255, 0.1);
+  --color-btn-light: var(--white);
+  --color-on-light: var(--navy-900);
+  /* Texto sobre --color-accent: con blanco no llega a AA en texto normal (<18.66px bold) */
+  --color-on-accent: var(--navy-950);
 
   /* Feedback */
   --color-success: #1f9d55;
@@ -33,8 +49,9 @@
   --shadow-md: 0 4px 12px rgba(11, 42, 74, 0.1);
   --shadow-lg: 0 12px 32px rgba(11, 42, 74, 0.16);
 
-  --sidebar-width: 240px;
-  --content-max: 1120px;
+  /* Altura real del header sticky (incluye su borde inferior) */
+  --header-height: 73px;
+  --content-max: 1200px;
 }
 
 *,
@@ -43,8 +60,46 @@
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* Anclas de la landing: el título no queda oculto bajo el header */
+section[id] { scroll-margin-top: var(--header-height); }
+
+/* Las secciones reciben foco tras el salto (tabindex="-1"); sin anillo alrededor de toda la sección */
+section[tabindex='-1']:focus { outline: none; }
+
+/* Contexto oscuro: remapea los tokens neutros dentro del bloque */
+.theme-dark {
+  --color-bg: var(--navy-900);
+  --color-text: var(--white);
+  --color-text-muted: var(--blue-100);
+  --color-border: var(--color-border-dark);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.theme-dark h1,
+.theme-dark h2,
+.theme-dark h3,
+.theme-dark h4 { color: var(--color-text); }
+.theme-dark .eyebrow { color: var(--color-accent); }
+
+/* Variante oscura para alternar secciones de la landing */
+.section--nav { background: var(--color-surface-nav); }
+
+/* ---------- Aparición de secciones ----------
+   Solo se ocultan si el JS marcó <html class="js">; sin JS todo queda visible. */
+@media (prefers-reduced-motion: no-preference) {
+  .js .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  }
+  .js .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 body {
@@ -136,10 +191,11 @@ li { margin-bottom: 0.35rem; }
 
 .btn--primary {
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-on-accent);
   box-shadow: var(--shadow-sm);
 }
-.btn--primary:hover { background: var(--color-accent-600); }
+/* Aclarar (no oscurecer) en hover para mantener el contraste con texto oscuro */
+.btn--primary:hover { filter: brightness(1.1); }
 
 .btn--ghost {
   background: transparent;

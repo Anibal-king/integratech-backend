@@ -1,0 +1,52 @@
+---
+import { api } from '../../lib/api';
+
+const [clientes, otros] = await Promise.all([api.clientes(), api.otrosClientes()]);
+---
+
+<section id="clientes" class="section section--surface reveal" aria-labelledby="clientes-title" tabindex="-1">
+  <div class="container">
+    <div class="section__head">
+      <span class="eyebrow">Referencias</span>
+      <h2 id="clientes-title">Clientes</h2>
+      <p>Empresas que han confiado en Servicios Integrales de Ingeniería para sus proyectos y mantenimientos.</p>
+    </div>
+
+    {clientes.length === 0 ? (
+      <div class="notice">
+        No se pudieron cargar los clientes. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
+      </div>
+    ) : (
+      <div class="grid grid--2">
+        {clientes.map((c) => (
+          <article class="card">
+            <h3>{c.nombre}</h3>
+            {c.servicios.length > 0 && (
+              <ul>
+                {c.servicios.map((s) => <li>{s}</li>)}
+              </ul>
+            )}
+          </article>
+        ))}
+      </div>
+    )}
+
+    {otros.length > 0 && (
+      <div class="otros">
+        <h3>Otros clientes</h3>
+        <div class="chips">
+          {otros.map((o) => <span class="tag">{o.nombre}</span>)}
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .card h3 { font-size: 1.15rem; }
+  .otros { margin-top: 3rem; }
+  .otros h3 { font-size: 1.4rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
+  .chips .tag { font-size: 0.85rem; padding: 0.35rem 0.75rem; background: var(--color-bg); border: 1px solid var(--color-border); }
+  code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style>

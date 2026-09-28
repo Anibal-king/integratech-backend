@@ -1,0 +1,15 @@
+/* =========================================================
+   Tokens de marca tomados del logo (header y menú móvil)
+   ========================================================= */
+
+:root {
+  --color-header-bg: #ffffff;         /* fondo del header y del menú móvil */
+  --color-brand-blue: #004c80;        /* azul del texto del logo */
+  --color-brand-blue-hover: #003a63;  /* hover/pressed del botón */
+  --color-brand-blue-tint: #e6eff6;   /* enlace activo y hover de enlaces */
+  --color-brand-gray: #b2b4b4;        /* gris del arco del logo */
+  --color-on-brand-blue: #ffffff;     /* texto sobre --color-brand-blue */
+
+  --color-header-divider: color-mix(in srgb, var(--color-brand-gray) 40%, transparent);
+  --shadow-header: 0 2px 8px rgba(6, 35, 65, 0.12);
+}

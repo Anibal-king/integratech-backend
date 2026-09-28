@@ -1,0 +1,205 @@
+---
+import { Image } from 'astro:assets';
+import { api } from '../../lib/api';
+import { marcaLogo, documentosLegales } from '../../lib/imagenes';
+
+const [empresa, marcas, legal] = await Promise.all([api.empresa(), api.marcas(), api.legal()]);
+---
+
+<section id="nosotros" class="section reveal" aria-labelledby="nosotros-title" tabindex="-1">
+  <div class="container">
+    <div class="section__head">
+      <span class="eyebrow">Quiénes somos</span>
+      <h2 id="nosotros-title">{empresa?.nombre ?? 'Servicios Integrales de Ingeniería El Salvador, S.A. de C.V.'}</h2>
+    </div>
+
+    {empresa ? (
+      <div class="prose">
+        {empresa.resena_historica && (
+          <>
+            <h3>Reseña</h3>
+            <p>{empresa.resena_historica}</p>
+          </>
+        )}
+
+        <div class="grid grid--2 mv">
+          {empresa.mision && (
+            <article class="card">
+              <h4>Misión</h4>
+              <p>{empresa.mision}</p>
+            </article>
+          )}
+          {empresa.vision && (
+            <article class="card">
+              <h4>Visión</h4>
+              <p>{empresa.vision}</p>
+            </article>
+          )}
+        </div>
+      </div>
+    ) : (
+      <div class="notice">
+        No se pudo cargar la información de la empresa. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
+      </div>
+    )}
+
+    {empresa && empresa.valores?.length > 0 && (
+      <div class="block">
+        <h3>Valores</h3>
+        <div class="grid grid--3">
+          {empresa.valores.map((v) => (
+            <article class="card">
+              <h4>{v.nombre}</h4>
+              <p>{v.descripcion}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {marcas.length > 0 && (
+      <div class="block">
+        <h3>Marcas que representamos</h3>
+        <div class="marcas">
+          {marcas.map((m) => {
+            const logo = marcaLogo(m.nombre);
+            return (
+              <article class="marca">
+                <div class="marca__logo">
+                  {logo ? (
+                    <Image src={logo} alt={m.nombre} widths={[160, 320]} sizes="200px" loading="lazy" />
+                  ) : (
+                    <span class="marca__nombre">{m.nombre}</span>
+                  )}
+                </div>
+                <div class="marca__txt">
+                  <h4>{m.nombre}</h4>
+                  {m.funcion && <p>{m.funcion}</p>}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    )}
+
+    {(legal.length > 0 || empresa) && (
+      <details class="block legal-box">
+        <summary>Datos legales</summary>
+        <table class="legal">
+          <tbody>
+            {empresa?.nit && <tr><th>NIT</th><td>{empresa.nit}</td></tr>}
+            {empresa?.registro_fiscal && <tr><th>Registro fiscal (NRC)</th><td>{empresa.registro_fiscal}</td></tr>}
+            {empresa?.direccion && <tr><th>Dirección</th><td>{empresa.direccion}</td></tr>}
+            {empresa?.telefono && <tr><th>Teléfono</th><td>{empresa.telefono}</td></tr>}
+            {empresa?.celular && <tr><th>Celular</th><td>{empresa.celular}</td></tr>}
+            {legal.map((d) => (
+              <tr><th>{d.tipo}</th><td>{d.numero}{d.descripcion ? ` — ${d.descripcion}` : ''}</td></tr>
+            ))}
+          </tbody>
+        </table>
+
+        {documentosLegales.length > 0 && (
+          <div class="docs">
+            {documentosLegales.map((d) => (
+              <figure class="doc">
+                <Image src={d.img} alt={d.alt} widths={[240, 480]} sizes="240px" loading="lazy" />
+                <figcaption>{d.alt}</figcaption>
+              </figure>
+            ))}
+          </div>
+        )}
+      </details>
+    )}
+  </div>
+</section>
+
+<style>
+  .prose { max-width: 70ch; }
+  .prose h3 { font-size: 1.4rem; }
+  .mv { margin: 2rem 0 0; }
+  .card h4 { font-size: 1.1rem; margin-bottom: 0.4rem; }
+
+  .block { margin-top: clamp(2.5rem, 5vw, 3.5rem); }
+  .block > h3 { font-size: 1.4rem; margin-bottom: 1.25rem; }
+
+  /* Marcas */
+  .marcas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: 1.25rem;
+  }
+  .marca {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .marca__logo {
+    flex-shrink: 0;
+    width: 96px;
+    height: 64px;
+    display: grid;
+    place-items: center;
+    background: var(--color-bg);
+    border: 1px solid var(--color-surface-2);
+    border-radius: 8px;
+    padding: 6px;
+  }
+  .marca__logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .marca__nombre { font-weight: 700; font-size: 0.8rem; text-align: center; color: var(--color-primary); }
+  .marca__txt h4 { margin: 0 0 0.2rem; font-size: 1rem; }
+  .marca__txt p { margin: 0; color: var(--color-text-muted); font-size: 0.88rem; }
+
+  /* Datos legales (desplegable) */
+  .legal-box {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.4rem;
+    background: var(--color-surface);
+  }
+  .legal-box summary {
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--color-primary);
+  }
+  .legal {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 640px;
+    margin-top: 1rem;
+  }
+  .legal th, .legal td {
+    text-align: left;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+  .legal th { width: 40%; color: var(--color-primary); }
+
+  .docs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+  }
+  .doc { margin: 0; width: min(240px, 100%); }
+  .doc img {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+  }
+  .doc figcaption {
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    line-height: 1.35;
+  }
+  code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style>
