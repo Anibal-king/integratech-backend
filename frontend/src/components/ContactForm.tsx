@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { api, type ContactoPayload } from '../lib/api';
+import { api, ContactoError, type ContactoPayload } from '../lib/api';
 import StatusMessage from './StatusMessage';
 
 type Estado =
@@ -21,6 +21,11 @@ export default function ContactForm() {
       setEstado({ tipo: 'ok' });
       form?.reset();
     } catch (err) {
+      // Validación o límite de envíos: el servidor ya da un mensaje apto para el visitante.
+      if (err instanceof ContactoError && err.esDelVisitante) {
+        setEstado({ tipo: 'invalido', msg: err.mensajeServidor });
+        return;
+      }
       setEstado({ tipo: 'error', detalle: `POST ${api.baseUrl}/api/contacto: ${(err as Error).message}` });
     }
   };
@@ -50,28 +55,28 @@ export default function ContactForm() {
       <div className="cform__row">
         <label>
           Nombre *
-          <input name="nombre" type="text" required autoComplete="name" />
+          <input name="nombre" type="text" required maxLength={120} autoComplete="name" />
         </label>
         <label>
           Empresa
-          <input name="empresa" type="text" autoComplete="organization" />
+          <input name="empresa" type="text" maxLength={150} autoComplete="organization" />
         </label>
       </div>
 
       <div className="cform__row">
         <label>
           Correo
-          <input name="correo" type="email" autoComplete="email" />
+          <input name="correo" type="email" maxLength={200} autoComplete="email" />
         </label>
         <label>
           Teléfono
-          <input name="telefono" type="tel" autoComplete="tel" />
+          <input name="telefono" type="tel" maxLength={40} autoComplete="tel" />
         </label>
       </div>
 
       <label>
         Mensaje *
-        <textarea name="mensaje" rows={5} required />
+        <textarea name="mensaje" rows={5} required maxLength={5000} />
       </label>
 
       <button type="submit" className="btn btn--primary" disabled={estado.tipo === 'enviando'}>

@@ -1,8 +1,25 @@
-const { db, initSchema } = require('./index');
+const { db, initSchema, DB_PATH } = require('./index');
 
+/**
+ * Carga los datos reales de la empresa (tomados de su documentación comercial).
+ * Idempotente: cada tabla de contenido se vacía y se vuelve a poblar. No toca
+ * mensajes_contacto ni leads_chatbot. Todo corre en una transacción: si algo
+ * falla, la base queda como estaba.
+ */
 function seed() {
   initSchema();
+  db.exec('BEGIN');
+  try {
+    poblar();
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+  console.log('✅ Base de datos inicializada y poblada correctamente en', DB_PATH);
+}
 
+function poblar() {
   // ---------- EMPRESA ----------
   db.exec('DELETE FROM empresa;');
   db.prepare(`
@@ -271,8 +288,6 @@ function seed() {
     ['NIT (Número de Identificación Tributaria)', '0614-120722-106-0', null, 'Ministerio de Hacienda, Gobierno de El Salvador.'],
     ['NRC (Número de Registro de Contribuyente)', '317094-1', '25/07/2022', 'Dirección General de Impuestos Internos - tarjeta de registro de contribuyentes, giro: instalaciones eléctricas.'],
   ].forEach(row => insLegal.run(...row));
-
-  console.log('✅ Base de datos inicializada y poblada correctamente en', require('./index').DB_PATH);
 }
 
 if (require.main === module) {

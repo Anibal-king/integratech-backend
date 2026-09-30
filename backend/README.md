@@ -2,50 +2,54 @@
 
 API REST + base de datos para el sitio web de **Servicios Integrales de Ingeniería El Salvador, S.A. de C.V. (SIIE)**.
 
-- **Stack:** Node.js 22 + Express 5
-- **Base de datos:** SQLite, usando el módulo nativo `node:sqlite` (no requiere instalar `sqlite3` ni compilar nada). El archivo vive en `db/siie.db` y se crea automáticamente.
+- **Stack:** Node.js 22.5+ + Express 5 (JavaScript con tipos verificados por `tsc` vía JSDoc)
+- **Base de datos:** SQLite, usando el módulo nativo `node:sqlite` (no requiere instalar `sqlite3` ni compilar nada). El archivo vive en `db/siie.db` (o en `DATABASE_PATH`) y se crea automáticamente.
 - Toda la información viene extraída de la ficha "Información de la empresa" (reseña, misión, visión, valores, clientes, catálogo de servicios, contratos de mantenimiento, proyectos destacados, marcas y documentación legal).
 
 ## Requisitos
 
-- Node.js **22 o superior** (usa `node --version` para verificar). El módulo `node:sqlite` es experimental pero estable para este uso.
+- Node.js **22.5 o superior** (usa `node --version` para verificar). El módulo `node:sqlite` es experimental pero estable para este uso.
 
 ## Instalación y arranque
 
 ```bash
-npm install        # instala express y cors (únicas dependencias)
-npm run seed        # crea db/siie.db y la llena con los datos del PDF (opcional, se hace solo si no existe)
-npm start            # levanta el servidor en http://localhost:3000
+npm install            # express, cors y nodemailer (+ typescript/@types/node solo para typecheck)
+cp .env.example .env   # opcional en desarrollo
+npm run db:seed        # crea db/siie.db y carga los datos de la empresa
+npm start              # servidor en http://localhost:3000  (npm run dev: con --watch)
 ```
 
-La primera vez que corras `npm start` sin haber hecho `npm run seed`, el servidor detecta que no existe `db/siie.db` y la crea/puebla automáticamente.
+Si la base no existe o está sin contenido, `npm start` ejecuta el seed automáticamente.
 
-Para reiniciar los datos desde cero:
-```bash
-rm db/siie.db
-npm run seed
-```
+| Script | Qué hace |
+|---|---|
+| `npm run db:migrate` | Crea las tablas que falten; no toca los datos |
+| `npm run db:seed` | Vacía y recarga las tablas de contenido. Idempotente y en una transacción; no toca `mensajes_contacto` ni `leads_chatbot` |
+| `npm run typecheck` | `tsc` sobre el JS (JSDoc + `checkJs`) contra `../shared/api-types.ts` |
+
+Variables de entorno: ver [`.env.example`](.env.example) (`PORT`, `NODE_ENV`, `DATABASE_PATH`, `CORS_ORIGIN`, `ADMIN_TOKEN`, `TRUST_PROXY`, `SMTP_*`).
 
 ## Estructura del proyecto
 
 ```
-siie-backend/
+backend/
+├── config.js           # Carga .env y centraliza la configuración
 ├── db/
 │   ├── schema.sql      # Definición de tablas
-│   ├── index.js        # Conexión a SQLite
-│   ├── seed.js         # Carga los datos del PDF a la base
-│   └── siie.db         # (generado) archivo de base de datos
-├── routes/
-│   ├── empresa.js
-│   ├── clientes.js
-│   ├── servicios.js
-│   ├── proyectos.js
-│   ├── marcas.js
-│   ├── legal.js
-│   └── contacto.js
+│   ├── index.js        # Conexión a SQLite (ruta absoluta) + helpers tipados all/get
+│   ├── migrate.js      # Aplica el esquema
+│   ├── seed.js         # Carga los datos de la empresa
+│   └── siie.db         # (generado, ignorado por git)
+├── lib/
+│   ├── mailer.js       # Correo SMTP de los leads del chatbot
+│   └── security.js     # ADMIN_TOKEN, límite de envíos, cabeceras, validación de campos
+├── routes/             # Un archivo por recurso: /api/<recurso>
 ├── server.js           # Punto de entrada de Express
-└── package.json
+└── tsconfig.json       # Solo verificación de tipos (no compila)
 ```
+
+El formato de cada respuesta está definido en [`../shared/api-types.ts`](../shared/api-types.ts),
+el mismo archivo que usa el frontend.
 
 ## Modelo de datos (tablas principales)
 
@@ -63,21 +67,26 @@ siie-backend/
 | `marcas`                  | Marcas representadas (AKSA, Tripp-Lite, Loxone, ABB, etc.)            |
 | `documentacion_legal`     | NIT, NRC y otros datos legales                                        |
 | `mensajes_contacto`       | Mensajes enviados desde el formulario de contacto del sitio           |
+| `leads_chatbot`           | Solicitudes de cotización capturadas por el chatbot                  |
 
 ## Endpoints de la API
 
 Todas las rutas responden JSON y están montadas bajo `/api`.
 
+**Formato:** listas como arreglo directo (`[]` con 200 si no hay datos); recursos individuales
+(`/:id`) como objeto, o 404 si no existen; errores como `{ "error": "..." }` con mensaje genérico
+(el detalle va al log del servidor).
+
 ### Salud del servicio
 ```
-GET /api/health
+GET /api/health   → { ok, servicio, version, db: { ok, conteos: { tabla: filas } } }   (503 si la base no responde)
 ```
 
 ### Empresa
 ```
 GET /api/empresa
 ```
-Devuelve datos generales + arreglo `valores`.
+Devuelve datos generales + arreglo `valores`, o `null` (200) si aún no está configurada.
 
 ### Clientes
 ```
@@ -110,17 +119,24 @@ GET /api/marcas
 GET /api/legal
 ```
 
-### Contacto (formulario del sitio web)
+### Formularios públicos (desde el navegador)
 ```
-POST /api/contacto
-Body JSON: { "nombre": "...", "correo": "...", "telefono": "...", "empresa": "...", "mensaje": "..." }
+POST /api/contacto       Body: { nombre, correo?, telefono?, empresa?, mensaje }
+POST /api/lead-chatbot   Body: ver docs/chatbot-flujo.md
+```
+- Límite: 5 envíos por IP cada 10 minutos (429 al superarlo).
+- Longitud máxima por campo; 400 si se excede. Cuerpo máximo: 16 KB.
+- CORS: solo los orígenes de `CORS_ORIGIN`.
 
-GET /api/contacto   → (uso administrativo) lista los mensajes recibidos
+### Rutas administrativas (datos personales)
 ```
+GET /api/contacto       → mensajes del formulario
+GET /api/lead-chatbot   → leads del chatbot
+Header: Authorization: Bearer <ADMIN_TOKEN>
+```
+Sin `ADMIN_TOKEN` configurado responden 404 (deshabilitadas); con un token incorrecto, 401.
 
 ## Próximos pasos sugeridos
 
-1. **Fotos de proyectos:** el PDF incluye ~30 fotografías de proyectos con su descripción. Se dejó la tabla `fotografias_proyectos` lista en el esquema; solo falta subir las imágenes (a `/public/images` o a un bucket) y poblar la tabla con las rutas/URLs.
-2. **Autenticación:** si vas a exponer `GET /api/contacto` (mensajes del formulario) en producción, protégelo con autenticación (por ejemplo, un JWT de administrador), ya que ahora mismo es público.
-3. **CORS:** actualmente `cors()` permite cualquier origen; en producción limita `origin` al dominio de tu sitio (`www.sii.com.sv`).
-4. **Migrar a PostgreSQL:** si el sitio crecerá o necesitas backups gestionados, la estructura en `schema.sql` es fácilmente portable a Postgres/MySQL cuando quieras escalar.
+1. **Fotos de proyectos:** se dejó la tabla `fotografias_proyectos` lista en el esquema; hoy las fotos viven en `frontend/src/assets/img` y no se usa la tabla.
+2. **Migrar a PostgreSQL:** si el sitio crecerá o necesitas backups gestionados, la estructura en `schema.sql` es fácilmente portable a Postgres/MySQL cuando quieras escalar.

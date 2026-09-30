@@ -2,13 +2,23 @@
 /**
  * Recuadro de estado (carga, error o vacío) para contenido renderizado en Astro.
  * Solo usa los tokens --placeholder-*: se adapta a la superficie donde esté.
+ *
+ * Con `resultado` (un ApiResult que no sea 'ok') elige solo el estado:
+ *   - 'empty'                      → estado vacío amable (mensaje `vacio`), sin estilo de error
+ *   - 'network' | 'http' | 'invalid' → error genérico para el visitante
  * El detalle técnico se muestra únicamente en desarrollo; en producción va a
  * console.error (del build / servidor).
  */
+import type { ApiResult } from '../lib/api';
+
 interface Props {
   tipo?: 'loading' | 'error' | 'empty';
   mensaje?: string;
   detalle?: string;
+  /** Resultado de la API; tiene prioridad sobre `tipo` y `detalle`. */
+  resultado?: Exclude<ApiResult<unknown>, { status: 'ok' }>;
+  /** Mensaje del estado vacío cuando se pasa `resultado`. */
+  vacio?: string;
 }
 
 const MENSAJES = {
@@ -17,7 +27,11 @@ const MENSAJES = {
   empty: 'No hay información disponible por ahora.',
 } as const;
 
-const { tipo = 'error', mensaje = MENSAJES[tipo], detalle } = Astro.props;
+const { resultado, vacio } = Astro.props;
+
+const tipo = resultado ? (resultado.status === 'empty' ? 'empty' : 'error') : (Astro.props.tipo ?? 'error');
+const mensaje = resultado?.status === 'empty' && vacio ? vacio : (Astro.props.mensaje ?? MENSAJES[tipo]);
+const detalle = resultado && resultado.status !== 'empty' ? resultado.detail : Astro.props.detalle;
 const mostrarDetalle = import.meta.env.DEV && detalle;
 
 if (detalle && !import.meta.env.DEV) {
@@ -25,7 +39,11 @@ if (detalle && !import.meta.env.DEV) {
 }
 ---
 
-<div class="status" role={tipo === 'error' ? 'alert' : 'status'} aria-busy={tipo === 'loading' ? 'true' : undefined}>
+<div
+  class:list={['status', `status--${tipo}`]}
+  role={tipo === 'error' ? 'alert' : 'status'}
+  aria-busy={tipo === 'loading' ? 'true' : undefined}
+>
   <p>{mensaje}</p>
   {mostrarDetalle && <p class="status__detail">{detalle}</p>}
 </div>
@@ -38,6 +56,11 @@ if (detalle && !import.meta.env.DEV) {
     background: var(--placeholder-bg);
     color: var(--placeholder-text);
     font-size: 0.95rem;
+  }
+  /* Vacío no es un error: sin borde punteado, tono informativo */
+  .status--empty {
+    border-style: solid;
+    border-color: var(--border);
   }
   .status p { margin: 0; }
   .status__detail {

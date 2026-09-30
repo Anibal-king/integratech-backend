@@ -1,11 +1,14 @@
 const express = require('express');
-const { db } = require('../db');
+const { all } = require('../db');
+
+/** @typedef {import('../../shared/api-types').DocumentoLegal} DocumentoLegal */
 
 const router = express.Router();
 
 // GET /api/legal - Documentación legal de la empresa
 router.get('/', (req, res) => {
-  const rows = db.prepare('SELECT id, tipo, numero, fecha_expedicion, descripcion FROM documentacion_legal ORDER BY id').all();
+  /** @type {DocumentoLegal[]} */
+  const rows = all('SELECT id, tipo, numero, fecha_expedicion, descripcion FROM documentacion_legal ORDER BY id');
   res.json(rows);
 });
 

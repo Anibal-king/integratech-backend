@@ -7,13 +7,13 @@ import ProjectsSection from '../components/sections/ProjectsSection.astro';
 import ClientsSection from '../components/sections/ClientsSection.astro';
 import AboutSection from '../components/sections/AboutSection.astro';
 import ContactSection from '../components/sections/ContactSection.astro';
-import { api } from '../lib/api';
+import { api, dataOr } from '../lib/api';
 
 // Landing única: cada sección se recorre con scroll y el menú apunta a "/#<id>".
 const [empresa, servicios, proyectos] = await Promise.all([
-  api.empresa(),
-  api.servicios(),
-  api.proyectos(),
+  api.empresa().then((r) => dataOr(r, null)),
+  api.servicios().then((r) => dataOr(r, [])),
+  api.proyectos().then((r) => dataOr(r, [])),
 ]);
 ---
 

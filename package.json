@@ -4,10 +4,15 @@
   "version": "0.1.0",
   "description": "Sitio web de Servicios Integrales de Ingenieria El Salvador (SIIE) - monorepo backend + frontend",
   "scripts": {
-    "seed": "node backend/db/seed.js",
+    "dev": "node scripts/dev.mjs",
     "backend": "node backend/server.js",
     "frontend": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build",
+    "db:migrate": "node backend/db/migrate.js",
+    "db:seed": "node backend/db/seed.js",
+    "seed": "node backend/db/seed.js",
+    "check:api": "node scripts/check-api.mjs",
+    "build": "node scripts/check-api.mjs && npm --prefix frontend run build",
+    "typecheck": "npm --prefix backend run typecheck",
     "install:all": "npm --prefix backend install && npm --prefix frontend install"
   },
   "engines": {

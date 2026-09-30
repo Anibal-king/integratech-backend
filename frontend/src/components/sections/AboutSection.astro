@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import Section, { type SectionVariant } from '../Section.astro';
 import StatusMessage from '../StatusMessage.astro';
-import { api } from '../../lib/api';
+import { api, dataOr } from '../../lib/api';
 import { marcaLogo, documentosLegales } from '../../lib/imagenes';
 
 interface Props {
@@ -10,7 +10,12 @@ interface Props {
 }
 
 const { variant } = Astro.props;
-const [empresa, marcas, legal] = await Promise.all([api.empresa(), api.marcas(), api.legal()]);
+const [empresaRes, marcas, legal] = await Promise.all([
+  api.empresa(),
+  api.marcas().then((r) => dataOr(r, [])),
+  api.legal().then((r) => dataOr(r, [])),
+]);
+const empresa = dataOr(empresaRes, null);
 ---
 
 <Section variant={variant} id="nosotros" class="section reveal" aria-labelledby="nosotros-title" tabindex="-1">
@@ -45,7 +50,9 @@ const [empresa, marcas, legal] = await Promise.all([api.empresa(), api.marcas(),
         </div>
       </div>
     ) : (
-      <StatusMessage detalle={`GET ${api.baseUrl}/api/empresa no devolvió datos`} />
+      empresaRes.status !== 'ok' && (
+        <StatusMessage resultado={empresaRes} vacio="Pronto publicaremos aquí la información de la empresa." />
+      )
     )}
 
     {empresa && empresa.valores?.length > 0 && (

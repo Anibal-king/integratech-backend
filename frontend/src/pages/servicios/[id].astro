@@ -4,16 +4,16 @@ import Layout from '../../layouts/Layout.astro';
 import Section from '../../components/Section.astro';
 import StatusMessage from '../../components/StatusMessage.astro';
 import Galeria from '../../components/Galeria.astro';
-import { api } from '../../lib/api';
+import { api, dataOr } from '../../lib/api';
 import { fotosDeCategoria } from '../../lib/imagenes';
 
 export async function getStaticPaths() {
-  const servicios = await api.servicios();
+  const servicios = dataOr(await api.servicios(), []);
   return servicios.map((s) => ({ params: { id: String(s.id) } }));
 }
 
 const { id } = Astro.params;
-const servicio = await api.servicio(id!);
+const servicio = dataOr(await api.servicio(id!), null);
 
 if (!servicio) {
   return Astro.redirect('/#servicios');
@@ -24,7 +24,7 @@ const portada = fotos[0]?.img ?? null;
 const galeria = fotos.slice(1);
 ---
 
-<Layout title={`${servicio.nombre} — IntegraTech`} description={servicio.descripcion}>
+<Layout title={`${servicio.nombre} — IntegraTech`} description={servicio.descripcion ?? undefined}>
   <!-- Encabezado con imagen -->
   <Section variant="dark" class="svc-hero">
     {portada && (

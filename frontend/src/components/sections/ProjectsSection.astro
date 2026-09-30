@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import Section, { type SectionVariant } from '../Section.astro';
-import { api } from '../../lib/api';
+import { api, dataOr } from '../../lib/api';
 import { bandaProyectos, todasLasFotos } from '../../lib/imagenes';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 }
 
 const { variant } = Astro.props;
-const proyectos = await api.proyectos();
+const proyectos = dataOr(await api.proyectos(), []);
 const proyectosDestacados = proyectos.slice(0, 3);
 ---
 

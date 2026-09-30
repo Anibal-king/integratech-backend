@@ -124,5 +124,6 @@ oculta (el resto del flujo funciona igual).
 
 ```
 GET /api/lead-chatbot        → JSON con todos los leads, más recientes primero
+Header: Authorization: Bearer <ADMIN_TOKEN>
 ```
-(Endpoint administrativo; conviene protegerlo con autenticación antes de producción.)
+Requiere `ADMIN_TOKEN` en `backend/.env`; sin él la ruta está deshabilitada (404).

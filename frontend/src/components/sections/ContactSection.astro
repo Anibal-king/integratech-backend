@@ -1,14 +1,14 @@
 ---
 import Section, { type SectionVariant } from '../Section.astro';
 import ContactForm from '../ContactForm.tsx';
-import { api } from '../../lib/api';
+import { api, dataOr } from '../../lib/api';
 
 interface Props {
   variant: SectionVariant;
 }
 
 const { variant } = Astro.props;
-const empresa = await api.empresa();
+const empresa = dataOr(await api.empresa(), null);
 ---
 
 <Section variant={variant} id="contacto" class="section reveal" aria-labelledby="contacto-title" tabindex="-1">

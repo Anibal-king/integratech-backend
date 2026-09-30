@@ -3,13 +3,13 @@ import Layout from '../../layouts/Layout.astro';
 import Section from '../../components/Section.astro';
 import StatusMessage from '../../components/StatusMessage.astro';
 import Galeria from '../../components/Galeria.astro';
-import { api } from '../../lib/api';
+import { api, dataOr } from '../../lib/api';
 import { fotosDeCategoria } from '../../lib/imagenes';
 
 const [servicios, proyectos, contratos] = await Promise.all([
   api.servicios(),
   api.proyectos(),
-  api.contratosMantenimiento(),
+  api.contratosMantenimiento().then((r) => dataOr(r, [])),
 ]);
 
 const slug = (nombre: string) =>
@@ -20,7 +20,7 @@ const slug = (nombre: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
 
-const categorias = servicios
+const categorias = dataOr(servicios, [])
   .map((s) => ({ ...s, fotos: fotosDeCategoria(s.nombre), slug: slug(s.nombre) }))
   .filter((c) => c.fotos.length > 0);
 
@@ -54,7 +54,10 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
   {categorias.length === 0 ? (
     <Section variant="light" class="section">
       <div class="container">
-        <StatusMessage detalle={`GET ${api.baseUrl}/api/servicios no devolvió categorías`} />
+        <StatusMessage
+          resultado={servicios.status === 'ok' ? { status: 'empty' } : servicios}
+          vacio="Pronto publicaremos aquí la galería de proyectos."
+        />
       </div>
     </Section>
   ) : (
@@ -91,11 +94,11 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
         <p>Una selección de trabajos ejecutados para clientes del sector industrial, financiero y de infraestructura.</p>
       </div>
 
-      {proyectos.length === 0 ? (
-        <StatusMessage detalle={`GET ${api.baseUrl}/api/proyectos no devolvió proyectos`} />
+      {proyectos.status !== 'ok' ? (
+        <StatusMessage resultado={proyectos} vacio="Pronto publicaremos nuestros proyectos aquí." />
       ) : (
         <div class="grid grid--2">
-          {proyectos.map((p) => (
+          {proyectos.data.map((p) => (
             <article class="card">
               {p.ejecucion && <span class="tag">{p.ejecucion}</span>}
               <h2 style="font-size:1.2rem;margin-top:0.6rem;">{p.nombre_proyecto}</h2>

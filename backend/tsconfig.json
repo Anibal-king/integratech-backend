@@ -1,0 +1,17 @@
+{
+  // Solo verificación de tipos (el backend sigue siendo JavaScript): npm run typecheck
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node10",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": ["**/*.js", "../shared/**/*.ts"],
+  "exclude": ["node_modules"]
+}

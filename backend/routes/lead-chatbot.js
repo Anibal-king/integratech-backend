@@ -1,6 +1,10 @@
 const express = require('express');
-const { db } = require('../db');
+const { db, all } = require('../db');
 const { sendMail } = require('../lib/mailer');
+const { requireAdmin, rateLimit, campoTexto } = require('../lib/security');
+
+// Longitud máxima de cada campo del lead
+const MAX = { tipo_servicio: 120, alcance: 3000, ubicacion: 200, plazo: 60, nombre: 120, empresa: 150, correo: 200, telefono: 40 };
 
 const router = express.Router();
 
@@ -57,12 +61,17 @@ function resumenHtml(lead) {
  * Body: { tipo_servicio, alcance, ubicacion, plazo, nombre, empresa, correo, telefono, origen? }
  * Guarda el lead y notifica por correo al cliente (si SMTP está configurado).
  */
-router.post('/', async (req, res, next) => {
+router.post('/', rateLimit({ max: 5, ventanaMs: 10 * 60 * 1000 }), async (req, res, next) => {
   try {
-    const b = req.body || {};
-    const nombre = String(b.nombre || '').trim();
-    const correo = String(b.correo || '').trim();
-    const telefono = String(b.telefono || '').trim();
+    const b = req.body ?? {};
+    /** @type {Record<string, string>} */
+    const d = {};
+    for (const [campo, max] of Object.entries(MAX)) {
+      const valor = campoTexto(b[campo], max);
+      if (valor === null) return res.status(400).json({ error: `El campo "${campo}" supera los ${max} caracteres.` });
+      d[campo] = valor;
+    }
+    const { nombre, correo, telefono } = d;
 
     if (!nombre) {
       return res.status(400).json({ error: 'El campo "nombre" es obligatorio.' });
@@ -75,12 +84,12 @@ router.post('/', async (req, res, next) => {
     }
 
     const lead = {
-      tipo_servicio: String(b.tipo_servicio || '').trim() || null,
-      alcance: String(b.alcance || '').trim() || null,
-      ubicacion: String(b.ubicacion || '').trim() || null,
-      plazo: String(b.plazo || '').trim() || null,
+      tipo_servicio: d.tipo_servicio || null,
+      alcance: d.alcance || null,
+      ubicacion: d.ubicacion || null,
+      plazo: d.plazo || null,
       nombre,
-      empresa: String(b.empresa || '').trim() || null,
+      empresa: d.empresa || null,
       correo: correo || null,
       telefono: telefono || null,
       origen: b.origen === 'whatsapp' ? 'whatsapp' : 'chatbot',
@@ -88,7 +97,6 @@ router.post('/', async (req, res, next) => {
 
     // 1) Notificación por correo (no bloquea el guardado si falla)
     let correoEnviado = false;
-    let correoDetalle = null;
     try {
       const r = await sendMail({
         subject: `Cotización — ${lead.tipo_servicio || 'Consulta'} (${lead.nombre})`,
@@ -97,11 +105,9 @@ router.post('/', async (req, res, next) => {
         replyTo: lead.correo || undefined,
       });
       correoEnviado = r.sent;
-      correoDetalle = r.reason || r.id || null;
       if (!r.sent) console.warn('[lead-chatbot] correo no enviado:', r.reason);
     } catch (mailErr) {
-      console.error('[lead-chatbot] error al enviar correo:', mailErr.message);
-      correoDetalle = mailErr.message;
+      console.error('[lead-chatbot] error al enviar correo:', /** @type {Error} */ (mailErr).message);
     }
 
     // 2) Persistencia
@@ -128,7 +134,6 @@ router.post('/', async (req, res, next) => {
       ok: true,
       id: Number(info.lastInsertRowid),
       emailSent: correoEnviado,
-      emailInfo: correoDetalle,
     });
   } catch (err) {
     next(err);
@@ -136,12 +141,11 @@ router.post('/', async (req, res, next) => {
 });
 
 /**
- * GET /api/lead-chatbot  (uso administrativo)
+ * GET /api/lead-chatbot  (administrativo, requiere ADMIN_TOKEN)
  * Lista los leads capturados, más recientes primero.
  */
-router.get('/', (req, res) => {
-  const rows = db.prepare('SELECT * FROM leads_chatbot ORDER BY fecha_creacion DESC, id DESC').all();
-  res.json(rows);
+router.get('/', requireAdmin, (req, res) => {
+  res.json(all('SELECT * FROM leads_chatbot ORDER BY fecha_creacion DESC, id DESC'));
 });
 
 module.exports = router;

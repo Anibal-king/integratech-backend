@@ -21,11 +21,11 @@ const servicios = await api.servicios();
       <p>Nuestras líneas de trabajo. Cada categoría agrupa capacidades específicas que ejecutamos con personal propio y marcas representadas.</p>
     </div>
 
-    {servicios.length === 0 ? (
-      <StatusMessage detalle={`GET ${api.baseUrl}/api/servicios no devolvió categorías`} />
+    {servicios.status !== 'ok' ? (
+      <StatusMessage resultado={servicios} vacio="Pronto publicaremos nuestros servicios aquí." />
     ) : (
       <div class="svc-grid">
-        {servicios.map((s) => {
+        {servicios.data.map((s) => {
           const portada = portadaDeCategoria(s.nombre);
           return (
             <a href={`/servicios/${s.id}`} class="svc-card">

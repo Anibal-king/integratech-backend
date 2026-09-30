@@ -20,6 +20,11 @@ frontend/.astro/
 .env.*
 !.env.example
 
+# El proyecto usa npm: evita versionar restos de otros gestores
+pnpm-lock.yaml
+pnpm-workspace.yaml
+yarn.lock
+
 # Logs
 *.log
 npm-debug.log*
