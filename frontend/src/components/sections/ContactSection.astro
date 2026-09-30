@@ -1,11 +1,17 @@
 ---
+import Section, { type SectionVariant } from '../Section.astro';
 import ContactForm from '../ContactForm.tsx';
 import { api } from '../../lib/api';
 
+interface Props {
+  variant: SectionVariant;
+}
+
+const { variant } = Astro.props;
 const empresa = await api.empresa();
 ---
 
-<section id="contacto" class="section theme-dark reveal" aria-labelledby="contacto-title" tabindex="-1">
+<Section variant={variant} id="contacto" class="section reveal" aria-labelledby="contacto-title" tabindex="-1">
   <div class="container contacto">
     <div>
       <div class="section__head">
@@ -26,7 +32,7 @@ const empresa = await api.empresa();
       </ul>
     </aside>
   </div>
-</section>
+</Section>
 
 <style>
   .contacto {
@@ -36,29 +42,14 @@ const empresa = await api.empresa();
     align-items: start;
   }
   .contacto__info {
-    background: var(--color-surface-nav);
-    border: 1px solid var(--color-border);
+    background: var(--surface-card);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 1.6rem;
   }
   .contacto__info h3 { font-size: 1.1rem; }
-  .contacto__info li { color: var(--color-text-muted); }
-  .contacto__info strong { color: var(--color-text); }
-
-  /* El formulario (isla React) trae estilos pensados para fondo claro: se adaptan al fondo azul */
-  .contacto :global(.cform label) { color: var(--color-text); }
-  .contacto :global(.cform input),
-  .contacto :global(.cform textarea) {
-    background: var(--white);
-    color: var(--navy-900);
-    border-color: transparent;
-  }
-  .contacto :global(.cform__feedback) {
-    align-self: flex-start;
-    background: var(--white);
-    padding: 0.5rem 0.9rem;
-    border-radius: var(--radius);
-  }
+  .contacto__info li { color: var(--text-muted); }
+  .contacto__info strong { color: var(--text); }
   .contacto__info ul { list-style: none; padding: 0; margin: 0; }
   .contacto__info li { margin-bottom: 0.6rem; font-size: 0.92rem; }
   @media (max-width: 860px) {

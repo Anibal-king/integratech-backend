@@ -1,10 +1,13 @@
 ---
+import Section, { type SectionVariant } from '../Section.astro';
+
 interface Props {
   servicios?: number;
   proyectos?: number;
+  variant: SectionVariant;
 }
 
-const { servicios = 0, proyectos = 0 } = Astro.props;
+const { servicios = 0, proyectos = 0, variant } = Astro.props;
 
 const stats = [
   { valor: '20+', label: 'años de experiencia' },
@@ -13,7 +16,7 @@ const stats = [
 ];
 ---
 
-<section class="stats theme-dark" aria-label="La empresa en cifras">
+<Section variant={variant} aria-label="La empresa en cifras">
   <ul class="container stats__list">
     {stats.map((s) => (
       <li>
@@ -22,14 +25,9 @@ const stats = [
       </li>
     ))}
   </ul>
-</section>
+</Section>
 
 <style>
-  .stats {
-    background: var(--color-surface-nav);
-    border-top: 1px solid var(--color-border-dark);
-  }
-
   .stats__list {
     list-style: none;
     margin-block: 0;
@@ -46,11 +44,11 @@ const stats = [
   }
   .stats__list strong {
     font-size: clamp(1.5rem, 1rem + 2vw, 2rem);
-    color: var(--color-text);
+    color: var(--heading);
     line-height: 1.2;
   }
   .stats__list span {
     font-size: 0.85rem;
-    color: var(--color-text-muted);
+    color: var(--text);
   }
 </style>

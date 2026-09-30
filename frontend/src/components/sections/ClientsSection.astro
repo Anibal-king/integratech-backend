@@ -1,10 +1,17 @@
 ---
+import Section, { type SectionVariant } from '../Section.astro';
+import StatusMessage from '../StatusMessage.astro';
 import { api } from '../../lib/api';
 
+interface Props {
+  variant: SectionVariant;
+}
+
+const { variant } = Astro.props;
 const [clientes, otros] = await Promise.all([api.clientes(), api.otrosClientes()]);
 ---
 
-<section id="clientes" class="section section--surface reveal" aria-labelledby="clientes-title" tabindex="-1">
+<Section variant={variant} id="clientes" class="section reveal" aria-labelledby="clientes-title" tabindex="-1">
   <div class="container">
     <div class="section__head">
       <span class="eyebrow">Referencias</span>
@@ -13,9 +20,7 @@ const [clientes, otros] = await Promise.all([api.clientes(), api.otrosClientes()
     </div>
 
     {clientes.length === 0 ? (
-      <div class="notice">
-        No se pudieron cargar los clientes. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
-      </div>
+      <StatusMessage detalle={`GET ${api.baseUrl}/api/clientes no devolvió clientes`} />
     ) : (
       <div class="grid grid--2">
         {clientes.map((c) => (
@@ -40,13 +45,12 @@ const [clientes, otros] = await Promise.all([api.clientes(), api.otrosClientes()
       </div>
     )}
   </div>
-</section>
+</Section>
 
 <style>
   .card h3 { font-size: 1.15rem; }
   .otros { margin-top: 3rem; }
   .otros h3 { font-size: 1.4rem; }
   .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
-  .chips .tag { font-size: 0.85rem; padding: 0.35rem 0.75rem; background: var(--color-bg); border: 1px solid var(--color-border); }
-  code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+  .chips .tag { font-size: 0.85rem; padding: 0.35rem 0.75rem; background: var(--surface-card); border: 1px solid var(--border); }
 </style>

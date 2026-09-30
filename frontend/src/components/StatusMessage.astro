@@ -1,0 +1,48 @@
+---
+/**
+ * Recuadro de estado (carga, error o vacío) para contenido renderizado en Astro.
+ * Solo usa los tokens --placeholder-*: se adapta a la superficie donde esté.
+ * El detalle técnico se muestra únicamente en desarrollo; en producción va a
+ * console.error (del build / servidor).
+ */
+interface Props {
+  tipo?: 'loading' | 'error' | 'empty';
+  mensaje?: string;
+  detalle?: string;
+}
+
+const MENSAJES = {
+  loading: 'Cargando…',
+  error: 'No pudimos cargar esta información en este momento. Intenta de nuevo más tarde.',
+  empty: 'No hay información disponible por ahora.',
+} as const;
+
+const { tipo = 'error', mensaje = MENSAJES[tipo], detalle } = Astro.props;
+const mostrarDetalle = import.meta.env.DEV && detalle;
+
+if (detalle && !import.meta.env.DEV) {
+  console.error(`[StatusMessage] ${detalle}`);
+}
+---
+
+<div class="status" role={tipo === 'error' ? 'alert' : 'status'} aria-busy={tipo === 'loading' ? 'true' : undefined}>
+  <p>{mensaje}</p>
+  {mostrarDetalle && <p class="status__detail">{detalle}</p>}
+</div>
+
+<style>
+  .status {
+    border: 1px dashed var(--placeholder-border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    background: var(--placeholder-bg);
+    color: var(--placeholder-text);
+    font-size: 0.95rem;
+  }
+  .status p { margin: 0; }
+  .status__detail {
+    margin-top: 0.5rem !important;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.8rem;
+  }
+</style>

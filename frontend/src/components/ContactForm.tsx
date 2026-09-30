@@ -1,14 +1,34 @@
-import { useState } from 'react';
-import { api } from '../lib/api';
+import { useRef, useState } from 'react';
+import { api, type ContactoPayload } from '../lib/api';
+import StatusMessage from './StatusMessage';
 
-type Estado = { tipo: 'idle' | 'enviando' | 'ok' | 'error'; msg?: string };
+type Estado =
+  | { tipo: 'idle' }
+  | { tipo: 'enviando' }
+  | { tipo: 'ok' }
+  | { tipo: 'invalido'; msg: string }
+  | { tipo: 'error'; detalle: string };
 
 export default function ContactForm() {
   const [estado, setEstado] = useState<Estado>({ tipo: 'idle' });
+  const ultimoPayload = useRef<ContactoPayload | null>(null);
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const enviar = async (payload: ContactoPayload, form?: HTMLFormElement) => {
+    ultimoPayload.current = payload;
+    setEstado({ tipo: 'enviando' });
+    try {
+      await api.enviarContacto(payload);
+      setEstado({ tipo: 'ok' });
+      form?.reset();
+    } catch (err) {
+      setEstado({ tipo: 'error', detalle: `POST ${api.baseUrl}/api/contacto: ${(err as Error).message}` });
+    }
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const payload = {
       nombre: String(fd.get('nombre') ?? '').trim(),
       correo: String(fd.get('correo') ?? '').trim(),
@@ -18,18 +38,11 @@ export default function ContactForm() {
     };
 
     if (!payload.nombre || !payload.mensaje) {
-      setEstado({ tipo: 'error', msg: 'El nombre y el mensaje son obligatorios.' });
+      setEstado({ tipo: 'invalido', msg: 'El nombre y el mensaje son obligatorios.' });
       return;
     }
 
-    setEstado({ tipo: 'enviando' });
-    try {
-      await api.enviarContacto(payload);
-      setEstado({ tipo: 'ok', msg: '¡Gracias! Tu mensaje fue enviado. Te contactaremos pronto.' });
-      e.currentTarget.reset();
-    } catch (err) {
-      setEstado({ tipo: 'error', msg: (err as Error).message });
-    }
+    enviar(payload, form);
   };
 
   return (
@@ -65,10 +78,17 @@ export default function ContactForm() {
         {estado.tipo === 'enviando' ? 'Enviando…' : 'Enviar mensaje'}
       </button>
 
-      {estado.msg && (
-        <p className={`cform__feedback cform__feedback--${estado.tipo}`} role="status">
-          {estado.msg}
-        </p>
+      {estado.tipo === 'ok' && (
+        <StatusMessage tipo="success" mensaje="¡Gracias! Tu mensaje fue enviado. Te contactaremos pronto." />
+      )}
+      {estado.tipo === 'invalido' && <StatusMessage tipo="error" mensaje={estado.msg} />}
+      {estado.tipo === 'error' && (
+        <StatusMessage
+          tipo="error"
+          mensaje="No pudimos enviar tu mensaje en este momento. Intenta de nuevo más tarde."
+          detalle={estado.detalle}
+          onRetry={() => ultimoPayload.current && enviar(ultimoPayload.current)}
+        />
       )}
 
       <style>{`
@@ -80,22 +100,22 @@ export default function ContactForm() {
           gap: 0.35rem;
           font-weight: 600;
           font-size: 0.9rem;
-          color: var(--color-primary);
+          color: var(--text);
         }
         .cform input,
         .cform textarea {
           font: inherit;
+          font-weight: 400;
           padding: 0.65rem 0.75rem;
-          border: 1px solid var(--color-border);
+          border: 1px solid var(--border-strong);
           border-radius: 8px;
-          background: #fff;
-          color: var(--color-text);
+          background: var(--input-bg);
+          color: var(--text);
         }
+        .cform input:focus-visible,
+        .cform textarea:focus-visible { border-color: var(--focus-ring); }
         .cform textarea { resize: vertical; }
         .cform .btn { align-self: flex-start; }
-        .cform__feedback { margin: 0; font-weight: 600; }
-        .cform__feedback--ok { color: var(--color-success); }
-        .cform__feedback--error { color: var(--color-error); }
         @media (max-width: 620px) {
           .cform__row { grid-template-columns: 1fr; }
         }

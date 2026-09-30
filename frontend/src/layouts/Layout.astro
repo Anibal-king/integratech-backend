@@ -2,6 +2,7 @@
 import '../styles/tokens.css';
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
+import Section from '../components/Section.astro';
 import Header from '../components/Header.astro';
 import Lightbox from '../components/Lightbox.astro';
 import ChatWidget from '../components/ChatWidget.tsx';
@@ -46,7 +47,7 @@ const year = new Date().getFullYear();
         <slot />
       </main>
 
-      <footer class="footer">
+      <Section as="footer" variant="dark" class="footer">
         <div class="container footer__inner">
           <p><strong>Servicios Integrales de Ingeniería El Salvador, S.A. de C.V.</strong></p>
           <p>
@@ -55,7 +56,7 @@ const year = new Date().getFullYear();
           </p>
           <p class="footer__legal">© {year} IntegraTech / SIIE. Todos los derechos reservados.</p>
         </div>
-      </footer>
+      </Section>
     </div>
 
     <Lightbox />
@@ -70,14 +71,13 @@ const year = new Date().getFullYear();
       .main { flex: 1; }
 
       .footer {
-        background: var(--color-primary);
-        color: #b9cbe0;
+        color: var(--text-muted);
         padding-block: 2.25rem;
         font-size: 0.9rem;
       }
       .footer__inner p { margin: 0 0 0.35rem; }
-      .footer strong { color: #fff; }
-      .footer__legal { margin-top: 0.75rem; color: #8faac6; font-size: 0.82rem; }
+      .footer strong { color: var(--heading); }
+      .footer__legal { margin-top: 0.75rem; color: var(--text-muted); font-size: 0.82rem; }
     </style>
   </body>
 </html>

@@ -1,12 +1,19 @@
 ---
 import { Image } from 'astro:assets';
+import Section, { type SectionVariant } from '../Section.astro';
+import StatusMessage from '../StatusMessage.astro';
 import { api } from '../../lib/api';
 import { marcaLogo, documentosLegales } from '../../lib/imagenes';
 
+interface Props {
+  variant: SectionVariant;
+}
+
+const { variant } = Astro.props;
 const [empresa, marcas, legal] = await Promise.all([api.empresa(), api.marcas(), api.legal()]);
 ---
 
-<section id="nosotros" class="section reveal" aria-labelledby="nosotros-title" tabindex="-1">
+<Section variant={variant} id="nosotros" class="section reveal" aria-labelledby="nosotros-title" tabindex="-1">
   <div class="container">
     <div class="section__head">
       <span class="eyebrow">Quiénes somos</span>
@@ -38,9 +45,7 @@ const [empresa, marcas, legal] = await Promise.all([api.empresa(), api.marcas(),
         </div>
       </div>
     ) : (
-      <div class="notice">
-        No se pudo cargar la información de la empresa. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
-      </div>
+      <StatusMessage detalle={`GET ${api.baseUrl}/api/empresa no devolvió datos`} />
     )}
 
     {empresa && empresa.valores?.length > 0 && (
@@ -112,7 +117,7 @@ const [empresa, marcas, legal] = await Promise.all([api.empresa(), api.marcas(),
       </details>
     )}
   </div>
-</section>
+</Section>
 
 <style>
   .prose { max-width: 70ch; }
@@ -133,8 +138,8 @@ const [empresa, marcas, legal] = await Promise.all([api.empresa(), api.marcas(),
     display: flex;
     align-items: center;
     gap: 1rem;
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
+    background: var(--surface-card);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 1rem 1.2rem;
     box-shadow: var(--shadow-sm);
@@ -145,28 +150,28 @@ const [empresa, marcas, legal] = await Promise.all([api.empresa(), api.marcas(),
     height: 64px;
     display: grid;
     place-items: center;
-    background: var(--color-bg);
-    border: 1px solid var(--color-surface-2);
+    background: var(--media-plate);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 6px;
   }
   .marca__logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
-  .marca__nombre { font-weight: 700; font-size: 0.8rem; text-align: center; color: var(--color-primary); }
+  .marca__nombre { font-weight: 700; font-size: 0.8rem; text-align: center; color: var(--media-plate-text); }
   .marca__txt h4 { margin: 0 0 0.2rem; font-size: 1rem; }
-  .marca__txt p { margin: 0; color: var(--color-text-muted); font-size: 0.88rem; }
+  .marca__txt p { margin: 0; color: var(--text-muted); font-size: 0.88rem; }
 
   /* Datos legales (desplegable) */
   .legal-box {
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 1rem 1.4rem;
-    background: var(--color-surface);
+    background: var(--surface-muted);
   }
   .legal-box summary {
     cursor: pointer;
     font-weight: 700;
     font-size: 1.1rem;
-    color: var(--color-primary);
+    color: var(--heading);
   }
   .legal {
     border-collapse: collapse;
@@ -177,10 +182,10 @@ const [empresa, marcas, legal] = await Promise.all([api.empresa(), api.marcas(),
   .legal th, .legal td {
     text-align: left;
     padding: 0.6rem 0.8rem;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--border);
     vertical-align: top;
   }
-  .legal th { width: 40%; color: var(--color-primary); }
+  .legal th { width: 40%; color: var(--heading); }
 
   .docs {
     display: flex;
@@ -191,15 +196,14 @@ const [empresa, marcas, legal] = await Promise.all([api.empresa(), api.marcas(),
   .doc { margin: 0; width: min(240px, 100%); }
   .doc img {
     width: 100%;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--border);
     border-radius: 8px;
     box-shadow: var(--shadow-sm);
   }
   .doc figcaption {
     margin-top: 0.4rem;
     font-size: 0.78rem;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     line-height: 1.35;
   }
-  code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
 </style>

@@ -224,7 +224,12 @@ function resumenLead(l: Lead): string {
 
 function abrirWhatsApp(lead: Lead) {
   if (!WA_NUMBER) {
-    alert('El número de WhatsApp aún no está configurado (PUBLIC_WHATSAPP_NUMBER).');
+    if (import.meta.env.DEV) {
+      alert('El número de WhatsApp aún no está configurado (PUBLIC_WHATSAPP_NUMBER).');
+    } else {
+      console.error('[ChatWidget] PUBLIC_WHATSAPP_NUMBER no está configurado');
+      alert('WhatsApp no está disponible en este momento. Intenta de nuevo más tarde.');
+    }
     return;
   }
   const tieneDatos = lead.nombre || lead.tipo_servicio || lead.alcance;
@@ -340,7 +345,13 @@ export default function ChatWidget() {
       }
     } catch (e) {
       setStepId('error');
-      pushBot(`${textoBot(STEPS.error, leadActual)}\n\nDetalle: ${(e as Error).message}`);
+      const detalle = `POST ${API_URL}/api/lead-chatbot: ${(e as Error).message}`;
+      if (import.meta.env.DEV) {
+        pushBot(`${textoBot(STEPS.error, leadActual)}\n\nDetalle: ${detalle}`);
+      } else {
+        console.error(`[ChatWidget] ${detalle}`);
+        pushBot(textoBot(STEPS.error, leadActual));
+      }
     }
   }
 
@@ -349,15 +360,15 @@ export default function ChatWidget() {
   return (
     <div className={`chat ${abierto ? 'chat--open' : ''}`}>
       {abierto && (
-        <div className="chat__panel" role="dialog" aria-label="Asistente de cotización">
-          <header className="chat__header">
+        <div className="chat__panel surface-light" role="dialog" aria-label="Asistente de cotización">
+          <header className="chat__header surface-dark">
             <span>Asistente IntegraTech</span>
             <button type="button" className="chat__icon" aria-label="Cerrar" onClick={() => setAbierto(false)}>
               &times;
             </button>
           </header>
 
-          <div className="chat__body" ref={bodyRef}>
+          <div className="chat__body surface-muted" ref={bodyRef}>
             {mensajes.map((m, i) => (
               <p key={i} className={`chat__msg chat__msg--${m.de}`}>
                 {m.texto}
@@ -454,19 +465,18 @@ export default function ChatWidget() {
           width: 64px; height: 64px;
           border-radius: 50%;
           border: 0;
-          background: var(--color-accent);
-          color: #fff;
+          background: var(--btn-primary-bg);
+          color: var(--btn-primary-text);
           font-weight: 700;
           font-size: 0.95rem;
           cursor: pointer;
           box-shadow: var(--shadow-lg);
         }
-        .chat__fab:hover { background: var(--color-accent-600); }
+        .chat__fab:hover { filter: brightness(1.1); }
         .chat__panel {
           width: min(360px, calc(100vw - 2.5rem));
           height: min(560px, calc(100vh - 7rem));
-          background: #fff;
-          border: 1px solid var(--color-border);
+          border: 1px solid var(--border);
           border-radius: 16px;
           box-shadow: var(--shadow-lg);
           display: flex;
@@ -474,15 +484,13 @@ export default function ChatWidget() {
           overflow: hidden;
         }
         .chat__header {
-          background: var(--color-primary);
-          color: #fff;
           padding: 0.85rem 1rem;
           font-weight: 600;
           display: flex; align-items: center; justify-content: space-between;
           flex-shrink: 0;
         }
         .chat__icon {
-          background: none; border: 0; color: #fff;
+          background: none; border: 0; color: var(--text);
           font-size: 1.4rem; line-height: 1; cursor: pointer;
         }
         .chat__body {
@@ -492,7 +500,6 @@ export default function ChatWidget() {
           display: flex;
           flex-direction: column;
           gap: 0.55rem;
-          background: var(--color-surface);
         }
         .chat__msg {
           margin: 0;
@@ -504,29 +511,28 @@ export default function ChatWidget() {
           white-space: pre-wrap;
         }
         .chat__msg--bot {
-          background: #fff;
-          border: 1px solid var(--color-border);
+          background: var(--surface-card);
+          border: 1px solid var(--border);
           align-self: flex-start;
           border-bottom-left-radius: 4px;
         }
         .chat__msg--user {
-          background: var(--color-accent);
-          color: #fff;
+          background: var(--btn-primary-bg);
+          color: var(--btn-primary-text);
           align-self: flex-end;
           border-bottom-right-radius: 4px;
         }
         .chat__typing { letter-spacing: 2px; opacity: 0.6; }
         .chat__controls {
-          border-top: 1px solid var(--color-border);
-          background: #fff;
+          border-top: 1px solid var(--border);
           padding: 0.75rem;
           flex-shrink: 0;
         }
         .chat__quick { display: flex; flex-wrap: wrap; gap: 0.4rem; }
         .chat__chip {
-          border: 1px solid var(--color-accent);
-          color: var(--color-accent-600);
-          background: #fff;
+          border: 1px solid var(--eyebrow);
+          color: var(--heading);
+          background: var(--surface);
           border-radius: 999px;
           padding: 0.4rem 0.8rem;
           font-size: 0.85rem;
@@ -534,17 +540,21 @@ export default function ChatWidget() {
           cursor: pointer;
           transition: background 0.14s ease, color 0.14s ease;
         }
-        .chat__chip:hover { background: var(--color-accent); color: #fff; }
+        .chat__chip:hover { background: var(--btn-primary-bg); color: var(--btn-primary-text); }
         .chat__form { display: flex; flex-direction: column; gap: 0.5rem; }
         .chat__form input,
         .chat__form textarea {
           width: 100%;
           font: inherit;
           padding: 0.55rem 0.7rem;
-          border: 1px solid var(--color-border);
+          border: 1px solid var(--border-strong);
           border-radius: 8px;
+          background: var(--input-bg);
+          color: var(--text);
           resize: vertical;
         }
+        .chat__form input:focus-visible,
+        .chat__form textarea:focus-visible { border-color: var(--focus-ring); }
         .chat__form-actions {
           display: flex;
           align-items: center;
@@ -555,13 +565,13 @@ export default function ChatWidget() {
         .chat__link {
           background: none;
           border: 0;
-          color: var(--color-text-muted);
+          color: var(--text-muted);
           font: inherit;
           font-size: 0.85rem;
           text-decoration: underline;
           cursor: pointer;
         }
-        .chat__error { margin: 0; color: var(--color-error); font-size: 0.82rem; }
+        .chat__error { margin: 0; color: var(--danger-text); font-size: 0.82rem; }
       `}</style>
     </div>
   );

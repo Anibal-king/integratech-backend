@@ -13,3 +13,109 @@
   --color-header-divider: color-mix(in srgb, var(--color-brand-gray) 40%, transparent);
   --shadow-header: 0 2px 8px rgba(6, 35, 65, 0.12);
 }
+
+/* =========================================================
+   Paleta base: solo la usan los tokens semánticos de abajo,
+   nunca los componentes.
+   ========================================================= */
+
+:root {
+  --color-navy: #062341;          /* azul marino principal */
+  --color-navy-deep: #081b31;     /* azul marino profundo */
+  --color-navy-soft: #334a6e;     /* texto secundario sobre fondo claro */
+  --color-accent: #00a3a6;        /* teal técnico */
+  --color-white: #ffffff;
+  --color-gray-soft: #f4f6fa;     /* fondo gris muy claro */
+  --color-text-on-dark: #c8d6e5;  /* párrafos sobre fondo oscuro */
+  --color-error: #c0392b;         /* ≥ 4.5:1 sobre blanco y --color-gray-soft */
+}
+
+/* =========================================================
+   Tokens semánticos que no dependen de la superficie
+   ========================================================= */
+
+:root {
+  --focus-ring: var(--color-accent);
+
+  /* Botón principal (teal). Texto oscuro: cumple AA a cualquier tamaño.
+     Texto blanco: ~3.1:1, solo válido en bold ≥ 18.66px (.btn--lg). */
+  --btn-primary-bg: var(--color-accent);
+  --btn-primary-text: var(--color-navy-deep);
+  --btn-primary-text-large: var(--color-white);
+
+  /* Texto y degradados sobre fotografías (siempre oscuros, sin importar la superficie) */
+  --overlay-scrim: color-mix(in srgb, var(--color-navy-deep) 92%, transparent);
+  --overlay-scrim-soft: color-mix(in srgb, var(--color-navy-deep) 35%, transparent);
+  --overlay-backdrop: color-mix(in srgb, var(--color-navy-deep) 90%, transparent);
+  --overlay-text: var(--color-white);
+  --overlay-text-muted: var(--color-text-on-dark);
+  --overlay-control-bg: color-mix(in srgb, var(--color-white) 12%, transparent);
+  --overlay-control-bg-hover: color-mix(in srgb, var(--color-white) 22%, transparent);
+
+  /* Placa blanca para logos y documentos escaneados (JPG con fondo blanco) */
+  --media-plate: var(--color-white);
+  --media-plate-text: var(--color-navy);
+
+  --danger-text: var(--color-error);
+}
+
+/* =========================================================
+   Superficies: cada una redefine el mismo set de tokens
+   semánticos. :root hereda la clara como valor por defecto.
+   ========================================================= */
+
+:root,
+.surface-light,
+.surface-muted {
+  --surface: var(--color-white);
+  --surface-muted: var(--color-gray-soft);  /* bloques internos: leyendas, tablas, chips */
+  --surface-card: var(--color-white);
+  --heading: var(--color-navy);
+  --text: var(--color-navy);
+  --text-muted: var(--color-navy-soft);
+  --eyebrow: var(--color-accent);
+  --link: var(--color-navy);
+  --border: rgba(6, 35, 65, 0.15);
+  --border-strong: rgba(6, 35, 65, 0.5);  /* ≥ 3:1: bordes de inputs y botones secundarios */
+  --input-bg: var(--color-white);
+  --btn-secondary-bg: var(--color-white);
+  --btn-secondary-text: var(--color-navy);
+  --btn-secondary-bg-hover: var(--color-gray-soft);
+  --placeholder-bg: var(--color-gray-soft);
+  --placeholder-border: rgba(6, 35, 65, 0.25);
+  --placeholder-text: var(--color-navy-soft);
+}
+
+.surface-muted {
+  --surface: var(--color-gray-soft);
+  --surface-muted: var(--color-white);
+  --btn-secondary-bg-hover: var(--color-white);
+  --placeholder-bg: var(--color-white);
+}
+
+.surface-dark {
+  --surface: var(--color-navy);
+  --surface-muted: var(--color-navy-deep);
+  --surface-card: var(--color-navy-deep);
+  --heading: var(--color-white);
+  --text: var(--color-white);
+  --text-muted: var(--color-text-on-dark);
+  --eyebrow: var(--color-accent);
+  --link: var(--color-accent);
+  --border: rgba(255, 255, 255, 0.15);
+  --border-strong: rgba(255, 255, 255, 0.5);
+  --input-bg: var(--color-navy-deep);
+  --btn-secondary-bg: transparent;
+  --btn-secondary-text: var(--color-white);
+  --btn-secondary-bg-hover: var(--color-navy-deep);
+  --placeholder-bg: rgba(255, 255, 255, 0.05);
+  --placeholder-border: rgba(255, 255, 255, 0.3);
+  --placeholder-text: var(--color-text-on-dark);
+}
+
+.surface-light,
+.surface-muted,
+.surface-dark {
+  background: var(--surface);
+  color: var(--text);
+}

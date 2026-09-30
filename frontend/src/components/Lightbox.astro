@@ -16,7 +16,7 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background: rgba(6, 20, 35, 0.9);
+    background: var(--overlay-backdrop);
   }
   .lightbox.is-open {
     display: flex;
@@ -34,10 +34,10 @@
     max-height: 78vh;
     object-fit: contain;
     border-radius: 8px;
-    background: #000;
+    background: var(--overlay-backdrop);
   }
   .lightbox__figure figcaption {
-    color: #dCE6F2;
+    color: var(--overlay-text-muted);
     font-size: 0.9rem;
     text-align: center;
   }
@@ -49,13 +49,13 @@
     height: 44px;
     border: 0;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: var(--overlay-control-bg);
+    color: var(--overlay-text);
     font-size: 1.6rem;
     line-height: 1;
     cursor: pointer;
   }
-  .lightbox__close:hover { background: rgba(255, 255, 255, 0.22); }
+  .lightbox__close:hover { background: var(--overlay-control-bg-hover); }
 </style>
 
 <script>

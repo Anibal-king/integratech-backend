@@ -1,5 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import Section from '../../components/Section.astro';
+import StatusMessage from '../../components/StatusMessage.astro';
 import Galeria from '../../components/Galeria.astro';
 import { api } from '../../lib/api';
 import { fotosDeCategoria } from '../../lib/imagenes';
@@ -27,7 +29,7 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
 
 <Layout title="Proyectos — IntegraTech">
   <!-- Encabezado + navegación por categoría -->
-  <section class="section section--tight">
+  <Section variant="light" class="section section--tight">
     <div class="container">
       <p><a href="/#proyectos" class="back-link">← Volver a proyectos</a></p>
       <div class="section__head">
@@ -46,20 +48,18 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
         </nav>
       )}
     </div>
-  </section>
+  </Section>
 
   <!-- Una sección por categoría: fotos a la izquierda, descripción legible a la derecha -->
   {categorias.length === 0 ? (
-    <section class="section">
+    <Section variant="light" class="section">
       <div class="container">
-        <div class="notice">
-          No se pudieron cargar las categorías de servicio. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
-        </div>
+        <StatusMessage detalle={`GET ${api.baseUrl}/api/servicios no devolvió categorías`} />
       </div>
-    </section>
+    </Section>
   ) : (
     categorias.map((c, i) => (
-      <section id={c.slug} class:list={['section', 'cat', { 'cat--surface': i % 2 === 1 }]}>
+      <Section variant={i % 2 === 1 ? 'muted' : 'light'} id={c.slug} class="section cat">
         <div class="container cat__grid">
           <div class="cat__photos">
             <Galeria fotos={c.fotos} min={220} />
@@ -76,14 +76,14 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
               </ul>
             )}
 
-            <a href={`/servicios/${c.id}`} class="btn btn--outline btn--block">Ver servicio completo →</a>
+            <a href={`/servicios/${c.id}`} class="btn btn--secondary btn--block">Ver servicio completo →</a>
           </aside>
         </div>
-      </section>
+      </Section>
     ))
   )}
 
-  <section class="section section--surface">
+  <Section variant="muted" class="section">
     <div class="container">
       <div class="section__head">
         <span class="eyebrow">Trayectoria</span>
@@ -92,9 +92,7 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
       </div>
 
       {proyectos.length === 0 ? (
-        <div class="notice">
-          No se pudieron cargar los proyectos. Verifica que el backend esté corriendo en <code>{api.baseUrl}</code>.
-        </div>
+        <StatusMessage detalle={`GET ${api.baseUrl}/api/proyectos no devolvió proyectos`} />
       ) : (
         <div class="grid grid--2">
           {proyectos.map((p) => (
@@ -107,10 +105,10 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
         </div>
       )}
     </div>
-  </section>
+  </Section>
 
   {contratos.length > 0 && (
-    <section class="section">
+    <Section variant="light" class="section">
       <div class="container">
         <div class="section__head">
           <span class="eyebrow">Servicio recurrente</span>
@@ -126,13 +124,11 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
           ))}
         </div>
       </div>
-    </section>
+    </Section>
   )}
 </Layout>
 
 <style>
-  code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
-
   .section--tight { padding-bottom: 0.5rem; }
   .back-link { font-weight: 600; }
 
@@ -148,18 +144,18 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
     align-items: center;
     gap: 0.4rem;
     padding: 0.5rem 0.9rem;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--border);
     border-radius: 999px;
-    background: var(--color-surface);
-    color: var(--color-primary);
+    background: var(--surface-muted);
+    color: var(--heading);
     font-weight: 600;
     font-size: 0.85rem;
   }
   .cat-nav__link:hover {
-    background: var(--color-primary);
-    color: #fff;
+    background: var(--heading);
+    color: var(--surface);
     text-decoration: none;
-    border-color: var(--color-primary);
+    border-color: var(--heading);
   }
   .cat-nav__count {
     display: inline-grid;
@@ -168,15 +164,14 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
     height: 1.4em;
     padding: 0 0.3em;
     border-radius: 999px;
-    background: var(--color-surface-2);
-    color: var(--color-text-muted);
+    background: var(--surface);
+    color: var(--text-muted);
     font-size: 0.75em;
   }
-  .cat-nav__link:hover .cat-nav__count { background: rgba(255, 255, 255, 0.25); color: #fff; }
+  .cat-nav__link:hover .cat-nav__count { background: var(--surface); color: var(--heading); }
 
   /* Sección por categoría */
   .cat { scroll-margin-top: calc(var(--header-height) + 1rem); }
-  .cat--surface { background: var(--color-surface); }
   .cat__grid {
     display: grid;
     grid-template-columns: 1fr 320px;
@@ -188,16 +183,15 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
     top: calc(var(--header-height) + 1.5rem);
   }
   .cat__aside h2 { margin: 0.35rem 0 0.75rem; font-size: 1.4rem; }
-  .cat__desc { color: var(--color-text-muted); line-height: 1.55; }
+  .cat__desc { color: var(--text-muted); line-height: 1.55; }
   .cat__items {
     margin: 1rem 0 1.5rem;
     padding-left: 1.1rem;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     font-size: 0.92rem;
     line-height: 1.6;
   }
   .cat__items li { margin-bottom: 0.2rem; }
-  .btn--block { width: 100%; justify-content: center; }
 
   @media (max-width: 900px) {
     .cat__grid { grid-template-columns: 1fr; }

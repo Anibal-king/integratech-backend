@@ -1,0 +1,33 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+/**
+ * Contenedor de sección con superficie de color.
+ * La variante solo cambia los tokens semánticos (ver tokens.css): cambiar el
+ * fondo de una sección es cambiar esta prop, sin tocar el contenido.
+ */
+export type SectionVariant = 'light' | 'muted' | 'dark';
+
+type Props = HTMLAttributes<'section'> & {
+  variant: SectionVariant;
+  /** Elemento a renderizar (el footer reutiliza el mismo contenedor). */
+  as?: 'section' | 'footer' | 'div';
+};
+
+const { variant, as: Tag = 'section', class: className, ...rest } = Astro.props;
+---
+
+<Tag class:list={['surface', `surface-${variant}`, className]} {...rest}>
+  <slot />
+</Tag>
+
+<style>
+  .surface { background: var(--surface); }
+
+  /* Dos superficies iguales seguidas: un borde las separa al hacer scroll */
+  .surface-light + .surface-light,
+  .surface-muted + .surface-muted,
+  .surface-dark + .surface-dark {
+    border-top: 1px solid var(--border);
+  }
+</style>

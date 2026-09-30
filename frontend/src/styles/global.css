@@ -1,53 +1,19 @@
 /* =========================================================
    IntegraTech - Sistema de diseño global
+   Colores: ver tokens.css (paleta base + tokens semánticos por
+   superficie). Aquí solo se usan los tokens semánticos.
    ========================================================= */
 
 :root {
-  /* Paleta base (los componentes usan los tokens semánticos de abajo) */
-  --navy-950: #081b31;            /* Dark Deep Blue */
-  --navy-900: #062341;            /* Main Navy Blue */
-  --navy-700: #12385c;            /* Dark Resaltado */
-  --white: #ffffff;
-  --blue-100: #c3d4e6;            /* texto secundario sobre navy */
-
-  /* Marca */
-  --color-primary: #0b2a4a;       /* navy profundo */
-  --color-primary-600: #123a63;
-  --color-primary-400: #2f5f92;
-  --color-accent: #00a3a6;        /* teal técnico */
-  --color-accent-600: #008c8c;
-
-  /* Neutros */
-  --color-bg: #ffffff;
-  --color-surface: #f5f7fa;
-  --color-surface-2: #eef1f6;
-  --color-border: #dde3ec;
-  --color-text: #1a2733;
-  --color-text-muted: #5b6b7c;
-  --color-text-invert: #eef4fb;
-
-  /* Superficies oscuras (header, hero, estadísticas) */
-  --color-surface-nav: var(--navy-950);
-  --color-nav-active: var(--navy-700);
-  --color-border-dark: rgba(255, 255, 255, 0.1);
-  --color-btn-light: var(--white);
-  --color-on-light: var(--navy-900);
-  /* Texto sobre --color-accent: con blanco no llega a AA en texto normal (<18.66px bold) */
-  --color-on-accent: var(--navy-950);
-
-  /* Feedback */
-  --color-success: #1f9d55;
-  --color-error: #d64545;
-
   /* Tipografía */
   --font-sans: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
 
   /* Espaciado / radios / sombra */
   --radius: 10px;
   --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px rgba(11, 42, 74, 0.06), 0 1px 3px rgba(11, 42, 74, 0.1);
-  --shadow-md: 0 4px 12px rgba(11, 42, 74, 0.1);
-  --shadow-lg: 0 12px 32px rgba(11, 42, 74, 0.16);
+  --shadow-sm: 0 1px 2px rgba(6, 35, 65, 0.06), 0 1px 3px rgba(6, 35, 65, 0.1);
+  --shadow-md: 0 4px 12px rgba(6, 35, 65, 0.1);
+  --shadow-lg: 0 12px 32px rgba(6, 35, 65, 0.16);
 
   /* Altura real del header sticky (incluye su borde inferior) */
   --header-height: 73px;
@@ -70,24 +36,6 @@ section[id] { scroll-margin-top: var(--header-height); }
 /* Las secciones reciben foco tras el salto (tabindex="-1"); sin anillo alrededor de toda la sección */
 section[tabindex='-1']:focus { outline: none; }
 
-/* Contexto oscuro: remapea los tokens neutros dentro del bloque */
-.theme-dark {
-  --color-bg: var(--navy-900);
-  --color-text: var(--white);
-  --color-text-muted: var(--blue-100);
-  --color-border: var(--color-border-dark);
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-.theme-dark h1,
-.theme-dark h2,
-.theme-dark h3,
-.theme-dark h4 { color: var(--color-text); }
-.theme-dark .eyebrow { color: var(--color-accent); }
-
-/* Variante oscura para alternar secciones de la landing */
-.section--nav { background: var(--color-surface-nav); }
-
 /* ---------- Aparición de secciones ----------
    Solo se ocultan si el JS marcó <html class="js">; sin JS todo queda visible. */
 @media (prefers-reduced-motion: no-preference) {
@@ -105,8 +53,8 @@ section[tabindex='-1']:focus { outline: none; }
 body {
   margin: 0;
   font-family: var(--font-sans);
-  color: var(--color-text);
-  background: var(--color-bg);
+  color: var(--text);
+  background: var(--surface);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
@@ -115,7 +63,7 @@ h1,
 h2,
 h3,
 h4 {
-  color: var(--color-primary);
+  color: var(--heading);
   line-height: 1.2;
   margin: 0 0 0.5em;
   font-weight: 700;
@@ -128,7 +76,7 @@ h3 { font-size: 1.2rem; }
 p { margin: 0 0 1rem; }
 
 a {
-  color: var(--color-accent-600);
+  color: var(--link);
   text-decoration: none;
 }
 a:hover { text-decoration: underline; }
@@ -151,15 +99,13 @@ li { margin-bottom: 0.35rem; }
   padding-block: clamp(3rem, 7vw, 5rem);
 }
 
-.section--surface { background: var(--color-surface); }
-
 .section__head {
   max-width: 640px;
   margin-bottom: 2.5rem;
 }
 
 .section__head p {
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   font-size: 1.05rem;
 }
 
@@ -169,7 +115,7 @@ li { margin-bottom: 0.35rem; }
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 700;
-  color: var(--color-accent-600);
+  color: var(--eyebrow);
   margin-bottom: 0.75rem;
 }
 
@@ -190,24 +136,38 @@ li { margin-bottom: 0.35rem; }
 .btn:hover { text-decoration: none; transform: translateY(-1px); }
 
 .btn--primary {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   box-shadow: var(--shadow-sm);
 }
 /* Aclarar (no oscurecer) en hover para mantener el contraste con texto oscuro */
 .btn--primary:hover { filter: brightness(1.1); }
 
-.btn--ghost {
-  background: transparent;
-  color: var(--color-primary);
-  border-color: var(--color-border);
+/* Botón grande: bold ≥ 18.66px permite texto blanco sobre teal (AA texto grande) */
+.btn--lg {
+  font-size: 1.1667rem;
+  font-weight: 700;
 }
-.btn--ghost:hover { background: var(--color-surface-2); }
+.btn--primary.btn--lg { color: var(--btn-primary-text-large); }
+/* Con texto blanco se oscurece en hover (aclarar bajaría el contraste) */
+.btn--primary.btn--lg:hover { filter: brightness(0.9); }
 
-.btn--light {
-  background: #fff;
-  color: var(--color-primary);
+/* Secundario: el borde (≥ 3:1) lo separa del fondo en cualquier superficie */
+.btn--secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border-color: var(--border-strong);
 }
+.btn--secondary:hover { background: var(--btn-secondary-bg-hover); }
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  filter: none;
+}
+
+.btn--block { width: 100%; justify-content: center; }
 
 /* ---------- Tarjetas / grid ---------- */
 
@@ -219,8 +179,8 @@ li { margin-bottom: 0.35rem; }
 .grid--3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 
 .card {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  background: var(--surface-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1.6rem;
   box-shadow: var(--shadow-sm);
@@ -231,7 +191,7 @@ li { margin-bottom: 0.35rem; }
   box-shadow: var(--shadow-md);
 }
 .card h3 { margin-bottom: 0.4rem; }
-.card p { color: var(--color-text-muted); margin-bottom: 0; }
+.card p { color: var(--text-muted); margin-bottom: 0; }
 
 .tag {
   display: inline-block;
@@ -239,19 +199,8 @@ li { margin-bottom: 0.35rem; }
   font-weight: 600;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  background: var(--color-surface-2);
-  color: var(--color-primary-400);
-}
-
-/* ---------- Aviso / estado vacío ---------- */
-
-.notice {
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius);
-  padding: 1.25rem 1.5rem;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-size: 0.95rem;
+  background: var(--surface-muted);
+  color: var(--text-muted);
 }
 
 /* ---------- Accesibilidad ---------- */
@@ -266,7 +215,8 @@ li { margin-bottom: 0.35rem; }
   border: 0;
 }
 
+/* Teal en todas las superficies: un anillo blanco desaparecería en las claras */
 :focus-visible {
-  outline: 3px solid var(--color-accent);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
