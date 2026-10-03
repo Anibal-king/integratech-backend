@@ -13,7 +13,8 @@
     "db:seed": "node db/seed.js",
     "seed": "node db/seed.js",
     "typecheck": "tsc -p tsconfig.json",
-    "crear-admin": "node scripts/crear-admin.js"
+    "crear-admin": "node scripts/crear-admin.js",
+    "cambiar-password": "node scripts/cambiar-password.js"
   },
   "keywords": [],
   "author": "",

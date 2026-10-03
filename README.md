@@ -50,6 +50,7 @@ y conteos mayores que cero en `db.conteos`.
 | `npm run db:migrate` | Crea las tablas que falten; no toca los datos |
 | `npm run db:seed` | Vacía y recarga las tablas de contenido con los datos de la empresa. Idempotente y en una transacción. No toca `mensajes_contacto`, `leads_chatbot` ni los usuarios del panel |
 | `npm run crear-admin` | Crea un usuario del panel de administración (pide correo y contraseña) |
+| `npm run cambiar-password` | Asigna una contraseña nueva a un usuario del panel (también si la olvidaste) y cierra sus sesiones |
 | `npm run build` | `astro build` (levanta la API local si hace falta) |
 | `npm run check:api` | Comprueba `/api/health` en `PUBLIC_API_URL` y avisa de tablas vacías |
 | `npm run typecheck` | `tsc` del backend (JSDoc + `checkJs` contra `shared/api-types.ts`) |
@@ -97,6 +98,8 @@ Muestran, en solo lectura, las solicitudes del formulario de contacto y del chat
 
 - **Primer usuario:** con el backend instalado, `npm run crear-admin` y responde
   correo y contraseña (mínimo 12 caracteres). No hay registro público ni usuarios por defecto.
+- **Contraseña olvidada:** `npm run cambiar-password` (requiere acceso al servidor; si el
+  correo no existe, el script muestra los usuarios registrados).
 - **Seguridad:** el HTML de estas páginas es estático y no contiene datos. El navegador
   pide los datos a la API, que exige una sesión válida (cookie HttpOnly, 8 horas,
   guardada en SQLite como hash). Cerrar sesión la invalida en la base.

@@ -26,6 +26,7 @@ Si la base no existe o está sin contenido, `npm start` ejecuta el seed automát
 | `npm run db:migrate` | Crea las tablas que falten; no toca los datos |
 | `npm run db:seed` | Vacía y recarga las tablas de contenido. Idempotente y en una transacción; no toca `mensajes_contacto`, `leads_chatbot` ni `admin_*` |
 | `npm run crear-admin` | Crea un usuario del panel (pide correo y contraseña; mínimo 12 caracteres) |
+| `npm run cambiar-password` | Contraseña nueva para un usuario del panel (sirve si se olvidó); cierra sus sesiones |
 | `npm run typecheck` | `tsc` sobre el JS (JSDoc + `checkJs`) contra `../shared/api-types.ts` |
 
 Variables de entorno: ver [`.env.example`](.env.example) (`PORT`, `NODE_ENV`, `DATABASE_PATH`, `CORS_ORIGIN`, `TRUST_PROXY`, `SMTP_*`).
@@ -47,7 +48,9 @@ backend/
 │   └── security.js     # Límite de envíos, cabeceras, validación de campos
 ├── routes/             # Un archivo por recurso: /api/<recurso> (admin.js: /api/admin)
 ├── scripts/
-│   └── crear-admin.js  # npm run crear-admin
+│   ├── crear-admin.js       # npm run crear-admin
+│   ├── cambiar-password.js  # npm run cambiar-password
+│   └── lector.js            # entrada por terminal (contraseña oculta) para ambos
 ├── server.js           # Punto de entrada de Express
 └── tsconfig.json       # Solo verificación de tipos (no compila)
 ```
@@ -151,7 +154,8 @@ GET  /api/lead-chatbot   → leads del chatbot (requiere sesión)
   (más `Secure` con `NODE_ENV=production`), válida 8 horas. En la base (`admin_sesiones`)
   solo se guarda su SHA-256. Sin sesión válida: 401.
 - **Contraseñas:** Argon2id (`admin_usuarios.password_hash`). Usuarios solo por
-  `npm run crear-admin`; no hay registro público, recuperación de contraseña ni roles.
+  `npm run crear-admin`; contraseña olvidada: `npm run cambiar-password`. No hay registro
+  público, recuperación por correo ni roles.
 
 #### Cookie en producción
 1. **Mismo sitio:** el frontend y la API deben compartir el dominio registrable, por

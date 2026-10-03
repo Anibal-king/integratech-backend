@@ -10,6 +10,7 @@
     "db:migrate": "node backend/db/migrate.js",
     "db:seed": "node backend/db/seed.js",
     "crear-admin": "npm --prefix backend run crear-admin",
+    "cambiar-password": "npm --prefix backend run cambiar-password",
     "seed": "node backend/db/seed.js",
     "check:api": "node scripts/check-api.mjs",
     "build": "npm --prefix frontend run build",

@@ -16,6 +16,8 @@ const COOKIE = 'siie_admin';
 // La cookie solo viaja a la API, nunca a las páginas del sitio.
 const COOKIE_PATH = '/api';
 const DURACION_MS = 8 * 60 * 60 * 1000;
+/** Largo mínimo de las contraseñas del panel (lo aplican los scripts que las crean). */
+const MIN_PASSWORD = 12;
 
 /** @typedef {(req: any, res: any, next: (err?: unknown) => void) => void} Middleware */
 
@@ -165,6 +167,7 @@ function requireAdmin(req, res, next) {
 }
 
 module.exports = {
+  MIN_PASSWORD,
   hashPassword,
   verificarCredenciales,
   crearSesion,
