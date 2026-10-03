@@ -1,0 +1,279 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Solicitudes">
+  <!-- Mientras no se confirma la sesión solo se ve este aviso; el panel está oculto y vacío. -->
+  <p class="admin-cargando" data-cargando>Verificando sesión…</p>
+
+  <div data-panel hidden>
+    <header class="admin-bar">
+      <div class="container admin-bar__inner">
+        <span class="admin-bar__brand">Panel SIIE</span>
+        <div class="dash__user">
+          <span class="dash__correo" data-usuario></span>
+          <button type="button" class="btn btn--secondary dash__logout" data-logout>Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container dash">
+      <div class="dash__head">
+        <div>
+          <h1>Solicitudes de cotización</h1>
+          <p class="dash__resumen" data-resumen></p>
+        </div>
+        <button type="button" class="btn btn--secondary" data-recargar>Actualizar</button>
+      </div>
+
+      <p class="admin-alert" data-error role="alert" hidden></p>
+
+      <div class="admin-card dash__tabla-wrap">
+        <table class="dash__tabla">
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">Origen</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">Empresa</th>
+              <th scope="col">Correo</th>
+              <th scope="col">Teléfono</th>
+              <th scope="col">Mensaje</th>
+            </tr>
+          </thead>
+          <tbody data-filas></tbody>
+        </table>
+        <p class="dash__vacio" data-vacio hidden>Aún no hay solicitudes.</p>
+      </div>
+    </main>
+  </div>
+</AdminLayout>
+
+<style>
+  .dash__user { display: flex; align-items: center; gap: 0.9rem; min-width: 0; }
+  .dash__correo {
+    color: var(--color-brand-blue);
+    font-size: 0.88rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dash__logout, .dash__head .btn { padding: 0.5rem 1rem; }
+
+  .dash { padding-block: 2rem 3rem; display: flex; flex-direction: column; gap: 1.25rem; }
+  .dash__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .dash__head h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); margin: 0 0 0.25rem; }
+  .dash__resumen { margin: 0; color: var(--text-muted); font-size: 0.92rem; }
+
+  .dash__tabla-wrap { overflow-x: auto; }
+  .dash__tabla {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  .dash__tabla th,
+  .dash__tabla :global(td) {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .dash__tabla th {
+    position: sticky;
+    top: 0;
+    background: var(--surface-muted);
+    color: var(--heading);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .dash__tabla :global(tr:last-child td) { border-bottom: 0; }
+  .dash__tabla :global(.c-fecha),
+  .dash__tabla :global(.c-tel) { white-space: nowrap; }
+  .dash__tabla :global(.c-msg) { min-width: 280px; max-width: 420px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .dash__tabla :global(.c-vacio) { color: var(--text-muted); }
+
+  .dash__tabla :global(.origen) {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    border: 1px solid var(--border-strong);
+    color: var(--heading);
+  }
+  .dash__tabla :global(.origen--chatbot) { background: var(--color-brand-blue-tint); border-color: transparent; }
+
+  .dash__vacio { margin: 0; padding: 2rem 1rem; text-align: center; color: var(--text-muted); }
+
+  @media (max-width: 600px) {
+    .dash__correo { display: none; }
+  }
+</style>
+
+<script>
+  import { admin, AdminError, LOGIN_PATH, type LeadChatbot, type MensajeContacto } from '../../lib/admin';
+
+  interface Solicitud {
+    fecha: Date;
+    origen: 'Formulario' | 'Chatbot';
+    nombre: string;
+    empresa: string | null;
+    correo: string | null;
+    telefono: string | null;
+    mensaje: string;
+  }
+
+  const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+  const cargando = $('[data-cargando]');
+  const panel = $('[data-panel]');
+  const filas = $('[data-filas]');
+  const vacio = $('[data-vacio]');
+  const resumen = $('[data-resumen]');
+  const errorBox = $('[data-error]');
+  const recargar = $<HTMLButtonElement>('[data-recargar]');
+
+  /** Las fechas de SQLite son UTC sin zona ('YYYY-MM-DD HH:MM:SS'). */
+  const fechaUTC = (s: string) => new Date(`${s.replace(' ', 'T')}Z`);
+  const formatoFecha = new Intl.DateTimeFormat('es-SV', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/El_Salvador',
+  });
+
+  const deContacto = (m: MensajeContacto): Solicitud => ({
+    fecha: fechaUTC(m.fecha_creacion),
+    origen: 'Formulario',
+    nombre: m.nombre,
+    empresa: m.empresa,
+    correo: m.correo,
+    telefono: m.telefono,
+    mensaje: m.mensaje,
+  });
+
+  // El lead del chatbot no trae un mensaje libre: se arma con sus respuestas.
+  const deLead = (l: LeadChatbot): Solicitud => ({
+    fecha: fechaUTC(l.fecha_creacion),
+    origen: 'Chatbot',
+    nombre: l.nombre,
+    empresa: l.empresa,
+    correo: l.correo,
+    telefono: l.telefono,
+    mensaje: [
+      l.tipo_servicio && `Servicio: ${l.tipo_servicio}`,
+      l.alcance && `Alcance: ${l.alcance}`,
+      l.ubicacion && `Ubicación: ${l.ubicacion}`,
+      l.plazo && `Plazo: ${l.plazo}`,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  });
+
+  /** Celda con texto (nunca innerHTML: los datos los escribieron visitantes del sitio). */
+  function celda(clase: string, contenido: string | Node | null) {
+    const td = document.createElement('td');
+    td.className = clase;
+    if (contenido === null || contenido === '') {
+      td.textContent = '—';
+      td.classList.add('c-vacio');
+    } else {
+      td.append(contenido);
+    }
+    return td;
+  }
+
+  function enlace(href: string, texto: string) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.textContent = texto;
+    return a;
+  }
+
+  function pintar(solicitudes: Solicitud[]) {
+    filas.replaceChildren(
+      ...solicitudes.map((s) => {
+        const tr = document.createElement('tr');
+        const origen = document.createElement('span');
+        origen.className = `origen origen--${s.origen === 'Chatbot' ? 'chatbot' : 'form'}`;
+        origen.textContent = s.origen;
+        tr.append(
+          celda('c-fecha', formatoFecha.format(s.fecha)),
+          celda('c-origen', origen),
+          celda('c-nombre', s.nombre),
+          celda('c-empresa', s.empresa),
+          celda('c-correo', s.correo ? enlace(`mailto:${s.correo}`, s.correo) : null),
+          celda('c-tel', s.telefono ? enlace(`tel:${s.telefono.replace(/[^\d+]/g, '')}`, s.telefono) : null),
+          celda('c-msg', s.mensaje)
+        );
+        return tr;
+      })
+    );
+    vacio.hidden = solicitudes.length > 0;
+    const nForm = solicitudes.filter((s) => s.origen === 'Formulario').length;
+    resumen.textContent = `${solicitudes.length} en total · ${nForm} del formulario · ${solicitudes.length - nForm} del chatbot`;
+  }
+
+  async function cargarSolicitudes() {
+    errorBox.hidden = true;
+    recargar.disabled = true;
+    try {
+      const [mensajes, leads] = await Promise.all([admin.mensajesContacto(), admin.leadsChatbot()]);
+      const todas = [...mensajes.map(deContacto), ...leads.map(deLead)];
+      todas.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+      pintar(todas);
+    } catch (err) {
+      // Un 401 ya está redirigiendo al login.
+      if (err instanceof AdminError && err.status === 401) return;
+      errorBox.textContent =
+        err instanceof AdminError && err.status === 0
+          ? 'No se pudo conectar con el servidor. Intenta de nuevo.'
+          : 'No se pudieron cargar las solicitudes. Intenta de nuevo.';
+      errorBox.hidden = false;
+    } finally {
+      recargar.disabled = false;
+    }
+  }
+
+  async function iniciar() {
+    let usuario;
+    try {
+      usuario = await admin.sesion();
+    } catch {
+      cargando.textContent = 'No se pudo conectar con el servidor. Recarga la página para reintentar.';
+      return;
+    }
+    if (!usuario) {
+      location.replace(LOGIN_PATH);
+      return;
+    }
+
+    $('[data-usuario]').textContent = usuario.correo;
+    cargando.remove();
+    panel.hidden = false;
+    await cargarSolicitudes();
+  }
+
+  recargar.addEventListener('click', cargarSolicitudes);
+
+  $<HTMLButtonElement>('[data-logout]').addEventListener('click', async (e) => {
+    const boton = e.currentTarget as HTMLButtonElement;
+    boton.disabled = true;
+    boton.textContent = 'Cerrando…';
+    try {
+      await admin.logout();
+    } finally {
+      location.replace(LOGIN_PATH);
+    }
+  });
+
+  iniciar();
+</script>

@@ -27,8 +27,6 @@ const CORS_ORIGINS = (process.env.CORS_ORIGIN ?? '')
 
 module.exports = {
   isProduction,
-  /** Token de las rutas administrativas (GET de mensajes y leads). Vacío = rutas deshabilitadas. */
-  ADMIN_TOKEN: process.env.ADMIN_TOKEN ?? '',
   /** Número de proxies delante del servidor (para que req.ip sea la IP real). */
   TRUST_PROXY: Number(process.env.TRUST_PROXY) || 0,
   PORT: Number(process.env.PORT) || 3000,

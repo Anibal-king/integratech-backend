@@ -12,12 +12,14 @@
     "db:migrate": "node db/migrate.js",
     "db:seed": "node db/seed.js",
     "seed": "node db/seed.js",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "crear-admin": "node scripts/crear-admin.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "argon2": "^0.45.1",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "nodemailer": "^6.9.14"
@@ -25,5 +27,8 @@
   "devDependencies": {
     "@types/node": "^22.20.4",
     "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "argon2": true
   }
 }

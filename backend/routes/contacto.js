@@ -1,7 +1,8 @@
 const express = require('express');
 const { db, all } = require('../db');
 const { sendMail, escapeHtml: esc } = require('../lib/mailer');
-const { requireAdmin, rateLimit, campoTexto } = require('../lib/security');
+const { rateLimit, campoTexto } = require('../lib/security');
+const { requireAdmin } = require('../lib/auth');
 
 /** @typedef {import('../../shared/api-types').ContactoRespuesta} ContactoRespuesta */
 
@@ -101,7 +102,7 @@ router.post('/', rateLimit({ max: 5, ventanaMs: 10 * 60 * 1000 }), async (req, r
   }
 });
 
-// GET /api/contacto - (administrativo, requiere ADMIN_TOKEN) Lista los mensajes recibidos
+// GET /api/contacto - (administrativo, requiere sesión del panel) Lista los mensajes recibidos
 router.get('/', requireAdmin, (req, res) => {
   res.json(all('SELECT * FROM mensajes_contacto ORDER BY fecha_creacion DESC'));
 });

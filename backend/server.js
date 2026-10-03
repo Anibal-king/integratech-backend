@@ -15,6 +15,7 @@ const marcasRoutes = require('./routes/marcas');
 const legalRoutes = require('./routes/legal');
 const contactoRoutes = require('./routes/contacto');
 const leadChatbotRoutes = require('./routes/lead-chatbot');
+const adminRoutes = require('./routes/admin');
 
 // db/index.js ya abrió (y por tanto creó) el archivo: se decide por el contenido.
 const TABLAS_PRINCIPALES = ['empresa', 'categorias_servicios', 'servicios', 'clientes', 'otros_clientes', 'proyectos_destacados', 'marcas'];
@@ -32,11 +33,13 @@ app.disable('x-powered-by');
 if (config.TRUST_PROXY) app.set('trust proxy', config.TRUST_PROXY);
 app.use(securityHeaders);
 
-// CORS: solo lo usan los POST del navegador (formulario y chatbot); los GET los hace Astro en el servidor.
+// CORS: lo usan los POST del navegador (formulario y chatbot) y el panel de administración,
+// que envía la cookie de sesión (credentials). Los GET públicos los hace Astro en el servidor.
+// Con credentials solo se reflejan los orígenes de la lista, nunca "*".
 if (config.CORS_ORIGINS.length === 0) {
   console.warn('⚠️  CORS_ORIGIN no está definido: el navegador no podrá llamar a la API desde otro origen.');
 }
-app.use(cors({ origin: config.CORS_ORIGINS }));
+app.use(cors({ origin: config.CORS_ORIGINS, credentials: true }));
 app.use(express.json({ limit: '16kb' }));
 
 app.get('/api/health', (req, res) => {
@@ -67,6 +70,7 @@ app.use('/api/marcas', marcasRoutes);
 app.use('/api/legal', legalRoutes);
 app.use('/api/contacto', contactoRoutes);
 app.use('/api/lead-chatbot', leadChatbotRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 

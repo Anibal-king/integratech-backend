@@ -130,3 +130,23 @@ CREATE TABLE IF NOT EXISTS leads_chatbot (
   correo_enviado INTEGER DEFAULT 0,     -- 1 si se logró notificar por email
   fecha_creacion TEXT DEFAULT (datetime('now'))
 );
+
+-- Usuarios del panel de administración. Se crean solo con `npm run crear-admin`
+-- (no hay registro público ni usuarios por defecto en el seed).
+CREATE TABLE IF NOT EXISTS admin_usuarios (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  correo TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  password_hash TEXT NOT NULL,          -- Argon2id (formato PHC: $argon2id$...)
+  fecha_creacion TEXT DEFAULT (datetime('now'))
+);
+
+-- Sesiones del panel. Solo se guarda el SHA-256 del token: el token real vive
+-- únicamente en la cookie HttpOnly del navegador. Cerrar sesión borra la fila.
+CREATE TABLE IF NOT EXISTS admin_sesiones (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  usuario_id INTEGER NOT NULL REFERENCES admin_usuarios(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  creada TEXT DEFAULT (datetime('now')),
+  expira TEXT NOT NULL                  -- datetime UTC, formato 'YYYY-MM-DD HH:MM:SS'
+);
+CREATE INDEX IF NOT EXISTS idx_admin_sesiones_usuario ON admin_sesiones(usuario_id);

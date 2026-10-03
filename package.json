@@ -9,6 +9,7 @@
     "frontend": "npm --prefix frontend run dev",
     "db:migrate": "node backend/db/migrate.js",
     "db:seed": "node backend/db/seed.js",
+    "crear-admin": "npm --prefix backend run crear-admin",
     "seed": "node backend/db/seed.js",
     "check:api": "node scripts/check-api.mjs",
     "build": "npm --prefix frontend run build",

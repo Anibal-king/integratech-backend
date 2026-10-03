@@ -24,10 +24,11 @@ Si la base no existe o está sin contenido, `npm start` ejecuta el seed automát
 | Script | Qué hace |
 |---|---|
 | `npm run db:migrate` | Crea las tablas que falten; no toca los datos |
-| `npm run db:seed` | Vacía y recarga las tablas de contenido. Idempotente y en una transacción; no toca `mensajes_contacto` ni `leads_chatbot` |
+| `npm run db:seed` | Vacía y recarga las tablas de contenido. Idempotente y en una transacción; no toca `mensajes_contacto`, `leads_chatbot` ni `admin_*` |
+| `npm run crear-admin` | Crea un usuario del panel (pide correo y contraseña; mínimo 12 caracteres) |
 | `npm run typecheck` | `tsc` sobre el JS (JSDoc + `checkJs`) contra `../shared/api-types.ts` |
 
-Variables de entorno: ver [`.env.example`](.env.example) (`PORT`, `NODE_ENV`, `DATABASE_PATH`, `CORS_ORIGIN`, `ADMIN_TOKEN`, `TRUST_PROXY`, `SMTP_*`).
+Variables de entorno: ver [`.env.example`](.env.example) (`PORT`, `NODE_ENV`, `DATABASE_PATH`, `CORS_ORIGIN`, `TRUST_PROXY`, `SMTP_*`).
 
 ## Estructura del proyecto
 
@@ -41,9 +42,12 @@ backend/
 │   ├── seed.js         # Carga los datos de la empresa
 │   └── siie.db         # (generado, ignorado por git)
 ├── lib/
-│   ├── mailer.js       # Correo SMTP de los leads del chatbot
-│   └── security.js     # ADMIN_TOKEN, límite de envíos, cabeceras, validación de campos
-├── routes/             # Un archivo por recurso: /api/<recurso>
+│   ├── auth.js         # Panel: Argon2id, sesiones en SQLite, cookie, requireAdmin, origen
+│   ├── mailer.js       # Correo SMTP (chatbot y formulario de contacto)
+│   └── security.js     # Límite de envíos, cabeceras, validación de campos
+├── routes/             # Un archivo por recurso: /api/<recurso> (admin.js: /api/admin)
+├── scripts/
+│   └── crear-admin.js  # npm run crear-admin
 ├── server.js           # Punto de entrada de Express
 └── tsconfig.json       # Solo verificación de tipos (no compila)
 ```
@@ -130,13 +134,37 @@ POST /api/lead-chatbot   Body: ver docs/chatbot-flujo.md
 - Longitud máxima por campo; 400 si se excede. Cuerpo máximo: 16 KB.
 - CORS: solo los orígenes de `CORS_ORIGIN`.
 
-### Rutas administrativas (datos personales)
+### Panel de administración (sesión por cookie)
 ```
-GET /api/contacto       → mensajes del formulario
-GET /api/lead-chatbot   → leads del chatbot
-Header: Authorization: Bearer <ADMIN_TOKEN>
+POST /api/admin/login    Body: { correo, password }  → { correo } + cookie siie_admin
+POST /api/admin/logout   → 204, borra la sesión de la base y la cookie
+GET  /api/admin/me       → { correo } o 401
+GET  /api/contacto       → mensajes del formulario (requiere sesión)
+GET  /api/lead-chatbot   → leads del chatbot (requiere sesión)
 ```
-Sin `ADMIN_TOKEN` configurado responden 404 (deshabilitadas); con un token incorrecto, 401.
+- **Origen:** todas exigen un header `Origin` incluido en `CORS_ORIGIN`; si falta o no
+  coincide, 403. El navegador lo envía siempre porque el panel y la API están en
+  orígenes distintos. Con `curl` hay que añadirlo: `-H "Origin: http://localhost:4321"`.
+- **Login:** el mismo mensaje (401) si falla el correo o la contraseña, con un tiempo de
+  respuesta similar en ambos casos. Límite: 10 intentos por IP cada 15 minutos (429).
+- **Sesión:** token aleatorio de 32 bytes en una cookie `HttpOnly; SameSite=Lax; Path=/api`
+  (más `Secure` con `NODE_ENV=production`), válida 8 horas. En la base (`admin_sesiones`)
+  solo se guarda su SHA-256. Sin sesión válida: 401.
+- **Contraseñas:** Argon2id (`admin_usuarios.password_hash`). Usuarios solo por
+  `npm run crear-admin`; no hay registro público, recuperación de contraseña ni roles.
+
+#### Cookie en producción
+1. **Mismo sitio:** el frontend y la API deben compartir el dominio registrable, por
+   ejemplo `www.sii.com.sv` y `api.sii.com.sv`. Con SameSite=Lax el navegador **no**
+   envía la cookie entre sitios distintos (p. ej. `x.netlify.app` → `y.onrender.com`).
+   Si no pueden compartir dominio, hay que servir la API bajo el mismo dominio con un
+   proxy (p. ej. `www.sii.com.sv/api` → backend).
+2. **HTTPS y `NODE_ENV=production`** en la API: la cookie lleva `Secure`.
+3. **`CORS_ORIGIN`** con el origen exacto del frontend (`https://www.sii.com.sv`, sin
+   barra final; añade también la variante sin `www` si se usa).
+4. **`PUBLIC_API_URL`** del frontend apuntando a la URL pública de la API.
+5. **`TRUST_PROXY`** según los proxies delante de la API, para que el límite de intentos
+   use la IP real.
 
 ## Próximos pasos sugeridos
 

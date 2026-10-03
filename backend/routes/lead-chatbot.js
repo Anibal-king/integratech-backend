@@ -1,7 +1,8 @@
 const express = require('express');
 const { db, all } = require('../db');
 const { sendMail, escapeHtml: esc } = require('../lib/mailer');
-const { requireAdmin, rateLimit, campoTexto } = require('../lib/security');
+const { rateLimit, campoTexto } = require('../lib/security');
+const { requireAdmin } = require('../lib/auth');
 
 // Longitud máxima de cada campo del lead
 const MAX = { tipo_servicio: 120, alcance: 3000, ubicacion: 200, plazo: 60, nombre: 120, empresa: 150, correo: 200, telefono: 40 };
@@ -134,7 +135,7 @@ router.post('/', rateLimit({ max: 5, ventanaMs: 10 * 60 * 1000 }), async (req, r
 });
 
 /**
- * GET /api/lead-chatbot  (administrativo, requiere ADMIN_TOKEN)
+ * GET /api/lead-chatbot  (administrativo, requiere sesión del panel)
  * Lista los leads capturados, más recientes primero.
  */
 router.get('/', requireAdmin, (req, res) => {

@@ -124,6 +124,7 @@ oculta (el resto del flujo funciona igual).
 
 ```
 GET /api/lead-chatbot        → JSON con todos los leads, más recientes primero
-Header: Authorization: Bearer <ADMIN_TOKEN>
 ```
-Requiere `ADMIN_TOKEN` en `backend/.env`; sin él la ruta está deshabilitada (404).
+Requiere una sesión del panel de administración. Lo más cómodo es verlos en
+`/admin/dashboard` (junto con los mensajes del formulario de contacto).
+Ver "Panel de administración" en `backend/README.md`.

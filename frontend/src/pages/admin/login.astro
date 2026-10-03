@@ -1,0 +1,126 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Iniciar sesión">
+  <main class="login">
+    <p class="admin-cargando" data-verificando>Verificando sesión…</p>
+
+    <form class="login__card admin-card" data-login-form hidden novalidate>
+      <h1>Panel de administración</h1>
+      <p class="login__sub">Servicios Integrales de Ingeniería</p>
+
+      <label>
+        Correo
+        <input name="correo" type="email" autocomplete="username" required maxlength="200" />
+      </label>
+      <label>
+        Contraseña
+        <input name="password" type="password" autocomplete="current-password" required maxlength="200" />
+      </label>
+
+      <p class="admin-alert" data-login-error role="alert" hidden></p>
+
+      <button type="submit" class="btn btn--primary btn--block" data-login-submit>Ingresar</button>
+    </form>
+  </main>
+</AdminLayout>
+
+<style>
+  .login {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem 1rem;
+  }
+  .login .admin-cargando { min-height: 0; }
+  .login__card {
+    width: min(400px, 100%);
+    padding: 2rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .login__card[hidden] { display: none; }
+  .login__card h1 { font-size: 1.5rem; margin: 0; }
+  .login__sub { margin: -0.6rem 0 0.5rem; color: var(--text-muted); font-size: 0.92rem; }
+  .login__card label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .login__card input {
+    font: inherit;
+    font-weight: 400;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text);
+  }
+  .login__card input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+</style>
+
+<script>
+  import { admin, AdminError, DASHBOARD_PATH } from '../../lib/admin';
+
+  const form = document.querySelector<HTMLFormElement>('[data-login-form]')!;
+  const verificando = document.querySelector<HTMLElement>('[data-verificando]')!;
+  const errorBox = document.querySelector<HTMLElement>('[data-login-error]')!;
+  const submit = document.querySelector<HTMLButtonElement>('[data-login-submit]')!;
+
+  function mostrarError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+  }
+
+  function mostrarFormulario() {
+    verificando.hidden = true;
+    form.hidden = false;
+    form.querySelector<HTMLInputElement>('input[name="correo"]')?.focus();
+  }
+
+  function mensajeLogin(err: unknown): string {
+    if (!(err instanceof AdminError)) return 'Ocurrió un error inesperado. Intenta de nuevo.';
+    if (err.status === 0) return 'No se pudo conectar con el servidor. Revisa tu conexión e intenta de nuevo.';
+    if (err.status === 401) return 'Correo o contraseña incorrectos.';
+    if (err.status === 429) return 'Demasiados intentos. Espera unos minutos antes de volver a intentar.';
+    if (err.status === 403) return 'Este sitio no tiene permiso para acceder al panel (origen no permitido).';
+    return 'El servidor no pudo procesar el inicio de sesión. Intenta más tarde.';
+  }
+
+  // Con una sesión activa no tiene sentido mostrar el formulario.
+  admin
+    .sesion()
+    .then((usuario) => (usuario ? location.replace(DASHBOARD_PATH) : mostrarFormulario()))
+    .catch((err) => {
+      mostrarFormulario();
+      mostrarError(mensajeLogin(err));
+    });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const correo = String(fd.get('correo') ?? '').trim();
+    const password = String(fd.get('password') ?? '');
+    if (!correo || !password) {
+      mostrarError('Escribe tu correo y tu contraseña.');
+      return;
+    }
+
+    errorBox.hidden = true;
+    submit.disabled = true;
+    submit.textContent = 'Ingresando…';
+    try {
+      await admin.login(correo, password);
+      location.replace(DASHBOARD_PATH);
+    } catch (err) {
+      mostrarError(mensajeLogin(err));
+      submit.disabled = false;
+      submit.textContent = 'Ingresar';
+      form.querySelector<HTMLInputElement>('input[name="password"]')!.value = '';
+    }
+  });
+</script>

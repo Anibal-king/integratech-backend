@@ -89,6 +89,42 @@ export interface ContactoRespuesta {
   emailSent: boolean;
 }
 
+// ---------- Panel de administración (requieren sesión) ----------
+
+/** Respuesta de POST /api/admin/login y GET /api/admin/me. */
+export interface AdminUsuario {
+  correo: string;
+}
+
+/** Fila de GET /api/contacto. */
+export interface MensajeContacto {
+  id: number;
+  nombre: string;
+  correo: string | null;
+  telefono: string | null;
+  empresa: string | null;
+  mensaje: string;
+  /** UTC, formato 'YYYY-MM-DD HH:MM:SS'. */
+  fecha_creacion: string;
+}
+
+/** Fila de GET /api/lead-chatbot. */
+export interface LeadChatbot {
+  id: number;
+  tipo_servicio: string | null;
+  alcance: string | null;
+  ubicacion: string | null;
+  plazo: string | null;
+  nombre: string;
+  empresa: string | null;
+  correo: string | null;
+  telefono: string | null;
+  origen: 'chatbot' | 'whatsapp';
+  correo_enviado: 0 | 1;
+  /** UTC, formato 'YYYY-MM-DD HH:MM:SS'. */
+  fecha_creacion: string;
+}
+
 export interface ApiError {
   error: string;
 }

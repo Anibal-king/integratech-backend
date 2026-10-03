@@ -48,7 +48,8 @@ y conteos mayores que cero en `db.conteos`.
 | `npm run dev` | Backend (con `--watch`) + frontend a la vez |
 | `npm run backend` / `npm run frontend` | Cada uno por separado |
 | `npm run db:migrate` | Crea las tablas que falten; no toca los datos |
-| `npm run db:seed` | Vacía y recarga las tablas de contenido con los datos de la empresa. Idempotente y en una transacción. No toca `mensajes_contacto` ni `leads_chatbot` |
+| `npm run db:seed` | Vacía y recarga las tablas de contenido con los datos de la empresa. Idempotente y en una transacción. No toca `mensajes_contacto`, `leads_chatbot` ni los usuarios del panel |
+| `npm run crear-admin` | Crea un usuario del panel de administración (pide correo y contraseña) |
 | `npm run build` | `astro build` (levanta la API local si hace falta) |
 | `npm run check:api` | Comprueba `/api/health` en `PUBLIC_API_URL` y avisa de tablas vacías |
 | `npm run typecheck` | `tsc` del backend (JSDoc + `checkJs` contra `shared/api-types.ts`) |
@@ -64,8 +65,7 @@ Si la base no existe o no tiene contenido, el backend ejecuta el seed al arranca
 | `PORT` | `3000` | Puerto de la API |
 | `NODE_ENV` | — | `production` desactiva los orígenes CORS por defecto |
 | `DATABASE_PATH` | `db/siie.db` | Ruta de SQLite. Si es relativa, se resuelve contra `backend/`, nunca contra la carpeta de arranque |
-| `CORS_ORIGIN` | `http://localhost:4321,http://127.0.0.1:4321` en desarrollo | Orígenes del navegador permitidos, separados por comas. Obligatorio en producción |
-| `ADMIN_TOKEN` | vacío | Habilita `GET /api/contacto` y `GET /api/lead-chatbot` (datos personales) con `Authorization: Bearer <token>`. Vacío = deshabilitadas |
+| `CORS_ORIGIN` | `http://localhost:4321,http://127.0.0.1:4321` en desarrollo | Orígenes del navegador permitidos, separados por comas. Obligatorio en producción. También es la lista de orígenes aceptados por el panel de administración |
 | `TRUST_PROXY` | `0` | Proxies delante del servidor en producción, para que el límite de envíos use la IP real |
 | `SMTP_*`, `MAIL_FROM`, `MAIL_TO_LEADS` | — | Correo de los leads del chatbot y del formulario de contacto (opcional) |
 
@@ -82,13 +82,27 @@ Si la base no existe o no tiene contenido, el backend ejecuta el seed al arranca
 - El sitio es **estático**: Astro lee la API en el frontmatter durante `astro build`
   (y en cada petición con `astro dev`). Si `PUBLIC_API_URL` es local y no responde,
   Astro arranca el backend automáticamente; si es remota, debe estar disponible al construir.
-- Solo el formulario de contacto y el chatbot llaman a la API desde el navegador
-  (POST); por eso CORS solo afecta a esos dos.
+- Desde el navegador solo llaman a la API el formulario de contacto, el chatbot (POST)
+  y el panel de administración; por eso CORS solo afecta a esos tres.
 - Formato de respuesta: listas como arreglo directo (`[]` con 200 si no hay datos),
   recursos individuales como objeto (404 si no existen), `/api/empresa` como objeto o
   `null`, y errores como `{ "error": "..." }` con mensaje genérico (el detalle va al log).
 - El frontend distingue: error de red, error HTTP, formato inválido y vacío. El vacío
   muestra un mensaje amable, no un error. El detalle técnico solo aparece con `astro dev`.
+
+## Panel de administración
+
+`/admin/login` y `/admin/dashboard` (no enlazados desde el sitio, con `noindex`).
+Muestran, en solo lectura, las solicitudes del formulario de contacto y del chatbot.
+
+- **Primer usuario:** con el backend instalado, `npm run crear-admin` y responde
+  correo y contraseña (mínimo 12 caracteres). No hay registro público ni usuarios por defecto.
+- **Seguridad:** el HTML de estas páginas es estático y no contiene datos. El navegador
+  pide los datos a la API, que exige una sesión válida (cookie HttpOnly, 8 horas,
+  guardada en SQLite como hash). Cerrar sesión la invalida en la base.
+- **Producción:** el frontend y la API deben compartir sitio (p. ej. `www.dominio.com`
+  y `api.dominio.com`), la API debe ir por HTTPS con `NODE_ENV=production`, y
+  `CORS_ORIGIN` debe contener el origen exacto del frontend. Detalle en `backend/README.md`.
 
 > Nota: si `npm run` falla con `spawn ... ENOENT`, es por la variable de entorno
 > `ComSpec` apuntando a una ruta inválida. Corrígela a `C:\Windows\System32\cmd.exe`

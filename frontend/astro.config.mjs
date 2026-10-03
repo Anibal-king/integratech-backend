@@ -15,5 +15,7 @@ export default defineConfig({
     '/clientes': '/#clientes',
     '/nosotros': '/#nosotros',
     '/contacto': '/#contacto',
+    // Panel de administración (no enlazado desde el sitio público).
+    '/admin': '/admin/dashboard',
   },
 });

@@ -1,0 +1,82 @@
+---
+/**
+ * Layout del panel de administración: sin header público, footer, chatbot ni
+ * View Transitions. noindex y sin enlaces desde el sitio público.
+ *
+ * El HTML de estas páginas es estático y por tanto público: nunca lleva datos.
+ * Todo lo sensible lo pide el navegador a la API, que valida la sesión.
+ */
+import '../styles/tokens.css';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} · Panel SIIE</title>
+  </head>
+  <body class="admin surface-muted">
+    <slot />
+
+    <style is:global>
+      /* hidden siempre gana, aunque la clase defina display */
+      .admin [hidden] { display: none !important; }
+
+      .admin {
+        min-height: 100vh;
+      }
+
+      .admin-bar {
+        background: var(--color-header-bg);
+        border-bottom: 1px solid var(--color-header-divider);
+        box-shadow: var(--shadow-header);
+      }
+      .admin-bar__inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-height: 64px;
+      }
+      .admin-bar__brand {
+        font-weight: 700;
+        color: var(--color-brand-blue);
+      }
+
+      .admin-card {
+        background: var(--surface-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .admin-alert {
+        margin: 0;
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--danger-text);
+        color: var(--danger-text);
+        background: var(--surface-card);
+        font-size: 0.92rem;
+      }
+
+      .admin-cargando {
+        display: grid;
+        place-items: center;
+        min-height: 60vh;
+        color: var(--text-muted);
+      }
+    </style>
+  </body>
+</html>

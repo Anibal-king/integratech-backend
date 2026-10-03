@@ -1,32 +1,12 @@
 /**
- * Protecciones de la API sin dependencias externas:
- *  - requireAdmin: rutas administrativas (listados con datos personales)
+ * Protecciones de la API sin dependencias externas
+ * (la sesión del panel de administración está en lib/auth.js):
  *  - rateLimit:    límite de envíos por IP para los formularios públicos
  *  - securityHeaders: cabeceras básicas para respuestas JSON
  *  - campoTexto:   normaliza y limita la longitud de los campos recibidos
  */
-const crypto = require('node:crypto');
-const { ADMIN_TOKEN } = require('../config');
 
 /** @typedef {(req: any, res: any, next: (err?: unknown) => void) => void} Middleware */
-
-/**
- * Exige `Authorization: Bearer <ADMIN_TOKEN>`.
- * Sin ADMIN_TOKEN configurado la ruta queda deshabilitada (404): nunca pública por defecto.
- * @type {Middleware}
- */
-function requireAdmin(req, res, next) {
-  if (!ADMIN_TOKEN) return res.status(404).json({ error: 'Ruta no encontrada' });
-
-  const recibido = /^Bearer (.+)$/.exec(req.get('authorization') ?? '')?.[1] ?? '';
-  // Se comparan los hashes: misma longitud siempre y comparación en tiempo constante.
-  const hash = (/** @type {string} */ s) => crypto.createHash('sha256').update(s).digest();
-  if (!recibido || !crypto.timingSafeEqual(hash(recibido), hash(ADMIN_TOKEN))) {
-    res.set('WWW-Authenticate', 'Bearer');
-    return res.status(401).json({ error: 'No autorizado' });
-  }
-  next();
-}
 
 /**
  * Límite de peticiones por IP en una ventana de tiempo (en memoria: se reinicia
@@ -84,4 +64,4 @@ function campoTexto(valor, max) {
   return s.length > max ? null : s;
 }
 
-module.exports = { requireAdmin, rateLimit, securityHeaders, campoTexto };
+module.exports = { rateLimit, securityHeaders, campoTexto };
