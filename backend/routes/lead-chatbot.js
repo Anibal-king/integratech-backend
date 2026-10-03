@@ -1,19 +1,12 @@
 const express = require('express');
 const { db, all } = require('../db');
-const { sendMail } = require('../lib/mailer');
+const { sendMail, escapeHtml: esc } = require('../lib/mailer');
 const { requireAdmin, rateLimit, campoTexto } = require('../lib/security');
 
 // Longitud máxima de cada campo del lead
 const MAX = { tipo_servicio: 120, alcance: 3000, ubicacion: 200, plazo: 60, nombre: 120, empresa: 150, correo: 200, telefono: 40 };
 
 const router = express.Router();
-
-// Utilidad: escapa HTML para el correo
-const esc = (s) =>
-  String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
 
 function resumenTexto(lead) {
   return [

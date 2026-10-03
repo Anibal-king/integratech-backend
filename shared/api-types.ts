@@ -73,6 +73,7 @@ export interface DocumentoLegal {
   descripcion: string | null;
 }
 
+/** Se exige correo o teléfono (al menos uno). */
 export interface ContactoPayload {
   nombre: string;
   correo?: string;
@@ -84,6 +85,8 @@ export interface ContactoPayload {
 export interface ContactoRespuesta {
   ok: true;
   id: number;
+  /** false si SMTP no está configurado o falló: el mensaje igual quedó guardado. */
+  emailSent: boolean;
 }
 
 export interface ApiError {

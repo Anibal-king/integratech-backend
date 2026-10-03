@@ -46,6 +46,18 @@ export default function ContactForm() {
       setEstado({ tipo: 'invalido', msg: 'El nombre y el mensaje son obligatorios.' });
       return;
     }
+    if (!payload.correo && !payload.telefono) {
+      setEstado({ tipo: 'invalido', msg: 'Déjanos un correo o un teléfono para poder responderte.' });
+      return;
+    }
+    if (payload.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.correo)) {
+      setEstado({ tipo: 'invalido', msg: 'El correo no tiene un formato válido.' });
+      return;
+    }
+    if (payload.telefono && payload.telefono.replace(/\D/g, '').length < 7) {
+      setEstado({ tipo: 'invalido', msg: 'El teléfono debe tener al menos 7 dígitos.' });
+      return;
+    }
 
     enviar(payload, form);
   };
@@ -65,11 +77,11 @@ export default function ContactForm() {
 
       <div className="cform__row">
         <label>
-          Correo
+          Correo **
           <input name="correo" type="email" maxLength={200} autoComplete="email" />
         </label>
         <label>
-          Teléfono
+          Teléfono **
           <input name="telefono" type="tel" maxLength={40} autoComplete="tel" />
         </label>
       </div>
@@ -78,6 +90,8 @@ export default function ContactForm() {
         Mensaje *
         <textarea name="mensaje" rows={5} required maxLength={5000} />
       </label>
+
+      <p className="cform__hint">* Obligatorio · ** Al menos uno de los dos, para poder responderte.</p>
 
       <button type="submit" className="btn btn--primary" disabled={estado.tipo === 'enviando'}>
         {estado.tipo === 'enviando' ? 'Enviando…' : 'Enviar mensaje'}
@@ -120,6 +134,7 @@ export default function ContactForm() {
         .cform input:focus-visible,
         .cform textarea:focus-visible { border-color: var(--focus-ring); }
         .cform textarea { resize: vertical; }
+        .cform__hint { margin: -0.25rem 0 0; font-size: 0.82rem; color: var(--text-muted); }
         .cform .btn { align-self: flex-start; }
         @media (max-width: 620px) {
           .cform__row { grid-template-columns: 1fr; }

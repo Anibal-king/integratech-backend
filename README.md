@@ -67,7 +67,7 @@ Si la base no existe o no tiene contenido, el backend ejecuta el seed al arranca
 | `CORS_ORIGIN` | `http://localhost:4321,http://127.0.0.1:4321` en desarrollo | Orígenes del navegador permitidos, separados por comas. Obligatorio en producción |
 | `ADMIN_TOKEN` | vacío | Habilita `GET /api/contacto` y `GET /api/lead-chatbot` (datos personales) con `Authorization: Bearer <token>`. Vacío = deshabilitadas |
 | `TRUST_PROXY` | `0` | Proxies delante del servidor en producción, para que el límite de envíos use la IP real |
-| `SMTP_*`, `MAIL_FROM`, `MAIL_TO_LEADS` | — | Correo de los leads del chatbot (opcional) |
+| `SMTP_*`, `MAIL_FROM`, `MAIL_TO_LEADS` | — | Correo de los leads del chatbot y del formulario de contacto (opcional) |
 
 **`frontend/.env`** (ver `frontend/.env.example`):
 

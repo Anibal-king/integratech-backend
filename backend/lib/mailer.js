@@ -72,4 +72,14 @@ async function sendMail(opts) {
   return { sent: true, id: info.messageId };
 }
 
-module.exports = { sendMail, smtpConfigurado };
+/**
+ * Escapa texto para insertarlo en el HTML de un correo.
+ * @param {unknown} s
+ */
+const escapeHtml = (s) =>
+  String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+module.exports = { sendMail, smtpConfigurado, escapeHtml };

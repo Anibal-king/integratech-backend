@@ -121,9 +121,11 @@ GET /api/legal
 
 ### Formularios públicos (desde el navegador)
 ```
-POST /api/contacto       Body: { nombre, correo?, telefono?, empresa?, mensaje }
+POST /api/contacto       Body: { nombre, correo?, telefono?, empresa?, mensaje }  (correo o teléfono obligatorio)
 POST /api/lead-chatbot   Body: ver docs/chatbot-flujo.md
 ```
+- Ambos guardan en la base y notifican por correo a `MAIL_TO_LEADS` si SMTP está configurado
+  (`emailSent` en la respuesta). Sin SMTP el envío igual se guarda.
 - Límite: 5 envíos por IP cada 10 minutos (429 al superarlo).
 - Longitud máxima por campo; 400 si se excede. Cuerpo máximo: 16 KB.
 - CORS: solo los orígenes de `CORS_ORIGIN`.
