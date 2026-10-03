@@ -144,7 +144,20 @@ POST /api/admin/logout   → 204, borra la sesión de la base y la cookie
 GET  /api/admin/me       → { correo } o 401
 GET  /api/contacto       → mensajes del formulario (requiere sesión)
 GET  /api/lead-chatbot   → leads del chatbot (requiere sesión)
+
+GET   /api/admin/solicitudes?estado=&origen=&q=&pagina=1&por_pagina=20
+      → { items, total, pagina, por_pagina }  formulario + chatbot, más recientes primero
+GET   /api/admin/solicitudes/:origen/:id      → una solicitud (origen: formulario | chatbot)
+PATCH /api/admin/solicitudes/:origen/:id      Body: { estado?, notas? } → solicitud actualizada
+GET   /api/admin/estadisticas
+      → { total, sin_atender, mes_actual, por_mes (6 meses × origen), por_estado }
 ```
+- **Estados:** `nuevo` (por defecto), `contactado`, `cotizado`, `cerrado`, `descartado`.
+  Columnas `estado`, `notas` y `fecha_actualizacion` en `mensajes_contacto` y
+  `leads_chatbot`; `db/index.js` las agrega a bases existentes al arrancar (o con
+  `npm run db:migrate`) sin tocar los datos.
+- **Búsqueda (`q`):** texto literal en nombre, empresa, correo, teléfono, mensaje,
+  respuestas del chatbot y notas. **Meses:** se cuentan en hora de El Salvador (UTC-6).
 - **Origen:** todas exigen un header `Origin` incluido en `CORS_ORIGIN`; si falta o no
   coincide, 403. El navegador lo envía siempre porque el panel y la API están en
   orígenes distintos. Con `curl` hay que añadirlo: `-H "Origin: http://localhost:4321"`.

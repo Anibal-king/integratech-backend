@@ -112,7 +112,12 @@ CREATE TABLE IF NOT EXISTS mensajes_contacto (
   telefono TEXT,
   empresa TEXT,
   mensaje TEXT NOT NULL,
-  fecha_creacion TEXT DEFAULT (datetime('now'))
+  fecha_creacion TEXT DEFAULT (datetime('now')),
+  -- Seguimiento en el panel (ver ESTADOS_SOLICITUD en db/index.js)
+  estado TEXT NOT NULL DEFAULT 'nuevo'
+    CHECK (estado IN ('nuevo', 'contactado', 'cotizado', 'cerrado', 'descartado')),
+  notas TEXT,                           -- notas internas del equipo
+  fecha_actualizacion TEXT              -- último cambio de estado o notas
 );
 
 -- Leads capturados por el chatbot de cotización del sitio web
@@ -128,7 +133,11 @@ CREATE TABLE IF NOT EXISTS leads_chatbot (
   telefono TEXT,
   origen TEXT DEFAULT 'chatbot',        -- 'chatbot' | 'whatsapp'
   correo_enviado INTEGER DEFAULT 0,     -- 1 si se logró notificar por email
-  fecha_creacion TEXT DEFAULT (datetime('now'))
+  fecha_creacion TEXT DEFAULT (datetime('now')),
+  estado TEXT NOT NULL DEFAULT 'nuevo'
+    CHECK (estado IN ('nuevo', 'contactado', 'cotizado', 'cerrado', 'descartado')),
+  notas TEXT,
+  fecha_actualizacion TEXT
 );
 
 -- Usuarios del panel de administración. Se crean solo con `npm run crear-admin`

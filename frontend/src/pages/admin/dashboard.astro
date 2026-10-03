@@ -1,279 +1,381 @@
 ---
-import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminShell from '../../components/admin/AdminShell.astro';
+import Vista from '../../components/admin/Vista.astro';
+import Icono from '../../components/admin/Icono.astro';
+
+// Las cifras se llenan en el navegador tras confirmar la sesión: el HTML no lleva datos.
+const TARJETAS = [
+  { id: 'sin_atender', titulo: 'Sin atender', icono: 'alerta', nota: 'en estado Nuevo', href: '/admin/mensajes?estado=nuevo' },
+  { id: 'mes', titulo: 'Este mes', icono: 'reloj', nota: '', href: null },
+  { id: 'seguimiento', titulo: 'En seguimiento', icono: 'seguimiento', nota: 'contactadas o cotizadas', href: null },
+  { id: 'total', titulo: 'Total recibidas', icono: 'bandeja', nota: 'formulario y chatbot', href: '/admin/mensajes' },
+] as const;
 ---
 
-<AdminLayout title="Solicitudes">
-  <!-- Mientras no se confirma la sesión solo se ve este aviso; el panel está oculto y vacío. -->
-  <p class="admin-cargando" data-cargando>Verificando sesión…</p>
+<AdminShell activo="resumen" titulo="Resumen">
+  <Vista id="estadisticas" cargando="Cargando cifras…" vacio="Aún no hay solicitudes. Las del formulario de contacto y el chatbot aparecerán aquí.">
+    <section class="kpis" aria-label="Cifras clave">
+      {TARJETAS.map((t) => (
+        <article class="admin-card kpi" data-kpi={t.id}>
+          <div class="kpi__icono"><Icono nombre={t.icono} /></div>
+          <div class="kpi__txt">
+            <h2 class="kpi__titulo">{t.titulo}</h2>
+            <p class="kpi__valor" data-kpi-valor>—</p>
+            <p class="kpi__nota" data-kpi-nota>{t.nota}</p>
+          </div>
+          {t.href && <a class="kpi__link" href={t.href} aria-label={`Ver: ${t.titulo}`}>Ver</a>}
+        </article>
+      ))}
+    </section>
 
-  <div data-panel hidden>
-    <header class="admin-bar">
-      <div class="container admin-bar__inner">
-        <span class="admin-bar__brand">Panel SIIE</span>
-        <div class="dash__user">
-          <span class="dash__correo" data-usuario></span>
-          <button type="button" class="btn btn--secondary dash__logout" data-logout>Cerrar sesión</button>
+    <div class="graficas">
+      <section class="admin-card grafica">
+        <div class="admin-card__head">
+          <h2>Solicitudes por mes</h2>
+          <ul class="leyenda" aria-hidden="true">
+            <li><span class="punto punto--formulario"></span>Formulario</li>
+            <li><span class="punto punto--chatbot"></span>Chatbot</li>
+          </ul>
         </div>
-      </div>
-    </header>
-
-    <main class="container dash">
-      <div class="dash__head">
-        <div>
-          <h1>Solicitudes de cotización</h1>
-          <p class="dash__resumen" data-resumen></p>
+        <div class="admin-card__body">
+          <div class="grafica__lienzo grafica__lienzo--barras">
+            <canvas data-grafica-meses role="img"></canvas>
+          </div>
         </div>
-        <button type="button" class="btn btn--secondary" data-recargar>Actualizar</button>
-      </div>
+      </section>
 
-      <p class="admin-alert" data-error role="alert" hidden></p>
+      <section class="admin-card grafica">
+        <div class="admin-card__head"><h2>Por estado</h2></div>
+        <div class="admin-card__body dona">
+          <div class="grafica__lienzo grafica__lienzo--dona">
+            <canvas data-grafica-estados role="img"></canvas>
+            <p class="dona__centro"><strong data-dona-total></strong><span>total</span></p>
+          </div>
+          <ul class="dona__leyenda" data-leyenda-estados></ul>
+        </div>
+      </section>
+    </div>
+  </Vista>
 
-      <div class="admin-card dash__tabla-wrap">
-        <table class="dash__tabla">
-          <thead>
-            <tr>
-              <th scope="col">Fecha</th>
-              <th scope="col">Origen</th>
-              <th scope="col">Nombre</th>
-              <th scope="col">Empresa</th>
-              <th scope="col">Correo</th>
-              <th scope="col">Teléfono</th>
-              <th scope="col">Mensaje</th>
-            </tr>
-          </thead>
-          <tbody data-filas></tbody>
-        </table>
-        <p class="dash__vacio" data-vacio hidden>Aún no hay solicitudes.</p>
-      </div>
-    </main>
-  </div>
-</AdminLayout>
+  <section class="admin-card recientes">
+    <div class="admin-card__head">
+      <h2>Solicitudes recientes</h2>
+      <a href="/admin/mensajes" class="btn btn--secondary btn--sm">Ver todas</a>
+    </div>
+    <Vista id="recientes" cargando="Cargando solicitudes…" vacio="Aún no hay solicitudes.">
+      <table class="tabla-recientes">
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Origen</th>
+            <th scope="col">Estado</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody data-recientes></tbody>
+      </table>
+    </Vista>
+  </section>
+</AdminShell>
 
 <style>
-  .dash__user { display: flex; align-items: center; gap: 0.9rem; min-width: 0; }
-  .dash__correo {
-    color: var(--color-brand-blue);
-    font-size: 0.88rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .dash__logout, .dash__head .btn { padding: 0.5rem 1rem; }
-
-  .dash { padding-block: 2rem 3rem; display: flex; flex-direction: column; gap: 1.25rem; }
-  .dash__head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+  /* ---------- Cifras clave ---------- */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
     gap: 1rem;
-    flex-wrap: wrap;
   }
-  .dash__head h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); margin: 0 0 0.25rem; }
-  .dash__resumen { margin: 0; color: var(--text-muted); font-size: 0.92rem; }
+  .kpi {
+    position: relative;
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+    padding: 1.1rem 1.2rem;
+  }
+  .kpi__icono {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--color-brand-blue-tint);
+    color: var(--color-brand-blue);
+  }
+  .kpi[data-kpi='sin_atender'] .kpi__icono {
+    background: color-mix(in srgb, var(--color-accent) 16%, var(--color-white));
+    color: var(--color-navy);
+  }
+  .kpi__titulo { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+  .kpi__valor { margin: 0.1rem 0 0; font-size: 1.9rem; font-weight: 700; line-height: 1.15; color: var(--heading); }
+  .kpi__nota { margin: 0.15rem 0 0; font-size: 0.8rem; color: var(--text-muted); }
+  .kpi__link { position: absolute; top: 1rem; right: 1.1rem; font-size: 0.82rem; font-weight: 600; }
 
-  .dash__tabla-wrap { overflow-x: auto; }
-  .dash__tabla {
-    width: 100%;
-    min-width: 900px;
-    border-collapse: collapse;
+  /* ---------- Gráficas ---------- */
+  .graficas {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .leyenda { display: flex; gap: 1rem; list-style: none; margin: 0; padding: 0; font-size: 0.8rem; color: var(--text-muted); }
+  .leyenda li { display: flex; align-items: center; gap: 0.4rem; margin: 0; }
+  .punto { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .punto--formulario { background: var(--serie-formulario); }
+  .punto--chatbot { background: var(--serie-chatbot); }
+
+  .grafica { display: flex; flex-direction: column; }
+  .grafica > .admin-card__body { flex: 1; display: flex; }
+  .grafica__lienzo { position: relative; }
+  .grafica__lienzo--barras { flex: 1; min-height: 280px; }
+  .grafica__lienzo--dona { width: 200px; height: 200px; flex-shrink: 0; }
+  .grafica > .admin-card__body.dona { display: flex; }
+  .dona { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
+  .dona__centro {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    line-height: 1.1;
+  }
+  .dona__centro strong { font-size: 1.7rem; color: var(--heading); }
+  .dona__centro span { font-size: 0.78rem; color: var(--text-muted); }
+  .dona__leyenda { list-style: none; margin: 0; padding: 0; min-width: 150px; flex: 1; }
+  .dona__leyenda :global(li) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
     font-size: 0.88rem;
   }
-  .dash__tabla th,
-  .dash__tabla :global(td) {
+  .dona__leyenda :global(li:last-child) { border-bottom: 0; }
+  .dona__leyenda :global(strong) { color: var(--heading); }
+
+  /* ---------- Recientes ---------- */
+  .recientes { margin-top: 1rem; }
+  .recientes :global(.vista) { padding: 0.5rem 0 0.25rem; }
+  .tabla-recientes { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .tabla-recientes th {
     text-align: left;
-    vertical-align: top;
-    padding: 0.7rem 0.9rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .dash__tabla th {
-    position: sticky;
-    top: 0;
-    background: var(--surface-muted);
-    color: var(--heading);
-    font-size: 0.78rem;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    white-space: nowrap;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
   }
-  .dash__tabla :global(tr:last-child td) { border-bottom: 0; }
-  .dash__tabla :global(.c-fecha),
-  .dash__tabla :global(.c-tel) { white-space: nowrap; }
-  .dash__tabla :global(.c-msg) { min-width: 280px; max-width: 420px; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .dash__tabla :global(.c-vacio) { color: var(--text-muted); }
+  .tabla-recientes :global(td) { padding: 0.7rem 1.25rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .tabla-recientes :global(tr:last-child td) { border-bottom: 0; }
+  .tabla-recientes :global(.c-nombre strong) { display: block; color: var(--heading); }
+  .tabla-recientes :global(.c-nombre small) { color: var(--text-muted); }
+  .tabla-recientes :global(.c-fecha) { white-space: nowrap; color: var(--text-muted); }
+  .tabla-recientes :global(.c-accion) { text-align: right; }
 
-  .dash__tabla :global(.origen) {
-    display: inline-block;
-    padding: 0.15rem 0.55rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    white-space: nowrap;
-    border: 1px solid var(--border-strong);
-    color: var(--heading);
+  @media (max-width: 1100px) {
+    .graficas { grid-template-columns: 1fr; }
   }
-  .dash__tabla :global(.origen--chatbot) { background: var(--color-brand-blue-tint); border-color: transparent; }
+  /* Móvil: cifras en 2 columnas y cada fila de la tabla como tarjeta */
+  @media (max-width: 640px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+    .kpi { flex-direction: column; gap: 0.5rem; padding: 0.9rem; }
+    .kpi__icono { width: 34px; height: 34px; border-radius: 10px; }
+    .kpi__valor { font-size: 1.6rem; }
+    .kpi__link { top: 0.9rem; right: 0.9rem; }
 
-  .dash__vacio { margin: 0; padding: 2rem 1rem; text-align: center; color: var(--text-muted); }
-
-  @media (max-width: 600px) {
-    .dash__correo { display: none; }
+    .tabla-recientes thead { display: none; }
+    .tabla-recientes :global(tr) {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem 0.5rem;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .tabla-recientes :global(tr:last-child) { border-bottom: 0; }
+    .tabla-recientes :global(td) { padding: 0; border: 0; }
+    .tabla-recientes :global(.c-nombre) { order: 1; flex: 1 1 0; min-width: 0; }
+    .tabla-recientes :global(.c-accion) { order: 2; }
+    .tabla-recientes :global(.c-fecha) { order: 3; flex-basis: 100%; font-size: 0.8rem; }
+    .tabla-recientes :global(.c-chips) { order: 4; }
+    .grafica__lienzo--barras { min-height: 220px; }
   }
 </style>
 
 <script>
-  import { admin, AdminError, LOGIN_PATH, type LeadChatbot, type MensajeContacto } from '../../lib/admin';
+  import {
+    Chart,
+    BarController,
+    BarElement,
+    CategoryScale,
+    LinearScale,
+    DoughnutController,
+    ArcElement,
+    Tooltip,
+  } from 'chart.js';
+  import { admin, type EstadisticasAdmin, type SolicitudAdmin } from '../../lib/admin';
+  import {
+    panelListo,
+    vista,
+    mensajeError,
+    esSesionExpirada,
+    ESTADOS,
+    colorEstado,
+    chipEstado,
+    chipOrigen,
+    claveSolicitud,
+    fechaCorta,
+    mesCorto,
+    mesLargo,
+  } from '../../lib/admin-ui';
 
-  interface Solicitud {
-    fecha: Date;
-    origen: 'Formulario' | 'Chatbot';
-    nombre: string;
-    empresa: string | null;
-    correo: string | null;
-    telefono: string | null;
-    mensaje: string;
-  }
+  // Solo los módulos que se usan: el resto de Chart.js no entra al bundle.
+  Chart.register(BarController, BarElement, CategoryScale, LinearScale, DoughnutController, ArcElement, Tooltip);
 
   const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
-  const cargando = $('[data-cargando]');
-  const panel = $('[data-panel]');
-  const filas = $('[data-filas]');
-  const vacio = $('[data-vacio]');
-  const resumen = $('[data-resumen]');
-  const errorBox = $('[data-error]');
-  const recargar = $<HTMLButtonElement>('[data-recargar]');
+  const vistaEst = $('[data-vista-de="estadisticas"]');
+  const vistaRec = $('[data-vista-de="recientes"]');
+  const css = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const animar = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /** Las fechas de SQLite son UTC sin zona ('YYYY-MM-DD HH:MM:SS'). */
-  const fechaUTC = (s: string) => new Date(`${s.replace(' ', 'T')}Z`);
-  const formatoFecha = new Intl.DateTimeFormat('es-SV', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'America/El_Salvador',
-  });
+  let graficaMeses: Chart | null = null;
+  let graficaEstados: Chart | null = null;
 
-  const deContacto = (m: MensajeContacto): Solicitud => ({
-    fecha: fechaUTC(m.fecha_creacion),
-    origen: 'Formulario',
-    nombre: m.nombre,
-    empresa: m.empresa,
-    correo: m.correo,
-    telefono: m.telefono,
-    mensaje: m.mensaje,
-  });
-
-  // El lead del chatbot no trae un mensaje libre: se arma con sus respuestas.
-  const deLead = (l: LeadChatbot): Solicitud => ({
-    fecha: fechaUTC(l.fecha_creacion),
-    origen: 'Chatbot',
-    nombre: l.nombre,
-    empresa: l.empresa,
-    correo: l.correo,
-    telefono: l.telefono,
-    mensaje: [
-      l.tipo_servicio && `Servicio: ${l.tipo_servicio}`,
-      l.alcance && `Alcance: ${l.alcance}`,
-      l.ubicacion && `Ubicación: ${l.ubicacion}`,
-      l.plazo && `Plazo: ${l.plazo}`,
-    ]
-      .filter(Boolean)
-      .join('\n'),
-  });
-
-  /** Celda con texto (nunca innerHTML: los datos los escribieron visitantes del sitio). */
-  function celda(clase: string, contenido: string | Node | null) {
-    const td = document.createElement('td');
-    td.className = clase;
-    if (contenido === null || contenido === '') {
-      td.textContent = '—';
-      td.classList.add('c-vacio');
-    } else {
-      td.append(contenido);
-    }
-    return td;
+  function kpi(id: string, valor: number, nota?: string) {
+    const card = $(`[data-kpi="${id}"]`);
+    card.querySelector('[data-kpi-valor]')!.textContent = valor.toLocaleString('es-SV');
+    if (nota) card.querySelector('[data-kpi-nota]')!.textContent = nota;
   }
 
-  function enlace(href: string, texto: string) {
-    const a = document.createElement('a');
-    a.href = href;
-    a.textContent = texto;
-    return a;
-  }
+  function pintarEstadisticas(e: EstadisticasAdmin) {
+    kpi('sin_atender', e.sin_atender);
+    kpi('mes', e.mes_actual.total, mesLargo(e.mes_actual.mes));
+    kpi('seguimiento', e.por_estado.contactado + e.por_estado.cotizado);
+    kpi('total', e.total);
 
-  function pintar(solicitudes: Solicitud[]) {
-    filas.replaceChildren(
-      ...solicitudes.map((s) => {
-        const tr = document.createElement('tr');
-        const origen = document.createElement('span');
-        origen.className = `origen origen--${s.origen === 'Chatbot' ? 'chatbot' : 'form'}`;
-        origen.textContent = s.origen;
-        tr.append(
-          celda('c-fecha', formatoFecha.format(s.fecha)),
-          celda('c-origen', origen),
-          celda('c-nombre', s.nombre),
-          celda('c-empresa', s.empresa),
-          celda('c-correo', s.correo ? enlace(`mailto:${s.correo}`, s.correo) : null),
-          celda('c-tel', s.telefono ? enlace(`tel:${s.telefono.replace(/[^\d+]/g, '')}`, s.telefono) : null),
-          celda('c-msg', s.mensaje)
-        );
-        return tr;
+    // Barras: solicitudes por mes, formulario y chatbot
+    const lienzoMeses = $<HTMLCanvasElement>('[data-grafica-meses]');
+    lienzoMeses.setAttribute(
+      'aria-label',
+      'Solicitudes por mes: ' +
+        e.por_mes.map((m) => `${mesLargo(m.mes)}, ${m.formulario} del formulario y ${m.chatbot} del chatbot`).join('; ')
+    );
+    graficaMeses?.destroy();
+    graficaMeses = new Chart(lienzoMeses, {
+      type: 'bar',
+      data: {
+        labels: e.por_mes.map((m) => mesCorto(m.mes)),
+        datasets: [
+          { label: 'Formulario', data: e.por_mes.map((m) => m.formulario), backgroundColor: css('--serie-formulario'), borderRadius: 6, maxBarThickness: 28 },
+          { label: 'Chatbot', data: e.por_mes.map((m) => m.chatbot), backgroundColor: css('--serie-chatbot'), borderRadius: 6, maxBarThickness: 28 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: animar ? undefined : false,
+        plugins: { tooltip: { mode: 'index', intersect: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: css('--text-muted') } },
+          y: { beginAtZero: true, ticks: { precision: 0, color: css('--text-muted') }, grid: { color: css('--border') } },
+        },
+      },
+    });
+
+    // Dona: conteo por estado (con leyenda propia, legible y accesible)
+    const lienzoEstados = $<HTMLCanvasElement>('[data-grafica-estados]');
+    const valores = ESTADOS.map((s) => e.por_estado[s.valor]);
+    lienzoEstados.setAttribute('aria-label', 'Solicitudes por estado: ' + ESTADOS.map((s, i) => `${s.etiqueta} ${valores[i]}`).join(', '));
+    $('[data-dona-total]').textContent = e.total.toLocaleString('es-SV');
+    graficaEstados?.destroy();
+    graficaEstados = new Chart(lienzoEstados, {
+      type: 'doughnut',
+      data: {
+        labels: ESTADOS.map((s) => s.etiqueta),
+        datasets: [{ data: valores, backgroundColor: ESTADOS.map((s) => colorEstado(s.valor)), borderColor: css('--surface-card'), borderWidth: 2 }],
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '68%', animation: animar ? undefined : false },
+    });
+
+    $('[data-leyenda-estados]').replaceChildren(
+      ...ESTADOS.map((s, i) => {
+        const li = document.createElement('li');
+        const n = document.createElement('strong');
+        n.textContent = String(valores[i]);
+        li.append(chipEstado(s.valor), n);
+        return li;
       })
     );
-    vacio.hidden = solicitudes.length > 0;
-    const nForm = solicitudes.filter((s) => s.origen === 'Formulario').length;
-    resumen.textContent = `${solicitudes.length} en total · ${nForm} del formulario · ${solicitudes.length - nForm} del chatbot`;
   }
 
-  async function cargarSolicitudes() {
-    errorBox.hidden = true;
-    recargar.disabled = true;
+  function filaReciente(s: SolicitudAdmin) {
+    const tr = document.createElement('tr');
+    const td = (clase: string, ...hijos: (Node | string)[]) => {
+      const c = document.createElement('td');
+      c.className = clase;
+      c.append(...hijos);
+      return c;
+    };
+    const nombre = document.createElement('strong');
+    nombre.textContent = s.nombre;
+    const empresa = document.createElement('small');
+    empresa.textContent = s.empresa ?? '';
+    const ver = document.createElement('a');
+    ver.className = 'btn btn--secondary btn--sm';
+    ver.href = `/admin/mensajes?ver=${claveSolicitud(s.origen, s.id)}`;
+    ver.textContent = 'Ver';
+    ver.setAttribute('aria-label', `Ver solicitud de ${s.nombre}`);
+
+    tr.append(
+      td('c-fecha', fechaCorta(s.fecha_creacion)),
+      td('c-nombre', nombre, empresa),
+      td('c-chips c-origen', chipOrigen(s.origen)),
+      td('c-chips c-estado', chipEstado(s.estado)),
+      td('c-accion', ver)
+    );
+    return tr;
+  }
+
+  async function cargarEstadisticas() {
+    vista(vistaEst, 'cargando');
     try {
-      const [mensajes, leads] = await Promise.all([admin.mensajesContacto(), admin.leadsChatbot()]);
-      const todas = [...mensajes.map(deContacto), ...leads.map(deLead)];
-      todas.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
-      pintar(todas);
+      const e = await admin.estadisticas();
+      if (e.total === 0) return vista(vistaEst, 'vacio');
+      // Se muestra antes de dibujar: Chart.js necesita el lienzo visible para medirlo.
+      vista(vistaEst, 'listo');
+      pintarEstadisticas(e);
     } catch (err) {
-      // Un 401 ya está redirigiendo al login.
-      if (err instanceof AdminError && err.status === 401) return;
-      errorBox.textContent =
-        err instanceof AdminError && err.status === 0
-          ? 'No se pudo conectar con el servidor. Intenta de nuevo.'
-          : 'No se pudieron cargar las solicitudes. Intenta de nuevo.';
-      errorBox.hidden = false;
-    } finally {
-      recargar.disabled = false;
+      if (!esSesionExpirada(err)) vista(vistaEst, 'error', mensajeError(err, 'No se pudieron cargar las cifras.'));
     }
   }
 
-  async function iniciar() {
-    let usuario;
+  async function cargarRecientes() {
+    vista(vistaRec, 'cargando');
     try {
-      usuario = await admin.sesion();
-    } catch {
-      cargando.textContent = 'No se pudo conectar con el servidor. Recarga la página para reintentar.';
-      return;
+      const { items } = await admin.solicitudes({ por_pagina: 6 });
+      if (items.length === 0) return vista(vistaRec, 'vacio');
+      $('[data-recientes]').replaceChildren(...items.map(filaReciente));
+      vista(vistaRec, 'listo');
+    } catch (err) {
+      if (!esSesionExpirada(err)) vista(vistaRec, 'error', mensajeError(err, 'No se pudieron cargar las solicitudes.'));
     }
-    if (!usuario) {
-      location.replace(LOGIN_PATH);
-      return;
-    }
-
-    $('[data-usuario]').textContent = usuario.correo;
-    cargando.remove();
-    panel.hidden = false;
-    await cargarSolicitudes();
   }
 
-  recargar.addEventListener('click', cargarSolicitudes);
-
-  $<HTMLButtonElement>('[data-logout]').addEventListener('click', async (e) => {
-    const boton = e.currentTarget as HTMLButtonElement;
-    boton.disabled = true;
-    boton.textContent = 'Cerrando…';
-    try {
-      await admin.logout();
-    } finally {
-      location.replace(LOGIN_PATH);
-    }
+  document.addEventListener('click', (e) => {
+    const id = (e.target as HTMLElement).closest<HTMLElement>('[data-reintentar]')?.dataset.reintentar;
+    if (id === 'estadisticas') cargarEstadisticas();
+    if (id === 'recientes') cargarRecientes();
   });
 
-  iniciar();
+  panelListo().then(() => {
+    cargarEstadisticas();
+    cargarRecientes();
+  });
 </script>

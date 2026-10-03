@@ -93,8 +93,15 @@ Si la base no existe o no tiene contenido, el backend ejecuta el seed al arranca
 
 ## Panel de administración
 
-`/admin/login` y `/admin/dashboard` (no enlazados desde el sitio, con `noindex`).
-Muestran, en solo lectura, las solicitudes del formulario de contacto y del chatbot.
+`/admin/login` y las páginas del panel (no enlazadas desde el sitio, con `noindex`):
+
+- **Resumen** (`/admin/dashboard`): cifras clave, solicitudes por mes, conteo por estado y recientes.
+- **Mensajes** (`/admin/mensajes`): todas las solicitudes del formulario y del chatbot con
+  búsqueda, filtros y paginación; en el detalle se cambia el estado, se escriben notas
+  internas y se responde por correo, teléfono o WhatsApp.
+- **Calendario** y **Servicios**: próximamente.
+
+Las gráficas usan Chart.js, que solo carga la página del Resumen.
 
 - **Primer usuario:** con el backend instalado, `npm run crear-admin` y responde
   correo y contraseña (mínimo 12 caracteres). No hay registro público ni usuarios por defecto.

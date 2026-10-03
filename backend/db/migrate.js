@@ -1,4 +1,4 @@
-// npm run db:migrate — crea las tablas que falten sin tocar los datos existentes.
+// npm run db:migrate — crea las tablas y columnas que falten sin tocar los datos existentes.
 const { initSchema, DB_PATH } = require('./index');
 
 initSchema();

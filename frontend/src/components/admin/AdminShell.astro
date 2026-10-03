@@ -1,0 +1,299 @@
+---
+/**
+ * Estructura de las páginas internas del panel: barra lateral oscura con
+ * navegación, barra superior con el usuario y área de contenido.
+ *
+ * Todo empieza oculto: solo se ve "Verificando sesión…" hasta que /api/admin/me
+ * confirma la sesión (panelListo). Sin sesión se redirige al login sin mostrar
+ * nada. Las páginas esperan panelListo() antes de pedir sus datos.
+ */
+import { Image } from 'astro:assets';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import Icono, { type NombreIcono } from './Icono.astro';
+import { logoHorizontal } from '../../lib/imagenes';
+
+export type SeccionPanel = 'resumen' | 'mensajes' | 'calendario' | 'servicios';
+
+interface Props {
+  activo: SeccionPanel;
+  titulo: string;
+}
+
+const { activo, titulo } = Astro.props;
+
+const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }[] = [
+  { id: 'resumen', href: '/admin/dashboard', label: 'Resumen', icono: 'resumen' },
+  { id: 'mensajes', href: '/admin/mensajes', label: 'Mensajes', icono: 'mensajes' },
+  { id: 'calendario', href: '/admin/calendario', label: 'Calendario', icono: 'calendario' },
+  { id: 'servicios', href: '/admin/servicios', label: 'Servicios', icono: 'servicios' },
+];
+---
+
+<AdminLayout title={titulo}>
+  <div class="admin-cargando" data-shell-cargando role="status">
+    <p data-shell-cargando-texto>Verificando sesión…</p>
+  </div>
+
+  <div class="shell" data-shell hidden>
+    <aside class="sidebar" id="admin-sidebar" data-sidebar aria-label="Navegación del panel">
+      <div class="sidebar__brand">
+        <a href="/admin/dashboard" class="sidebar__logo" aria-label="Panel SIIE - Resumen">
+          <Image src={logoHorizontal} alt="Servicios Integrales de Ingeniería" widths={[200, 400]} sizes="200px" loading="eager" />
+        </a>
+        <button type="button" class="sidebar__cerrar" data-sidebar-cerrar aria-label="Cerrar menú">
+          <Icono nombre="cerrar" />
+        </button>
+      </div>
+      <p class="sidebar__titulo">Panel de administración</p>
+      <nav>
+        <ul class="sidebar__nav">
+          {NAV.map((n) => (
+            <li>
+              <a href={n.href} class:list={['sidebar__link', { 'is-active': n.id === activo }]} aria-current={n.id === activo ? 'page' : undefined}>
+                <Icono nombre={n.icono} />
+                <span>{n.label}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </aside>
+    <div class="shell__fondo" data-sidebar-fondo hidden></div>
+
+    <div class="shell__main">
+      <header class="topbar">
+        <button
+          type="button"
+          class="topbar__menu"
+          data-sidebar-abrir
+          aria-label="Abrir menú"
+          aria-controls="admin-sidebar"
+          aria-expanded="false"
+        >
+          <Icono nombre="menu" />
+        </button>
+        <h1 class="topbar__titulo">{titulo}</h1>
+        <div class="topbar__usuario">
+          <span class="topbar__avatar" data-usuario-inicial aria-hidden="true"></span>
+          <span class="topbar__correo" data-usuario-correo></span>
+          <button type="button" class="btn btn--secondary btn--sm topbar__salir" data-logout aria-label="Cerrar sesión">
+            <Icono nombre="salir" tamano={16} />
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="contenido">
+        <slot />
+      </main>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .shell { min-height: 100vh; }
+
+  /* ---------- Barra lateral ---------- */
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 40;
+    width: var(--admin-sidebar);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem 0.85rem;
+    background: var(--color-navy);
+    color: var(--color-text-on-dark);
+    overflow-y: auto;
+  }
+  .sidebar__brand { display: flex; align-items: center; gap: 0.5rem; }
+  /* El logo es un JPG con fondo blanco: va sobre una placa blanca */
+  .sidebar__logo {
+    flex: 1;
+    display: block;
+    padding: 0.55rem 0.7rem;
+    border-radius: var(--radius);
+    background: var(--media-plate);
+  }
+  .sidebar__logo img { width: 100%; height: auto; }
+  .sidebar__cerrar { display: none; }
+  .sidebar__titulo {
+    margin: 0.9rem 0.6rem 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-on-dark);
+    opacity: 0.75;
+  }
+  .sidebar__nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+  .sidebar__nav li { margin: 0; }
+  .sidebar__link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: var(--radius);
+    color: var(--color-text-on-dark);
+    font-weight: 500;
+    font-size: 0.95rem;
+    border-left: 3px solid transparent;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .sidebar__link:hover { background: color-mix(in srgb, var(--color-white) 8%, transparent); color: var(--color-white); text-decoration: none; }
+  .sidebar__link.is-active {
+    background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+    border-left-color: var(--color-accent);
+    color: var(--color-white);
+    font-weight: 600;
+  }
+  .sidebar__link.is-active :global(.icono) { color: var(--color-accent); }
+
+  /* ---------- Barra superior ---------- */
+  .shell__main { margin-left: var(--admin-sidebar); min-width: 0; }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    height: var(--admin-topbar);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 clamp(1rem, 3vw, 2rem);
+    background: var(--surface-card);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar__menu { display: none; }
+  .topbar__titulo { flex: 1; min-width: 0; margin: 0; font-size: 1.2rem; }
+  .topbar__usuario { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
+  .topbar__avatar {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--color-brand-blue-tint);
+    color: var(--color-brand-blue);
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .topbar__correo {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 240px;
+  }
+  .topbar__salir { flex-shrink: 0; }
+
+  .contenido { padding: clamp(1rem, 3vw, 2rem); max-width: 1400px; }
+
+  .topbar__menu,
+  .sidebar__cerrar {
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  /* ---------- Móvil: la barra lateral se vuelve un menú ---------- */
+  @media (max-width: 960px) {
+    .shell__main { margin-left: 0; }
+    .topbar__menu { display: grid; }
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.2s ease;
+      box-shadow: var(--shadow-lg);
+      visibility: hidden;
+    }
+    .sidebar.is-open { transform: none; visibility: visible; }
+    .sidebar__cerrar { display: grid; border-color: color-mix(in srgb, var(--color-white) 25%, transparent); }
+    .shell__fondo {
+      position: fixed;
+      inset: 0;
+      z-index: 35;
+      background: var(--overlay-backdrop);
+      opacity: 0.6;
+    }
+  }
+  @media (max-width: 600px) {
+    .topbar__correo { display: none; }
+    .topbar__titulo { font-size: 1.05rem; }
+    /* Solo el icono; el nombre accesible lo da aria-label */
+    .topbar__salir span { display: none; }
+    .topbar__salir { padding: 0.5rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+  }
+</style>
+
+<script>
+  import { admin, LOGIN_PATH } from '../../lib/admin';
+  import { panelListo } from '../../lib/admin-ui';
+
+  const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+  const shell = $('[data-shell]');
+  const cargando = $('[data-shell-cargando]');
+  const sidebar = $('[data-sidebar]');
+  const fondo = $('[data-sidebar-fondo]');
+  const abrir = $<HTMLButtonElement>('[data-sidebar-abrir]');
+
+  panelListo()
+    .then((usuario) => {
+      $('[data-usuario-correo]').textContent = usuario.correo;
+      $('[data-usuario-inicial]').textContent = usuario.correo.charAt(0);
+      cargando.remove();
+      shell.hidden = false;
+    })
+    .catch(() => {
+      $('[data-shell-cargando-texto]').textContent =
+        'No se pudo conectar con el servidor. Recarga la página para reintentar.';
+    });
+
+  // ---------- Menú móvil ----------
+  const movil = window.matchMedia('(max-width: 960px)');
+
+  function abrirMenu() {
+    sidebar.classList.add('is-open');
+    fondo.hidden = false;
+    abrir.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+    sidebar.querySelector<HTMLElement>('.sidebar__link.is-active, .sidebar__link')?.focus();
+  }
+  function cerrarMenu(devolverFoco = true) {
+    if (!sidebar.classList.contains('is-open')) return;
+    sidebar.classList.remove('is-open');
+    fondo.hidden = true;
+    abrir.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+    if (devolverFoco) abrir.focus();
+  }
+
+  abrir.addEventListener('click', abrirMenu);
+  $('[data-sidebar-cerrar]').addEventListener('click', () => cerrarMenu());
+  fondo.addEventListener('click', () => cerrarMenu());
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && movil.matches) cerrarMenu();
+  });
+  movil.addEventListener('change', (e) => !e.matches && cerrarMenu(false));
+
+  // ---------- Cerrar sesión ----------
+  $<HTMLButtonElement>('[data-logout]').addEventListener('click', async (e) => {
+    const boton = e.currentTarget as HTMLButtonElement;
+    boton.disabled = true;
+    try {
+      await admin.logout();
+    } finally {
+      location.replace(LOGIN_PATH);
+    }
+  });
+</script>

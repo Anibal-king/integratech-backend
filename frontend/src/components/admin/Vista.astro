@@ -1,0 +1,43 @@
+---
+/**
+ * Contenedor con los cuatro estados de un bloque de datos. El contenido "listo"
+ * va en el slot. Se cambia de estado desde el script con vista() de lib/admin-ui.
+ * El botón "Reintentar" emite un clic en [data-reintentar] que escucha la página.
+ */
+import Icono, { type NombreIcono } from './Icono.astro';
+
+interface Props {
+  id: string;
+  cargando?: string;
+  vacio?: string;
+  iconoVacio?: NombreIcono;
+  class?: string;
+}
+
+const {
+  id,
+  cargando = 'Cargando…',
+  vacio = 'No hay datos todavía.',
+  iconoVacio = 'bandeja',
+  class: clase,
+} = Astro.props;
+---
+
+<div class:list={['vista', clase]} data-vista-de={id} aria-live="polite" aria-busy="true">
+  <div class="estado-vista" data-vista="cargando">
+    <span class="spinner" aria-hidden="true"></span>
+    <p>{cargando}</p>
+  </div>
+  <div class="estado-vista" data-vista="vacio" hidden>
+    <Icono nombre={iconoVacio} tamano={32} />
+    <p data-vista-texto>{vacio}</p>
+  </div>
+  <div class="estado-vista estado-vista--error" data-vista="error" role="alert" hidden>
+    <Icono nombre="alerta" tamano={32} />
+    <p data-vista-texto>No se pudieron cargar los datos.</p>
+    <button type="button" class="btn btn--secondary" data-reintentar={id}>Reintentar</button>
+  </div>
+  <div data-vista="listo" hidden>
+    <slot />
+  </div>
+</div>

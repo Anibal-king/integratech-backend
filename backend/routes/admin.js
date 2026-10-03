@@ -10,6 +10,7 @@ const {
   requireAllowedOrigin,
   requireAdmin,
 } = require('../lib/auth');
+const panelRoutes = require('./admin-panel');
 
 /** @typedef {import('../../shared/api-types').AdminUsuario} AdminUsuario */
 
@@ -56,5 +57,8 @@ router.get('/me', requireAdmin, (req, res) => {
   const respuesta = { correo: req.admin.correo };
   res.json(respuesta);
 });
+
+// Solicitudes y estadísticas del panel (todas con requireAdmin).
+router.use(panelRoutes);
 
 module.exports = router;

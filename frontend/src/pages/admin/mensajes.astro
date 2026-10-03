@@ -1,0 +1,557 @@
+---
+import AdminShell from '../../components/admin/AdminShell.astro';
+import Vista from '../../components/admin/Vista.astro';
+import Icono from '../../components/admin/Icono.astro';
+import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
+---
+
+<AdminShell activo="mensajes" titulo="Mensajes">
+  <form class="admin-card filtros" data-filtros role="search" aria-label="Filtrar solicitudes">
+    <label class="filtros__buscar">
+      <span class="sr-only">Buscar</span>
+      <Icono nombre="buscar" tamano={18} />
+      <input type="search" name="q" maxlength="100" placeholder="Buscar por nombre, empresa, correo, teléfono o texto…" autocomplete="off" />
+    </label>
+    <label>
+      <span class="sr-only">Estado</span>
+      <select name="estado">
+        <option value="">Todos los estados</option>
+        {ESTADOS.map((e) => <option value={e.valor}>{e.etiqueta}</option>)}
+      </select>
+    </label>
+    <label>
+      <span class="sr-only">Origen</span>
+      <select name="origen">
+        <option value="">Todos los orígenes</option>
+        {ORIGENES.map((o) => <option value={o.valor}>{o.etiqueta}</option>)}
+      </select>
+    </label>
+    <button type="button" class="btn btn--secondary btn--sm" data-limpiar>Limpiar</button>
+  </form>
+
+  <section class="admin-card lista" aria-labelledby="lista-titulo">
+    <h2 id="lista-titulo" class="sr-only">Solicitudes</h2>
+    <Vista id="lista" cargando="Cargando solicitudes…" vacio="Aún no hay solicitudes.">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Solicitante</th>
+            <th scope="col">Contacto</th>
+            <th scope="col">Origen</th>
+            <th scope="col">Estado</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody data-filas></tbody>
+      </table>
+      <nav class="paginacion" aria-label="Paginación">
+        <p data-pag-info aria-live="polite"></p>
+        <div>
+          <button type="button" class="btn btn--secondary btn--sm" data-pag="anterior">Anterior</button>
+          <button type="button" class="btn btn--secondary btn--sm" data-pag="siguiente">Siguiente</button>
+        </div>
+      </nav>
+    </Vista>
+  </section>
+
+  <!-- Detalle de una solicitud: se llena en el navegador al abrirla -->
+  <dialog class="detalle" data-detalle aria-labelledby="detalle-titulo">
+    <div class="detalle__head">
+      <h2 id="detalle-titulo" data-d="nombre">Solicitud</h2>
+      <button type="button" class="detalle__cerrar" data-detalle-cerrar aria-label="Cerrar detalle">
+        <Icono nombre="cerrar" />
+      </button>
+    </div>
+    <Vista id="detalle" cargando="Cargando solicitud…" vacio="Esta solicitud ya no existe.">
+      <div class="detalle__body">
+        <p class="detalle__meta">
+          <span data-d="origen"></span>
+          <span data-d="estado"></span>
+          <span class="detalle__fecha" data-d="fecha"></span>
+        </p>
+
+        <div class="responder" data-responder>
+          <a class="btn btn--primary btn--sm" data-r="correo" hidden><Icono nombre="correo" tamano={16} />Correo</a>
+          <a class="btn btn--secondary btn--sm" data-r="telefono" hidden><Icono nombre="telefono" tamano={16} />Llamar</a>
+          <a class="btn btn--secondary btn--sm" data-r="whatsapp" target="_blank" rel="noopener noreferrer" hidden><Icono nombre="whatsapp" tamano={16} />WhatsApp</a>
+          <p class="responder__nada" data-r="nada" hidden>No dejó correo ni teléfono.</p>
+        </div>
+
+        <dl class="datos">
+          <div><dt>Empresa</dt><dd data-d="empresa"></dd></div>
+          <div><dt>Correo</dt><dd data-d="correo"></dd></div>
+          <div><dt>Teléfono</dt><dd data-d="telefono"></dd></div>
+        </dl>
+
+        <section class="detalle__seccion">
+          <h3>Mensaje</h3>
+          <p class="detalle__mensaje" data-d="mensaje"></p>
+          <dl class="datos datos--chatbot" data-d="chatbot" hidden>
+            <div><dt>Servicio</dt><dd data-d="tipo_servicio"></dd></div>
+            <div><dt>Alcance</dt><dd data-d="alcance"></dd></div>
+            <div><dt>Ubicación</dt><dd data-d="ubicacion"></dd></div>
+            <div><dt>Plazo</dt><dd data-d="plazo"></dd></div>
+          </dl>
+        </section>
+
+        <form class="detalle__seccion seguimiento" data-seguimiento>
+          <h3>Seguimiento</h3>
+          <label>
+            Estado
+            <select name="estado">
+              {ESTADOS.map((e) => <option value={e.valor}>{e.etiqueta}</option>)}
+            </select>
+          </label>
+          <label>
+            Notas internas
+            <textarea name="notas" rows="5" maxlength="5000" placeholder="Solo las ve el equipo. Ej.: llamado el lunes, pide visita técnica."></textarea>
+          </label>
+          <div class="seguimiento__acciones">
+            <button type="submit" class="btn btn--primary btn--sm" data-guardar>Guardar cambios</button>
+            <p class="seguimiento__estado" data-guardado role="status"></p>
+          </div>
+          <p class="detalle__actualizado" data-d="actualizado"></p>
+        </form>
+      </div>
+    </Vista>
+  </dialog>
+</AdminShell>
+
+<style>
+  /* ---------- Filtros ---------- */
+  .filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+  }
+  .filtros__buscar { position: relative; flex: 1 1 280px; display: block; }
+  .filtros__buscar :global(.icono) {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  .filtros__buscar input { width: 100%; padding-left: 2.2rem !important; }
+  .filtros select { min-width: 170px; }
+
+  /* ---------- Tabla ---------- */
+  .lista { margin-top: 1rem; overflow: hidden; }
+  .tabla { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .tabla th {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: var(--surface-muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .tabla :global(td) { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .tabla :global(tr.is-nuevo td:first-child) { box-shadow: inset 3px 0 0 var(--estado-nuevo); }
+  .tabla :global(.c-fecha) { white-space: nowrap; color: var(--text-muted); }
+  .tabla :global(.c-nombre strong) { display: block; color: var(--heading); }
+  .tabla :global(.c-nombre small),
+  .tabla :global(.c-contacto small) { display: block; color: var(--text-muted); font-size: 0.8rem; }
+  .tabla :global(.c-contacto) { max-width: 240px; overflow-wrap: anywhere; }
+  .tabla :global(.c-accion) { text-align: right; }
+
+  .paginacion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.8rem 1rem;
+  }
+  .paginacion p { margin: 0; font-size: 0.85rem; color: var(--text-muted); }
+  .paginacion div { display: flex; gap: 0.5rem; }
+
+  /* ---------- Detalle (panel lateral) ---------- */
+  .detalle {
+    margin: 0 0 0 auto;
+    width: min(520px, 100vw);
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    padding: 0;
+    border: 0;
+    background: var(--surface-card);
+    color: var(--text);
+    box-shadow: var(--shadow-lg);
+  }
+  .detalle::backdrop { background: var(--overlay-backdrop); opacity: 0.55; }
+  .detalle[open] { display: flex; flex-direction: column; }
+  .detalle__head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface-card);
+    border-bottom: 1px solid var(--border);
+  }
+  .detalle__head h2 { margin: 0; font-size: 1.2rem; overflow-wrap: anywhere; }
+  .detalle__cerrar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .detalle__body { padding: 1.1rem 1.25rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+  .detalle__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0; }
+  .detalle__fecha { font-size: 0.85rem; color: var(--text-muted); }
+
+  .responder { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .responder__nada { margin: 0; font-size: 0.88rem; color: var(--text-muted); }
+
+  .datos { margin: 0; display: grid; gap: 0.1rem; }
+  .datos div { display: grid; grid-template-columns: 110px 1fr; gap: 0.75rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
+  .datos dt { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); }
+  .datos dd { margin: 0; font-size: 0.92rem; overflow-wrap: anywhere; }
+  .datos--chatbot { margin-top: 0.25rem; }
+
+  .detalle__seccion h3 { font-size: 0.95rem; margin: 0 0 0.5rem; }
+  .detalle__mensaje {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius);
+    background: var(--surface-muted);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 0.92rem;
+  }
+
+  .seguimiento { display: flex; flex-direction: column; gap: 0.8rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .seguimiento label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; font-weight: 600; }
+  .seguimiento :is(select, textarea) { font-weight: 400; }
+  .seguimiento textarea { resize: vertical; }
+  .seguimiento__acciones { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .seguimiento__estado { margin: 0; font-size: 0.85rem; color: var(--text-muted); }
+  .seguimiento__estado.is-error { color: var(--danger-text); }
+  .detalle__actualizado { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+
+  /* ---------- Móvil ---------- */
+  @media (max-width: 760px) {
+    .filtros select { flex: 1 1 140px; min-width: 0; }
+    .tabla thead { display: none; }
+    .tabla :global(tr) {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem 0.5rem;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .tabla :global(tr.is-nuevo) { box-shadow: inset 3px 0 0 var(--estado-nuevo); }
+    .tabla :global(tr.is-nuevo td:first-child) { box-shadow: none; }
+    .tabla :global(td) { padding: 0; border: 0; }
+    .tabla :global(.c-nombre) { order: 1; flex: 1 1 0; min-width: 0; }
+    .tabla :global(.c-accion) { order: 2; }
+    .tabla :global(.c-contacto) { order: 3; flex-basis: 100%; max-width: none; font-size: 0.85rem; }
+    .tabla :global(.c-fecha) { order: 4; flex-basis: 100%; font-size: 0.8rem; }
+    .tabla :global(.c-chips) { order: 5; }
+    .datos div { grid-template-columns: 90px 1fr; }
+  }
+</style>
+
+<script>
+  import { admin, type EstadoSolicitud, type OrigenSolicitud, type SolicitudAdmin } from '../../lib/admin';
+  import {
+    panelListo,
+    vista,
+    mensajeError,
+    esSesionExpirada,
+    chipEstado,
+    chipOrigen,
+    claveSolicitud,
+    leerClave,
+    fechaHora,
+    fechaCorta,
+    enlaceCorreo,
+    enlaceTelefono,
+    enlaceWhatsApp,
+  } from '../../lib/admin-ui';
+
+  const POR_PAGINA = 20;
+  const $ = <T extends HTMLElement>(sel: string, raiz: ParentNode = document) => raiz.querySelector<T>(sel)!;
+
+  const form = $<HTMLFormElement>('[data-filtros]');
+  const vistaLista = $('[data-vista-de="lista"]');
+  const filas = $('[data-filas]');
+  const dialogo = $<HTMLDialogElement>('[data-detalle]');
+  const vistaDetalle = $('[data-vista-de="detalle"]');
+  const formSeg = $<HTMLFormElement>('[data-seguimiento]');
+  const guardado = $('[data-guardado]');
+
+  // ---------- Estado de la página (sincronizado con la URL) ----------
+
+  const url = new URL(location.href);
+  const estado = {
+    q: url.searchParams.get('q') ?? '',
+    estado: (url.searchParams.get('estado') ?? '') as EstadoSolicitud | '',
+    origen: (url.searchParams.get('origen') ?? '') as OrigenSolicitud | '',
+    pagina: Math.max(1, Number(url.searchParams.get('pagina')) || 1),
+  };
+  let abierta: { origen: OrigenSolicitud; id: number } | null = leerClave(url.searchParams.get('ver'));
+  let actual: SolicitudAdmin | null = null;
+
+  (form.elements.namedItem('q') as HTMLInputElement).value = estado.q;
+  (form.elements.namedItem('estado') as HTMLSelectElement).value = estado.estado;
+  (form.elements.namedItem('origen') as HTMLSelectElement).value = estado.origen;
+
+  function actualizarUrl() {
+    const u = new URL(location.pathname, location.origin);
+    if (estado.q) u.searchParams.set('q', estado.q);
+    if (estado.estado) u.searchParams.set('estado', estado.estado);
+    if (estado.origen) u.searchParams.set('origen', estado.origen);
+    if (estado.pagina > 1) u.searchParams.set('pagina', String(estado.pagina));
+    if (abierta) u.searchParams.set('ver', claveSolicitud(abierta.origen, abierta.id));
+    history.replaceState(null, '', u);
+  }
+
+  const hayFiltros = () => Boolean(estado.q || estado.estado || estado.origen);
+
+  // ---------- Lista ----------
+
+  function td(clase: string, ...hijos: (Node | string)[]) {
+    const c = document.createElement('td');
+    c.className = clase;
+    c.append(...hijos);
+    return c;
+  }
+  function texto(tag: 'strong' | 'small' | 'span', t: string) {
+    const el = document.createElement(tag);
+    el.textContent = t;
+    return el;
+  }
+
+  function fila(s: SolicitudAdmin) {
+    const tr = document.createElement('tr');
+    if (s.estado === 'nuevo') tr.className = 'is-nuevo';
+    const contacto = [s.correo && texto('span', s.correo), s.telefono && texto('small', s.telefono)].filter(Boolean) as Node[];
+    const ver = document.createElement('button');
+    ver.type = 'button';
+    ver.className = 'btn btn--secondary btn--sm';
+    ver.textContent = 'Ver';
+    ver.setAttribute('aria-label', `Ver solicitud de ${s.nombre}`);
+    ver.addEventListener('click', () => abrirDetalle(s.origen, s.id, ver));
+    tr.append(
+      td('c-fecha', fechaCorta(s.fecha_creacion)),
+      td('c-nombre', texto('strong', s.nombre), ...(s.empresa ? [texto('small', s.empresa)] : [])),
+      td('c-contacto', ...(contacto.length ? contacto : ['—'])),
+      td('c-chips c-origen', chipOrigen(s.origen)),
+      td('c-chips c-estado', chipEstado(s.estado)),
+      td('c-accion', ver)
+    );
+    return tr;
+  }
+
+  let pedido = 0; // descarta respuestas que llegan fuera de orden
+  async function cargarLista({ silencioso = false } = {}) {
+    const mio = ++pedido;
+    if (!silencioso) vista(vistaLista, 'cargando');
+    try {
+      const r = await admin.solicitudes({ ...estado, por_pagina: POR_PAGINA });
+      if (mio !== pedido) return;
+      // Página fuera de rango (p. ej. tras filtrar): volver a la última con datos.
+      if (r.items.length === 0 && r.total > 0 && estado.pagina > 1) {
+        estado.pagina = Math.ceil(r.total / POR_PAGINA);
+        actualizarUrl();
+        return cargarLista({ silencioso });
+      }
+      if (r.total === 0) {
+        vista(vistaLista, 'vacio', hayFiltros() ? 'No hay solicitudes que coincidan con la búsqueda o los filtros.' : 'Aún no hay solicitudes. Las del formulario de contacto y el chatbot aparecerán aquí.');
+        return;
+      }
+      filas.replaceChildren(...r.items.map(fila));
+      const desde = (r.pagina - 1) * r.por_pagina + 1;
+      const hasta = desde + r.items.length - 1;
+      $('[data-pag-info]').textContent = `Mostrando ${desde}–${hasta} de ${r.total}`;
+      $<HTMLButtonElement>('[data-pag="anterior"]').disabled = r.pagina <= 1;
+      $<HTMLButtonElement>('[data-pag="siguiente"]').disabled = hasta >= r.total;
+      vista(vistaLista, 'listo');
+    } catch (err) {
+      if (mio === pedido && !esSesionExpirada(err)) vista(vistaLista, 'error', mensajeError(err, 'No se pudieron cargar las solicitudes.'));
+    }
+  }
+
+  let espera: number | undefined;
+  form.addEventListener('input', (e) => {
+    const campo = e.target as HTMLInputElement | HTMLSelectElement;
+    const aplicar = () => {
+      estado.q = (form.elements.namedItem('q') as HTMLInputElement).value.trim();
+      estado.estado = (form.elements.namedItem('estado') as HTMLSelectElement).value as EstadoSolicitud | '';
+      estado.origen = (form.elements.namedItem('origen') as HTMLSelectElement).value as OrigenSolicitud | '';
+      estado.pagina = 1;
+      actualizarUrl();
+      cargarLista();
+    };
+    clearTimeout(espera);
+    // El texto espera a que se deje de escribir; los selectores aplican al instante.
+    if (campo.name === 'q') espera = window.setTimeout(aplicar, 300);
+    else aplicar();
+  });
+  form.addEventListener('submit', (e) => e.preventDefault());
+
+  $('[data-limpiar]').addEventListener('click', () => {
+    form.reset();
+    Object.assign(estado, { q: '', estado: '', origen: '', pagina: 1 });
+    actualizarUrl();
+    cargarLista();
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-pag]').forEach((b) =>
+    b.addEventListener('click', () => {
+      estado.pagina += b.dataset.pag === 'siguiente' ? 1 : -1;
+      actualizarUrl();
+      cargarLista();
+      $('.lista').scrollIntoView({ block: 'start', behavior: 'smooth' });
+    })
+  );
+
+  // ---------- Detalle ----------
+
+  let origenFoco: HTMLElement | null = null;
+
+  function poner(campo: string, valor: string | null) {
+    const el = $(`[data-d="${campo}"]`, dialogo);
+    el.textContent = valor || '—';
+  }
+
+  function enlace(clave: string, href: string | null) {
+    const a = $<HTMLAnchorElement>(`[data-r="${clave}"]`, dialogo);
+    a.hidden = !href;
+    if (href) a.href = href;
+  }
+
+  function pintarDetalle(s: SolicitudAdmin) {
+    actual = s;
+    poner('nombre', s.nombre);
+    $('[data-d="origen"]', dialogo).replaceChildren(chipOrigen(s.origen));
+    $('[data-d="estado"]', dialogo).replaceChildren(chipEstado(s.estado));
+    poner('fecha', `Recibida el ${fechaHora(s.fecha_creacion)}`);
+    poner('empresa', s.empresa);
+    poner('correo', s.correo);
+    poner('telefono', s.telefono);
+
+    enlace('correo', s.correo ? enlaceCorreo(s.correo, s.nombre) : null);
+    enlace('telefono', s.telefono ? enlaceTelefono(s.telefono) : null);
+    enlace('whatsapp', s.telefono ? enlaceWhatsApp(s.telefono, s.nombre) : null);
+    $('[data-r="nada"]', dialogo).hidden = Boolean(s.correo || s.telefono);
+
+    const esChatbot = s.chatbot !== null;
+    $('[data-d="mensaje"]', dialogo).hidden = esChatbot;
+    $('[data-d="chatbot"]', dialogo).hidden = !esChatbot;
+    if (esChatbot) {
+      poner('tipo_servicio', s.chatbot!.tipo_servicio);
+      poner('alcance', s.chatbot!.alcance);
+      poner('ubicacion', s.chatbot!.ubicacion);
+      poner('plazo', s.chatbot!.plazo);
+    } else {
+      poner('mensaje', s.mensaje);
+    }
+
+    (formSeg.elements.namedItem('estado') as HTMLSelectElement).value = s.estado;
+    (formSeg.elements.namedItem('notas') as HTMLTextAreaElement).value = s.notas ?? '';
+    poner('actualizado', s.fecha_actualizacion ? `Último cambio: ${fechaHora(s.fecha_actualizacion)}` : 'Sin cambios desde que llegó.');
+    guardado.textContent = '';
+    guardado.classList.remove('is-error');
+  }
+
+  async function abrirDetalle(origen: OrigenSolicitud, id: number, desde?: HTMLElement) {
+    origenFoco = desde ?? null;
+    abierta = { origen, id };
+    actualizarUrl();
+    poner('nombre', 'Solicitud');
+    if (!dialogo.open) dialogo.showModal();
+    vista(vistaDetalle, 'cargando');
+    try {
+      pintarDetalle(await admin.solicitud(origen, id));
+      vista(vistaDetalle, 'listo');
+    } catch (err) {
+      if (esSesionExpirada(err)) return;
+      if ((err as { status?: number }).status === 404) vista(vistaDetalle, 'vacio');
+      else vista(vistaDetalle, 'error', mensajeError(err, 'No se pudo cargar la solicitud.'));
+    }
+  }
+
+  function hayCambiosSinGuardar() {
+    if (!actual || vistaDetalle.querySelector('[data-vista="listo"]')?.hasAttribute('hidden')) return false;
+    const est = (formSeg.elements.namedItem('estado') as HTMLSelectElement).value;
+    const notas = (formSeg.elements.namedItem('notas') as HTMLTextAreaElement).value.trim();
+    return est !== actual.estado || notas !== (actual.notas ?? '');
+  }
+
+  function cerrarDetalle() {
+    if (hayCambiosSinGuardar() && !confirm('Hay cambios sin guardar en esta solicitud. ¿Cerrar de todos modos?')) return;
+    dialogo.close();
+  }
+
+  dialogo.addEventListener('close', () => {
+    abierta = null;
+    actual = null;
+    actualizarUrl();
+    origenFoco?.focus();
+  });
+  // Escape: el diálogo emite "cancel"; se intercepta para avisar de cambios sin guardar.
+  dialogo.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    cerrarDetalle();
+  });
+  $('[data-detalle-cerrar]').addEventListener('click', cerrarDetalle);
+  // Clic en el fondo (fuera del panel) cierra.
+  dialogo.addEventListener('click', (e) => {
+    if (e.target === dialogo) cerrarDetalle();
+  });
+
+  formSeg.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!actual) return;
+    const boton = $<HTMLButtonElement>('[data-guardar]', formSeg);
+    boton.disabled = true;
+    guardado.classList.remove('is-error');
+    guardado.textContent = 'Guardando…';
+    try {
+      const nuevo = await admin.actualizarSolicitud(actual.origen, actual.id, {
+        estado: (formSeg.elements.namedItem('estado') as HTMLSelectElement).value as EstadoSolicitud,
+        notas: (formSeg.elements.namedItem('notas') as HTMLTextAreaElement).value,
+      });
+      pintarDetalle(nuevo);
+      guardado.textContent = 'Cambios guardados.';
+      cargarLista({ silencioso: true });
+    } catch (err) {
+      if (esSesionExpirada(err)) return;
+      guardado.classList.add('is-error');
+      guardado.textContent = mensajeError(err, 'No se pudieron guardar los cambios.');
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const id = (e.target as HTMLElement).closest<HTMLElement>('[data-reintentar]')?.dataset.reintentar;
+    if (id === 'lista') cargarLista();
+    if (id === 'detalle' && abierta) abrirDetalle(abierta.origen, abierta.id);
+  });
+
+  panelListo().then(() => {
+    cargarLista();
+    if (abierta) abrirDetalle(abierta.origen, abierta.id);
+  });
+</script>

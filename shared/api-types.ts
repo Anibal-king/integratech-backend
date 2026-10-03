@@ -96,6 +96,64 @@ export interface AdminUsuario {
   correo: string;
 }
 
+/** Estados de seguimiento de una solicitud, en orden. */
+export type EstadoSolicitud = 'nuevo' | 'contactado' | 'cotizado' | 'cerrado' | 'descartado';
+
+/** De dónde llegó la solicitud. */
+export type OrigenSolicitud = 'formulario' | 'chatbot';
+
+/** Solicitud unificada (formulario o chatbot) de /api/admin/solicitudes. */
+export interface SolicitudAdmin {
+  origen: OrigenSolicitud;
+  /** id dentro de su origen: la clave única es origen + id. */
+  id: number;
+  nombre: string;
+  empresa: string | null;
+  correo: string | null;
+  telefono: string | null;
+  /** Mensaje del formulario, o resumen de las respuestas del chatbot. */
+  mensaje: string;
+  /** Respuestas del chatbot por separado (null para el formulario). */
+  chatbot: {
+    tipo_servicio: string | null;
+    alcance: string | null;
+    ubicacion: string | null;
+    plazo: string | null;
+  } | null;
+  estado: EstadoSolicitud;
+  notas: string | null;
+  /** UTC, formato 'YYYY-MM-DD HH:MM:SS'. */
+  fecha_creacion: string;
+  /** UTC; null si nunca se cambió el estado ni las notas. */
+  fecha_actualizacion: string | null;
+}
+
+/** GET /api/admin/solicitudes */
+export interface SolicitudesPagina {
+  items: SolicitudAdmin[];
+  /** Total con los filtros aplicados (para paginar). */
+  total: number;
+  pagina: number;
+  por_pagina: number;
+}
+
+/** PATCH /api/admin/solicitudes/:origen/:id */
+export interface SolicitudCambios {
+  estado?: EstadoSolicitud;
+  notas?: string | null;
+}
+
+/** GET /api/admin/estadisticas (meses en hora de El Salvador). */
+export interface EstadisticasAdmin {
+  total: number;
+  /** Solicitudes en estado 'nuevo'. */
+  sin_atender: number;
+  mes_actual: { mes: string; total: number };
+  /** Últimos 6 meses, del más antiguo al actual; mes = 'YYYY-MM'. */
+  por_mes: { mes: string; formulario: number; chatbot: number }[];
+  por_estado: Record<EstadoSolicitud, number>;
+}
+
 /** Fila de GET /api/contacto. */
 export interface MensajeContacto {
   id: number;
@@ -106,6 +164,9 @@ export interface MensajeContacto {
   mensaje: string;
   /** UTC, formato 'YYYY-MM-DD HH:MM:SS'. */
   fecha_creacion: string;
+  estado: EstadoSolicitud;
+  notas: string | null;
+  fecha_actualizacion: string | null;
 }
 
 /** Fila de GET /api/lead-chatbot. */
@@ -123,6 +184,9 @@ export interface LeadChatbot {
   correo_enviado: 0 | 1;
   /** UTC, formato 'YYYY-MM-DD HH:MM:SS'. */
   fecha_creacion: string;
+  estado: EstadoSolicitud;
+  notas: string | null;
+  fecha_actualizacion: string | null;
 }
 
 export interface ApiError {

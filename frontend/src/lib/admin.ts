@@ -6,9 +6,17 @@
  * Cualquier 401 de una ruta protegida significa sesión inexistente o expirada:
  * se redirige al login.
  */
-import type { AdminUsuario, LeadChatbot, MensajeContacto } from '../../../shared/api-types';
+import type {
+  AdminUsuario,
+  EstadisticasAdmin,
+  EstadoSolicitud,
+  OrigenSolicitud,
+  SolicitudAdmin,
+  SolicitudCambios,
+  SolicitudesPagina,
+} from '../../../shared/api-types';
 
-export type { AdminUsuario, LeadChatbot, MensajeContacto };
+export type { AdminUsuario, EstadisticasAdmin, EstadoSolicitud, OrigenSolicitud, SolicitudAdmin, SolicitudesPagina };
 
 const BASE_URL = (import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 const TIMEOUT_MS = 10_000;
@@ -50,12 +58,20 @@ async function mensajeDe(res: Response, porDefecto: string): Promise<string> {
   return typeof data?.error === 'string' ? data.error : porDefecto;
 }
 
-/** GET protegido: 401 → login. */
-async function getProtegido<T>(path: string): Promise<T> {
-  const res = await pedir(path);
+/** Petición a una ruta protegida: 401 → login; otro error → AdminError. */
+async function protegido<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await pedir(path, init);
   if (res.status === 401) irAlLogin();
   if (!res.ok) throw new AdminError(res.status, await mensajeDe(res, `Error ${res.status}`));
   return (await res.json()) as T;
+}
+
+export interface FiltrosSolicitudes {
+  estado?: EstadoSolicitud | '';
+  origen?: OrigenSolicitud | '';
+  q?: string;
+  pagina?: number;
+  por_pagina?: number;
 }
 
 export const admin = {
@@ -77,6 +93,21 @@ export const admin = {
     await pedir('/api/admin/logout', { method: 'POST' });
   },
 
-  mensajesContacto: () => getProtegido<MensajeContacto[]>('/api/contacto'),
-  leadsChatbot: () => getProtegido<LeadChatbot[]>('/api/lead-chatbot'),
+  estadisticas: () => protegido<EstadisticasAdmin>('/api/admin/estadisticas'),
+
+  solicitudes(filtros: FiltrosSolicitudes = {}) {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(filtros)) if (v !== undefined && v !== '') params.set(k, String(v));
+    const qs = params.toString();
+    return protegido<SolicitudesPagina>(`/api/admin/solicitudes${qs ? `?${qs}` : ''}`);
+  },
+
+  solicitud: (origen: OrigenSolicitud, id: number) =>
+    protegido<SolicitudAdmin>(`/api/admin/solicitudes/${origen}/${id}`),
+
+  actualizarSolicitud: (origen: OrigenSolicitud, id: number, cambios: SolicitudCambios) =>
+    protegido<SolicitudAdmin>(`/api/admin/solicitudes/${origen}/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(cambios),
+    }),
 };

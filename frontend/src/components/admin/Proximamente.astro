@@ -1,0 +1,53 @@
+---
+import Icono, { type NombreIcono } from './Icono.astro';
+
+interface Props {
+  icono: NombreIcono;
+  titulo: string;
+  descripcion: string;
+}
+
+const { icono, titulo, descripcion } = Astro.props;
+---
+
+<section class="admin-card proximamente">
+  <div class="proximamente__icono"><Icono nombre={icono} tamano={28} /></div>
+  <span class="proximamente__etiqueta">Próximamente</span>
+  <h2>{titulo}</h2>
+  <p>{descripcion}</p>
+  <a href="/admin/dashboard" class="btn btn--secondary btn--sm">Volver al resumen</a>
+</section>
+
+<style>
+  .proximamente {
+    max-width: 560px;
+    margin: clamp(1rem, 6vh, 4rem) auto 0;
+    padding: 2.5rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+  }
+  .proximamente__icono {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    background: var(--color-brand-blue-tint);
+    color: var(--color-brand-blue);
+  }
+  .proximamente__etiqueta {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-navy);
+    background: color-mix(in srgb, var(--color-accent) 18%, var(--color-white));
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+  }
+  .proximamente h2 { margin: 0; font-size: 1.35rem; }
+  .proximamente p { margin: 0 0 0.5rem; color: var(--text-muted); max-width: 44ch; }
+</style>
