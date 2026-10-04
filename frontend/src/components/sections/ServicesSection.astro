@@ -11,6 +11,14 @@ interface Props {
 
 const { variant } = Astro.props;
 const servicios = await api.servicios();
+
+/**
+ * Texto en el que busca el filtro: título, descripción y TODOS los ítems (también
+ * los que la tarjeta no muestra), en minúsculas y sin tildes. El script normaliza
+ * lo que escribe el visitante de la misma forma.
+ */
+const normalizar = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const textoBusqueda = (s: (typeof servicios)[number]) => normalizar([s.nombre, s.descripcion ?? '', ...s.items].join(' '));
 ---
 
 <Section variant={variant} id="servicios" class="section reveal" aria-labelledby="servicios-title" tabindex="-1">
@@ -24,11 +32,30 @@ const servicios = await api.servicios();
     {servicios.length === 0 ? (
       <StatusMessage detalle={`GET ${api.baseUrl}/api/servicios no devolvió categorías`} />
     ) : (
+      <div class="svc-catalogo" data-svc-raiz>
+    <!-- Buscador: oculto hasta que carga el script (sin JS se ven todos los servicios) -->
+    <div class="svc-buscar" role="search" data-svc-buscador hidden>
+      <label for="svc-q" class="svc-sr">Buscar un servicio</label>
+      <div class="svc-buscar__campo">
+        <svg class="svc-buscar__icono" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+        <input id="svc-q" type="search" placeholder="Buscar un servicio…" autocomplete="off" spellcheck="false" enterkeyhint="search" maxlength="80" data-svc-q />
+        <button type="button" class="svc-buscar__limpiar" aria-label="Limpiar búsqueda" data-svc-limpiar hidden>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <p class="svc-sr" aria-live="polite" data-svc-estado></p>
+    </div>
+
+    <div class="svc-vacio" data-svc-vacio hidden>
+      <p>No encontramos servicios para '<span data-svc-texto></span>'. Cuéntanos qué necesitas y te preparamos una propuesta.</p>
+      <a href="/#contacto" class="btn btn--primary">Ir al formulario de contacto</a>
+    </div>
+
       <div class="svc-grid">
         {servicios.map((s) => {
           const portada = portadaDeCategoria(s.nombre);
           return (
-            <a href={`/servicios/${s.id}`} class="svc-card">
+            <a href={`/servicios/${s.id}`} class="svc-card" data-svc-card data-buscar={textoBusqueda(s)}>
               {portada && (
                 <div class="svc-card__media">
                   <Image src={portada} alt={s.nombre} widths={[320, 640]} sizes="(max-width: 700px) 90vw, 45vw" loading="lazy" />
@@ -49,11 +76,88 @@ const servicios = await api.servicios();
           );
         })}
       </div>
+      </div>
     )}
   </div>
 </Section>
 
 <style>
+  /* ---------- Buscador ---------- */
+  .svc-buscar { margin: -0.75rem 0 1.75rem; max-width: 560px; }
+  .svc-buscar[hidden] { display: none; }
+  .svc-buscar__campo { position: relative; }
+  .svc-buscar__icono {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  .svc-buscar input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.7rem 3rem 0.7rem 2.7rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--input-bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+    /* Al enfocarlo en móvil queda sobre el botón flotante del chat */
+    scroll-margin-block: calc(var(--header-height) + 1rem) 7rem;
+  }
+  .svc-buscar input::placeholder { color: var(--text-muted); opacity: 1; }
+  .svc-buscar input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  /* La X propia reemplaza la del navegador */
+  .svc-buscar input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+  .svc-buscar__limpiar {
+    position: absolute;
+    right: 0.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .svc-buscar__limpiar:hover { color: var(--text); background: var(--surface-muted); }
+  .svc-buscar__limpiar:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+  .svc-buscar__limpiar[hidden] { display: none; }
+
+  .svc-vacio {
+    margin-bottom: 1.75rem;
+    padding: 1.5rem;
+    border: 1px dashed var(--placeholder-border);
+    border-radius: var(--radius-lg);
+    background: var(--placeholder-bg);
+    color: var(--text);
+  }
+  .svc-vacio[hidden] { display: none; }
+  .svc-vacio p { margin: 0 0 1rem; max-width: 60ch; }
+  .svc-vacio span { font-weight: 700; overflow-wrap: anywhere; }
+
+  .svc-card[hidden] { display: none; }
+
+  .svc-card[hidden] { display: none; }
+
+  .svc-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .svc-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
@@ -94,3 +198,72 @@ const servicios = await api.servicios();
   .svc-items .muted { color: var(--text-muted); list-style: none; margin-left: -1.2rem; }
   .svc-card__cta { margin-top: auto; font-weight: 700; color: var(--link); }
 </style>
+
+<script>
+  /*
+   * Filtro de servicios: oculta o muestra las tarjetas que ya están en el HTML (no
+   * llama al backend ni las vuelve a generar). Ignora mayúsculas y tildes; con
+   * varias palabras deben aparecer todas, en cualquier orden. Se reinicia en cada
+   * astro:page-load.
+   */
+  const normalizar = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  function iniciarBuscador() {
+    const raiz = document.querySelector<HTMLElement>('[data-svc-raiz]');
+    if (!raiz) return;
+    const caja = raiz.querySelector<HTMLElement>('[data-svc-buscador]')!;
+    const input = raiz.querySelector<HTMLInputElement>('[data-svc-q]')!;
+    const limpiar = raiz.querySelector<HTMLButtonElement>('[data-svc-limpiar]')!;
+    const estado = raiz.querySelector<HTMLElement>('[data-svc-estado]')!;
+    const vacio = raiz.querySelector<HTMLElement>('[data-svc-vacio]')!;
+    const tarjetas = [...raiz.querySelectorAll<HTMLElement>('[data-svc-card]')];
+    let aviso: number | undefined;
+
+    function filtrar() {
+      const texto = input.value.trim();
+      const palabras = normalizar(texto).split(/\s+/).filter(Boolean);
+      const buscando = palabras.length > 0;
+      let visibles = 0;
+      for (const t of tarjetas) {
+        const ver = palabras.every((p) => t.dataset.buscar!.includes(p));
+        t.hidden = !ver;
+        if (ver) visibles++;
+      }
+      limpiar.hidden = input.value === '';
+      vacio.hidden = visibles > 0;
+      vacio.querySelector('[data-svc-texto]')!.textContent = texto;
+
+      // Aviso para lectores de pantalla, cuando se deja de escribir un momento
+      clearTimeout(aviso);
+      aviso = window.setTimeout(() => {
+        estado.textContent = !buscando
+          ? `Se muestran los ${tarjetas.length} servicios.`
+          : visibles === 0
+            ? `No se encontraron servicios para ${texto}.`
+            : visibles === 1
+              ? '1 servicio encontrado.'
+              : `${visibles} servicios encontrados.`;
+      }, 400);
+    }
+
+    input.addEventListener('input', filtrar);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && input.value) {
+        e.preventDefault();
+        input.value = '';
+        filtrar();
+      }
+      if (e.key === 'Enter') e.preventDefault(); // no hay formulario que enviar
+    });
+    limpiar.addEventListener('click', () => {
+      input.value = '';
+      filtrar();
+      input.focus();
+    });
+
+    caja.hidden = false;
+    if (input.value) filtrar(); // el navegador puede restaurar el texto al volver atrás
+  }
+
+  document.addEventListener('astro:page-load', iniciarBuscador);
+</script>
