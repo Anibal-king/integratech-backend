@@ -1,14 +1,16 @@
 ---
-import { Image } from 'astro:assets';
-import type { FotoProyecto } from '../lib/imagenes';
+import { mediaUrl, mediaSrcset, type ServicioFoto } from '../lib/api';
 
+/** Galería con zoom (Lightbox) de las fotos de un servicio, servidas por el backend en /media. */
 interface Props {
-  fotos: FotoProyecto[];
+  fotos: ServicioFoto[];
   /** columnas mínimas en desktop; el grid es responsive igual */
   min?: number;
 }
 
 const { fotos, min = 260 } = Astro.props;
+// Para el zoom, la versión más grande (la última del srcset).
+const mayor = (f: ServicioFoto) => f.srcset.split(',').pop()!.trim().split(' ')[0];
 ---
 
 {
@@ -19,18 +21,21 @@ const { fotos, min = 260 } = Astro.props;
           class="galeria__item"
           type="button"
           data-lightbox
-          data-src={f.img.src}
-          data-caption={f.descripcion}
-          aria-label={`Ampliar: ${f.descripcion}`}
+          data-src={mediaUrl(mayor(f))}
+          data-caption={f.alt}
+          aria-label={`Ampliar: ${f.alt}`}
         >
-          <Image
-            src={f.img}
-            alt={f.descripcion}
-            widths={[320, 640, 960]}
+          <img
+            src={mediaUrl(f.src)}
+            srcset={mediaSrcset(f.srcset)}
             sizes="(max-width: 640px) 90vw, (max-width: 1100px) 45vw, 30vw"
+            width={f.ancho}
+            height={f.alto}
+            alt={f.alt}
             loading={i < 3 ? 'eager' : 'lazy'}
+            decoding="async"
           />
-          <span class="galeria__cap">{f.descripcion}</span>
+          <span class="galeria__cap">{f.alt}</span>
         </button>
       ))}
     </div>

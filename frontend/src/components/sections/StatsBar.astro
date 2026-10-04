@@ -2,18 +2,21 @@
 import Section, { type SectionVariant } from '../Section.astro';
 
 interface Props {
-  servicios?: number;
-  proyectos?: number;
+  /** Servicios publicados; null si la API no respondió (la cifra no se muestra). */
+  servicios: number | null;
+  /** Proyectos destacados; null si la API no respondió. */
+  proyectos: number | null;
   variant: SectionVariant;
 }
 
-const { servicios = 0, proyectos = 0, variant } = Astro.props;
+const { servicios, proyectos, variant } = Astro.props;
 
+// Nada de cifras inventadas: lo que no se pudo leer de la API se omite.
 const stats = [
   { valor: '20+', label: 'años de experiencia' },
-  { valor: String(servicios || 8), label: 'líneas de servicio' },
-  { valor: `${proyectos || 30}+`, label: 'proyectos ejecutados' },
-];
+  servicios ? { valor: String(servicios), label: servicios === 1 ? 'línea de servicio' : 'líneas de servicio' } : null,
+  proyectos ? { valor: `${proyectos}+`, label: 'proyectos ejecutados' } : null,
+].filter((s) => s !== null);
 ---
 
 <Section variant={variant} aria-label="La empresa en cifras">
@@ -33,7 +36,9 @@ const stats = [
     margin-block: 0;
     padding-block: 1.75rem;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    /* 2 o 3 cifras según lo que haya: columnas iguales */
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     gap: 1.5rem;
   }
   .stats__list li {

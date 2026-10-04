@@ -32,11 +32,34 @@ export interface Empresa {
 }
 
 /** Categoría del catálogo con los nombres de sus servicios (tabla `servicios`). */
+/** Foto de un servicio. src/srcset son rutas del backend (/media/...): se antepone la URL de la API. */
+export interface ServicioFoto {
+  id: number;
+  alt: string;
+  /** Menor versión de al menos 800 px, o la mayor disponible. */
+  src: string;
+  /** Todas las versiones WebP: "/media/... 400w, /media/... 800w". */
+  srcset: string;
+  /** Tamaño de la versión más grande (para width/height y evitar saltos de diseño). */
+  ancho: number;
+  alto: number;
+  es_portada: boolean;
+}
+
+/** Servicio público (GET /api/servicios y /api/servicios/:id; solo los publicados). */
 export interface CategoriaServicio {
   id: number;
+  /** Título. */
   nombre: string;
+  /** Descripción corta (tarjetas). */
   descripcion: string | null;
+  /** Descripción larga (página de detalle); null = usar la corta. */
+  descripcion_larga: string | null;
+  /** Ítems de "Qué incluye", en orden. */
   items: string[];
+  portada: ServicioFoto | null;
+  /** Galería completa en orden (incluye la portada). */
+  fotos: ServicioFoto[];
 }
 
 export interface Cliente {
@@ -90,6 +113,23 @@ export interface ContactoRespuesta {
 }
 
 // ---------- Panel de administración (requieren sesión) ----------
+
+/** Servicio en el panel: incluye los ocultos. */
+export interface ServicioAdmin extends CategoriaServicio {
+  orden: number;
+  publicado: boolean;
+  /** UTC; null si nunca se editó desde el panel. */
+  fecha_actualizacion: string | null;
+}
+
+/** Cuerpo de POST /api/admin/servicios y PUT /api/admin/servicios/:id. */
+export interface ServicioDatos {
+  nombre: string;
+  descripcion: string;
+  descripcion_larga?: string | null;
+  items: string[];
+  publicado: boolean;
+}
 
 /** Respuesta de POST /api/admin/login y GET /api/admin/me. */
 export interface AdminUsuario {

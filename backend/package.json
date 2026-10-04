@@ -14,7 +14,8 @@
     "seed": "node db/seed.js",
     "typecheck": "tsc -p tsconfig.json",
     "crear-admin": "node scripts/crear-admin.js",
-    "cambiar-password": "node scripts/cambiar-password.js"
+    "cambiar-password": "node scripts/cambiar-password.js",
+    "migrar-fotos-servicios": "node scripts/migrar-fotos-servicios.js"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +24,9 @@
     "argon2": "^0.45.1",
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "nodemailer": "^6.9.14"
+    "multer": "^2.4.0",
+    "nodemailer": "^6.9.14",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",

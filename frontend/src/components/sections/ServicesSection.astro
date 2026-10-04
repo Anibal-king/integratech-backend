@@ -1,16 +1,18 @@
 ---
-import { Image } from 'astro:assets';
 import Section, { type SectionVariant } from '../Section.astro';
 import StatusMessage from '../StatusMessage.astro';
-import { api } from '../../lib/api';
-import { portadaDeCategoria } from '../../lib/imagenes';
+import { api, mediaUrl, mediaSrcset, type ApiResult, type CategoriaServicio } from '../../lib/api';
 
 interface Props {
   variant: SectionVariant;
+  /** Resultado ya pedido por la página (evita repetir la consulta). */
+  servicios?: ApiResult<CategoriaServicio[]>;
 }
 
 const { variant } = Astro.props;
-const servicios = await api.servicios();
+// Se lee en cada visita (la página se renderiza en el servidor): refleja el panel al instante.
+// Si la API falla, solo esta sección muestra el aviso; el resto de la página sigue normal.
+const servicios = Astro.props.servicios ?? (await api.servicios());
 ---
 
 <Section variant={variant} id="servicios" class="section reveal" aria-labelledby="servicios-title" tabindex="-1">
@@ -26,12 +28,21 @@ const servicios = await api.servicios();
     ) : (
       <div class="svc-grid">
         {servicios.data.map((s) => {
-          const portada = portadaDeCategoria(s.nombre);
+          const portada = s.portada;
           return (
             <a href={`/servicios/${s.id}`} class="svc-card">
               {portada && (
                 <div class="svc-card__media">
-                  <Image src={portada} alt={s.nombre} widths={[320, 640]} sizes="(max-width: 700px) 90vw, 45vw" loading="lazy" />
+                  <img
+                    src={mediaUrl(portada.src)}
+                    srcset={mediaSrcset(portada.srcset)}
+                    sizes="(max-width: 700px) 90vw, 45vw"
+                    width={portada.ancho}
+                    height={portada.alto}
+                    alt={portada.alt}
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
               )}
               <div class="svc-card__body">

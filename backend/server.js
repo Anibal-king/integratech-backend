@@ -4,6 +4,7 @@ const cors = require('cors');
 const { DB_PATH, initSchema, get } = require('./db');
 const { seed } = require('./db/seed');
 const { securityHeaders } = require('./lib/security');
+const { URL_MEDIA } = require('./lib/fotos');
 
 /** @typedef {import('../shared/api-types').Health} Health */
 
@@ -41,6 +42,20 @@ if (config.CORS_ORIGINS.length === 0) {
 }
 app.use(cors({ origin: config.CORS_ORIGINS, credentials: true }));
 app.use(express.json({ limit: '16kb' }));
+
+// Fotos subidas desde el panel. Los nombres son aleatorios y nunca se reutilizan:
+// se pueden cachear sin límite. Cross-origin: el sitio puede estar en otro dominio.
+app.use(
+  URL_MEDIA,
+  express.static(config.UPLOADS_DIR, {
+    index: false,
+    dotfiles: 'deny',
+    fallthrough: false,
+    immutable: true,
+    maxAge: '365d',
+    setHeaders: (res) => res.set('Cross-Origin-Resource-Policy', 'cross-origin'),
+  })
+);
 
 app.get('/api/health', (req, res) => {
   /** @type {Health} */
@@ -90,6 +105,7 @@ app.use((err, req, res, next) => {
 app.listen(config.PORT, () => {
   console.log(`🚀 API de SIIE corriendo en http://localhost:${config.PORT}`);
   console.log(`   Base de datos: ${DB_PATH}`);
+  console.log(`   Fotos subidas: ${config.UPLOADS_DIR}`);
   console.log(`   CORS: ${config.CORS_ORIGINS.join(', ') || '(ninguno)'}`);
   console.log(`   Prueba: http://localhost:${config.PORT}/api/health`);
 });

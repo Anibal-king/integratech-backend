@@ -9,19 +9,25 @@ import AboutSection from '../components/sections/AboutSection.astro';
 import ContactSection from '../components/sections/ContactSection.astro';
 import { api, dataOr } from '../lib/api';
 
+// Se renderiza en cada visita: los servicios y sus fotos se administran en el panel.
+export const prerender = false;
+
 // Landing única: cada sección se recorre con scroll y el menú apunta a "/#<id>".
 const [empresa, servicios, proyectos] = await Promise.all([
   api.empresa().then((r) => dataOr(r, null)),
-  api.servicios().then((r) => dataOr(r, [])),
-  api.proyectos().then((r) => dataOr(r, [])),
+  api.servicios(),
+  api.proyectos(),
 ]);
+// Cifras solo con datos reales: si la API falló, esa cifra no se muestra.
+const contar = (r: { status: string; data?: unknown[] }) =>
+  r.status === 'ok' ? (r.data as unknown[]).length : r.status === 'empty' ? 0 : null;
 ---
 
 <Layout>
   {/* Ritmo de color al hacer scroll: cambiar el fondo de una sección es cambiar su variant */}
   <Hero variant="light" descripcion={empresa?.mision ?? undefined} />
-  <StatsBar variant="muted" servicios={servicios.length} proyectos={proyectos.length} />
-  <ServicesSection variant="dark" />
+  <StatsBar variant="muted" servicios={contar(servicios)} proyectos={contar(proyectos)} />
+  <ServicesSection variant="dark" servicios={servicios} />
   <ProjectsSection variant="light" />
   <ClientsSection variant="dark" />
   <AboutSection variant="light" />

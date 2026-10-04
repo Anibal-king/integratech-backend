@@ -1,32 +1,24 @@
 const express = require('express');
-const { all, get } = require('../db');
+const { listarServicios, obtenerServicio, aPublico } = require('../lib/servicios');
 
 /** @typedef {import('../../shared/api-types').CategoriaServicio} CategoriaServicio */
 
 const router = express.Router();
 
-/** @param {number} categoriaId */
-const itemsDe = (categoriaId) =>
-  all(/* sql */ 'SELECT nombre FROM servicios WHERE categoria_id = ? ORDER BY orden', categoriaId).map(
-    (/** @type {{ nombre: string }} */ i) => i.nombre
-  );
-
-// GET /api/servicios - Catálogo de categorías de servicios con sus ítems
+// GET /api/servicios - Servicios publicados, en el orden definido en el panel
 router.get('/', (req, res) => {
-  /** @type {Omit<CategoriaServicio, 'items'>[]} */
-  const categorias = all('SELECT id, nombre, descripcion FROM categorias_servicios ORDER BY id');
   /** @type {CategoriaServicio[]} */
-  const result = categorias.map((c) => ({ ...c, items: itemsDe(c.id) }));
+  const result = listarServicios({ soloPublicados: true }).map(aPublico);
   res.json(result);
 });
 
-// GET /api/servicios/:id - Detalle de una categoría de servicios
+// GET /api/servicios/:id - Detalle de un servicio publicado (404 si no existe o está oculto)
 router.get('/:id', (req, res) => {
-  /** @type {Omit<CategoriaServicio, 'items'> | undefined} */
-  const categoria = get('SELECT id, nombre, descripcion FROM categorias_servicios WHERE id = ?', req.params.id);
-  if (!categoria) return res.status(404).json({ error: 'Categoría no encontrada' });
+  const id = Number(req.params.id);
+  const servicio = Number.isInteger(id) && id > 0 ? obtenerServicio(id, { soloPublicados: true }) : null;
+  if (!servicio) return res.status(404).json({ error: 'Servicio no encontrado' });
   /** @type {CategoriaServicio} */
-  const result = { ...categoria, items: itemsDe(categoria.id) };
+  const result = aPublico(servicio);
   res.json(result);
 });
 

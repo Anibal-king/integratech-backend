@@ -1,0 +1,32 @@
+---
+/** Contenido de "página no encontrada" (404.astro y servicios inexistentes u ocultos). */
+import Section from './Section.astro';
+
+interface Props {
+  titulo?: string;
+  mensaje?: string;
+}
+
+const {
+  titulo = 'No encontramos esta página',
+  mensaje = 'Puede que la dirección esté mal escrita o que el contenido ya no esté disponible.',
+} = Astro.props;
+---
+
+<Section variant="light" class="section no-encontrado">
+  <div class="container">
+    <span class="eyebrow">Error 404</span>
+    <h1>{titulo}</h1>
+    <p>{mensaje}</p>
+    <div class="no-encontrado__acciones">
+      <a href="/#servicios" class="btn btn--primary">Ver servicios</a>
+      <a href="/" class="btn btn--secondary">Ir al inicio</a>
+    </div>
+  </div>
+</Section>
+
+<style>
+  .no-encontrado { min-height: 50vh; }
+  .no-encontrado p { color: var(--text-muted); max-width: 52ch; }
+  .no-encontrado__acciones { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
+</style>

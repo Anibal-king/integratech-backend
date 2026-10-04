@@ -1,0 +1,713 @@
+---
+import AdminShell from '../../../components/admin/AdminShell.astro';
+import Vista from '../../../components/admin/Vista.astro';
+import Icono from '../../../components/admin/Icono.astro';
+
+// Página estática: el servicio se elige con ?id=N (sin id, se crea uno nuevo) y se
+// carga en el navegador tras confirmar la sesión.
+---
+
+<AdminShell activo="servicios" titulo="Servicio">
+  <p class="volver"><a href="/admin/servicios" data-salir>← Volver a servicios</a></p>
+
+  <Vista id="editor" cargando="Cargando servicio…" vacio="Este servicio ya no existe. Puede que alguien lo haya eliminado.">
+    <form class="editor" data-form novalidate>
+      <p class="admin-alert" data-error-form role="alert" hidden></p>
+
+      <!-- Información -->
+      <section class="admin-card bloque" aria-labelledby="t-info">
+        <div class="admin-card__head"><h2 id="t-info">Información</h2></div>
+        <div class="admin-card__body campos">
+          <div class="campo">
+            <label for="f-nombre">Título <span aria-hidden="true">*</span></label>
+            <input id="f-nombre" name="nombre" type="text" maxlength="120" required aria-describedby="e-nombre" />
+            <p class="campo__error" id="e-nombre" data-error="nombre"></p>
+          </div>
+          <div class="campo">
+            <label for="f-descripcion">Descripción corta <span aria-hidden="true">*</span></label>
+            <textarea id="f-descripcion" name="descripcion" rows="2" maxlength="300" required aria-describedby="a-descripcion e-descripcion"></textarea>
+            <p class="campo__ayuda" id="a-descripcion">Se muestra en la tarjeta de la página principal. <span data-contador="descripcion"></span></p>
+            <p class="campo__error" id="e-descripcion" data-error="descripcion"></p>
+          </div>
+          <div class="campo">
+            <label for="f-larga">Descripción larga</label>
+            <textarea id="f-larga" name="descripcion_larga" rows="7" maxlength="5000" aria-describedby="a-larga e-larga"></textarea>
+            <p class="campo__ayuda" id="a-larga">Opcional. Se muestra en la página del servicio. Separa los párrafos con una línea en blanco.</p>
+            <p class="campo__error" id="e-larga" data-error="descripcion_larga"></p>
+          </div>
+          <div class="campo campo--check">
+            <label class="check">
+              <input name="publicado" type="checkbox" aria-describedby="a-publicado" />
+              <span>Publicado en el sitio</span>
+            </label>
+            <p class="campo__ayuda" id="a-publicado">Si lo desmarcas, el servicio desaparece de la página principal y su página responde «no encontrado».</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Qué incluye -->
+      <section class="admin-card bloque" aria-labelledby="t-items">
+        <div class="admin-card__head"><h2 id="t-items">Qué incluye</h2></div>
+        <div class="admin-card__body">
+          <p class="campo__ayuda items__ayuda">Cada ítem es una línea de la lista «Qué incluye». Los vacíos no se guardan.</p>
+          <ol class="items" data-items></ol>
+          <button type="button" class="btn btn--secondary btn--sm" data-agregar-item><Icono nombre="mas" tamano={16} />Agregar ítem</button>
+          <p class="campo__error" data-error="items"></p>
+        </div>
+      </section>
+
+      <!-- Fotos -->
+      <section class="admin-card bloque" aria-labelledby="t-fotos">
+        <div class="admin-card__head"><h2 id="t-fotos">Fotos</h2><span class="fotos__conteo" data-fotos-conteo></span></div>
+        <div class="admin-card__body">
+          <p class="fotos__nuevo" data-fotos-nuevo hidden>Guarda el servicio para poder subir fotos.</p>
+          <div data-fotos-panel>
+            <label class="subida" data-subida>
+              <input type="file" name="fotos" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" data-input-fotos class="sr-only" />
+              <Icono nombre="subir" tamano={26} />
+              <span class="subida__titulo">Arrastra fotos aquí o <u>elige archivos</u></span>
+              <span class="subida__ayuda">JPG, PNG o WebP, hasta 8 MB cada una. Se optimizan automáticamente.</span>
+            </label>
+            <p class="subida__estado" data-subida-estado role="status"></p>
+            <ul class="subida__errores" data-subida-errores role="alert"></ul>
+            <p class="fotos__vacio" data-fotos-vacio hidden>Este servicio todavía no tiene fotos. La primera que subas será la portada.</p>
+            <ul class="galeria-admin" data-galeria></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Acciones -->
+      <div class="acciones">
+        <button type="submit" class="btn btn--primary" data-guardar>Guardar cambios</button>
+        <a href="/admin/servicios" class="btn btn--secondary" data-salir>Cancelar</a>
+        <a class="btn btn--secondary" data-ver-sitio target="_blank" rel="noopener" hidden><Icono nombre="ver" tamano={16} />Ver en el sitio</a>
+        <p class="acciones__estado" data-estado-guardado role="status"></p>
+        <button type="button" class="btn acciones__eliminar" data-eliminar hidden><Icono nombre="eliminar" tamano={16} />Eliminar servicio</button>
+      </div>
+    </form>
+  </Vista>
+
+  <!-- Plantillas (se clonan en el navegador; no contienen datos) -->
+  <template data-plantilla-item>
+    <li class="item">
+      <input type="text" maxlength="200" data-item-texto />
+      <div class="item__acciones">
+        <button type="button" class="icono-btn" data-item-subir aria-label="Subir ítem"><Icono nombre="arriba" tamano={16} /></button>
+        <button type="button" class="icono-btn" data-item-bajar aria-label="Bajar ítem"><Icono nombre="abajo" tamano={16} /></button>
+        <button type="button" class="icono-btn icono-btn--peligro" data-item-quitar aria-label="Quitar ítem"><Icono nombre="eliminar" tamano={16} /></button>
+      </div>
+    </li>
+  </template>
+
+  <template data-plantilla-foto>
+    <li class="foto">
+      <div class="foto__img">
+        <img alt="" data-foto-img />
+        <span class="foto__portada" data-foto-portada hidden><Icono nombre="estrella" tamano={14} />Portada</span>
+      </div>
+      <div class="foto__cuerpo">
+        <label class="foto__alt">
+          <span>Texto alternativo</span>
+          <input type="text" maxlength="200" data-foto-alt />
+        </label>
+        <p class="foto__estado" data-foto-estado></p>
+        <div class="foto__acciones">
+          <button type="button" class="icono-btn" data-foto-izq><Icono nombre="izquierda" tamano={16} /></button>
+          <button type="button" class="icono-btn" data-foto-der><Icono nombre="derecha" tamano={16} /></button>
+          <button type="button" class="btn btn--secondary btn--sm" data-foto-hacer-portada><Icono nombre="estrella" tamano={14} />Usar como portada</button>
+          <button type="button" class="icono-btn icono-btn--peligro" data-foto-eliminar><Icono nombre="eliminar" tamano={16} /></button>
+        </div>
+      </div>
+    </li>
+  </template>
+</AdminShell>
+
+<style>
+  .volver { margin: 0 0 1rem; font-size: 0.9rem; font-weight: 600; }
+  .editor { display: flex; flex-direction: column; gap: 1rem; max-width: 960px; }
+
+  .campos { display: flex; flex-direction: column; gap: 1.1rem; }
+  .campo { display: flex; flex-direction: column; gap: 0.35rem; }
+  .campo label { font-weight: 600; font-size: 0.9rem; }
+  .campo label span { color: var(--danger-text); }
+  .campo textarea { resize: vertical; }
+  .campo :is(input, textarea)[aria-invalid='true'],
+  .item input[aria-invalid='true'],
+  .foto__alt input[aria-invalid='true'] { border-color: var(--danger-text); }
+  .campo__ayuda { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+  .campo__error { margin: 0; font-size: 0.82rem; color: var(--danger-text); }
+  .campo__error:empty { display: none; }
+  .check { display: flex !important; align-items: center; gap: 0.55rem; cursor: pointer; }
+  .check input { width: 18px; height: 18px; accent-color: var(--color-accent); }
+  .check span { color: var(--text) !important; }
+
+  /* Ítems */
+  .items__ayuda { margin-bottom: 0.75rem; }
+  .items { list-style: none; margin: 0 0 0.85rem; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .items:empty { display: none; }
+  .items :global(.item) { display: flex; gap: 0.5rem; align-items: center; margin: 0; }
+  .items :global(.item input) { flex: 1; min-width: 0; }
+  .items :global(.item__acciones) { display: flex; gap: 0.25rem; }
+
+  /* Botones de icono (ítems, fotos) */
+  .editor :global(.icono-btn) {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-card);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .editor :global(.icono-btn:hover:not(:disabled)) { background: var(--surface-muted); }
+  .editor :global(.icono-btn:disabled) { opacity: 0.35; cursor: default; }
+  .editor :global(.icono-btn--peligro) { color: var(--danger-text); }
+
+  /* Fotos */
+  .fotos__conteo { font-size: 0.85rem; color: var(--text-muted); }
+  .fotos__nuevo, .fotos__vacio { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+  .fotos__vacio { margin-top: 1rem; }
+  .subida {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 1.5rem 1rem;
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--surface-muted);
+    color: var(--text-muted);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+  .subida:hover, .subida.is-encima { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 8%, var(--surface-card)); }
+  .subida:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  .subida.is-ocupada { pointer-events: none; opacity: 0.6; }
+  .subida__titulo { font-weight: 600; color: var(--text); }
+  .subida__ayuda { font-size: 0.8rem; }
+  .subida__estado { margin: 0.75rem 0 0; font-size: 0.88rem; color: var(--text-muted); }
+  .subida__estado:empty { display: none; }
+  .subida__errores { margin: 0.5rem 0 0; padding-left: 1.1rem; color: var(--danger-text); font-size: 0.85rem; }
+  .subida__errores:empty { display: none; }
+
+  .galeria-admin {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+    gap: 1rem;
+  }
+  .galeria-admin :global(.foto) {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface-card);
+    display: flex;
+    flex-direction: column;
+  }
+  .galeria-admin :global(.foto.is-portada) { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
+  /* La imagen va en absoluto: así la caja respeta 4:3 aunque la foto sea vertical */
+  .galeria-admin :global(.foto__img) { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--surface-muted); }
+  .galeria-admin :global(.foto__img img) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .galeria-admin :global(.foto__portada) {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: var(--color-accent);
+    color: var(--color-navy-deep);
+  }
+  .galeria-admin :global(.foto__cuerpo) { padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .galeria-admin :global(.foto__alt) { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; }
+  .galeria-admin :global(.foto__alt input) { font-weight: 400; }
+  .galeria-admin :global(.foto__estado) { margin: 0; min-height: 1.1em; font-size: 0.78rem; color: var(--text-muted); }
+  .galeria-admin :global(.foto__estado.is-error) { color: var(--danger-text); }
+  .galeria-admin :global(.foto__acciones) { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+  .galeria-admin :global(.foto__acciones [data-foto-eliminar]) { margin-left: auto; }
+
+  /* Acciones */
+  .acciones {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+  .acciones__estado { margin: 0; font-size: 0.88rem; color: var(--text-muted); }
+  .acciones__estado.is-error { color: var(--danger-text); }
+  .acciones__eliminar { margin-left: auto; background: transparent; color: var(--danger-text); border-color: var(--danger-text); }
+  .acciones__eliminar:hover { background: color-mix(in srgb, var(--danger-text) 8%, transparent); }
+
+  @media (max-width: 640px) {
+    .acciones { position: static; }
+    .acciones .btn { flex: 1 1 auto; justify-content: center; }
+    .acciones__eliminar { margin-left: 0; }
+    .acciones__estado { flex-basis: 100%; order: -1; }
+  }
+</style>
+
+<script>
+  import { admin, mediaUrl, AdminError, type ServicioAdmin, type ServicioDatos, type ServicioFoto } from '../../../lib/admin';
+  import { panelListo, vista, mensajeError, esSesionExpirada } from '../../../lib/admin-ui';
+
+  const $ = <T extends HTMLElement>(sel: string, raiz: ParentNode = document) => raiz.querySelector<T>(sel)!;
+
+  const contenedor = $('[data-vista-de="editor"]');
+  const form = $<HTMLFormElement>('[data-form]');
+  const listaItems = $('[data-items]');
+  const galeria = $('[data-galeria]');
+  const plantillaItem = $<HTMLTemplateElement>('[data-plantilla-item]');
+  const plantillaFoto = $<HTMLTemplateElement>('[data-plantilla-foto]');
+  const inputFotos = $<HTMLInputElement>('[data-input-fotos]');
+  const zonaSubida = $('[data-subida]');
+  const estadoSubida = $('[data-subida-estado]');
+  const erroresSubida = $('[data-subida-errores]');
+  const estadoGuardado = $('[data-estado-guardado]');
+  const errorForm = $('[data-error-form]');
+  const botonGuardar = $<HTMLButtonElement>('[data-guardar]');
+
+  const campo = <T extends HTMLInputElement | HTMLTextAreaElement>(nombre: string) => form.elements.namedItem(nombre) as T;
+
+  const LIMITES = { nombre: 120, descripcion: 300, descripcion_larga: 5000, item: 200, items: 50 };
+  const FORMATOS = ['image/jpeg', 'image/png', 'image/webp'];
+  const MAX_BYTES = 8 * 1024 * 1024;
+
+  const parametroId = Number(new URL(location.href).searchParams.get('id'));
+  let servicio: ServicioAdmin | null = null;
+  let guardadoInicial = '';
+  let ocupadoFotos = false;
+
+  // ---------- Datos del formulario ----------
+
+  function leerItems(): string[] {
+    return [...listaItems.querySelectorAll<HTMLInputElement>('[data-item-texto]')].map((i) => i.value.trim()).filter(Boolean);
+  }
+
+  function leerDatos(): ServicioDatos {
+    return {
+      nombre: campo('nombre').value.trim(),
+      descripcion: campo('descripcion').value.trim(),
+      descripcion_larga: campo('descripcion_larga').value.trim() || null,
+      items: leerItems(),
+      publicado: campo<HTMLInputElement>('publicado').checked,
+    };
+  }
+
+  const hayCambios = () => JSON.stringify(leerDatos()) !== guardadoInicial;
+
+  function actualizarContador() {
+    const n = campo('descripcion').value.length;
+    $('[data-contador="descripcion"]').textContent = `${n}/${LIMITES.descripcion} caracteres.`;
+  }
+
+  // ---------- Ítems ----------
+
+  function agregarItem(texto = '', enfocar = false) {
+    const li = plantillaItem.content.firstElementChild!.cloneNode(true) as HTMLLIElement;
+    const input = $<HTMLInputElement>('[data-item-texto]', li);
+    input.value = texto;
+    input.setAttribute('aria-label', 'Ítem de «Qué incluye»');
+    listaItems.append(li);
+    actualizarBotonesItems();
+    if (enfocar) input.focus();
+  }
+
+  function actualizarBotonesItems() {
+    const filas = [...listaItems.children];
+    filas.forEach((li, i) => {
+      $<HTMLButtonElement>('[data-item-subir]', li).disabled = i === 0;
+      $<HTMLButtonElement>('[data-item-bajar]', li).disabled = i === filas.length - 1;
+    });
+  }
+
+  listaItems.addEventListener('click', (e) => {
+    const boton = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
+    const li = boton?.closest('li');
+    if (!boton || !li) return;
+    if (boton.matches('[data-item-quitar]')) {
+      const siguiente = (li.nextElementSibling ?? li.previousElementSibling) as HTMLElement | null;
+      li.remove();
+      (siguiente?.querySelector<HTMLInputElement>('[data-item-texto]') ?? $('[data-agregar-item]')).focus();
+    } else if (boton.matches('[data-item-subir]') && li.previousElementSibling) {
+      li.previousElementSibling.before(li);
+      boton.focus();
+    } else if (boton.matches('[data-item-bajar]') && li.nextElementSibling) {
+      li.nextElementSibling.after(li);
+      boton.focus();
+    }
+    actualizarBotonesItems();
+  });
+  listaItems.addEventListener('keydown', (e) => {
+    // Enter en un ítem agrega otro debajo (en vez de enviar el formulario).
+    if (e.key === 'Enter' && (e.target as HTMLElement).matches('[data-item-texto]')) {
+      e.preventDefault();
+      agregarItem('', true);
+    }
+  });
+  $('[data-agregar-item]').addEventListener('click', () => agregarItem('', true));
+
+  // ---------- Validación ----------
+
+  function marcarError(nombre: string, mensaje: string | null) {
+    const p = form.querySelector<HTMLElement>(`[data-error="${nombre}"]`);
+    if (p) p.textContent = mensaje ?? '';
+    const input = form.elements.namedItem(nombre) as HTMLElement | null;
+    if (input && 'setAttribute' in input) {
+      if (mensaje) input.setAttribute('aria-invalid', 'true');
+      else input.removeAttribute('aria-invalid');
+    }
+  }
+
+  function validar(d: ServicioDatos): Record<string, string> {
+    const errores: Record<string, string> = {};
+    if (!d.nombre) errores.nombre = 'Escribe el título del servicio.';
+    else if (d.nombre.length > LIMITES.nombre) errores.nombre = `El título no puede superar los ${LIMITES.nombre} caracteres.`;
+    if (!d.descripcion) errores.descripcion = 'Escribe una descripción corta.';
+    else if (d.descripcion.length > LIMITES.descripcion) errores.descripcion = `La descripción corta no puede superar los ${LIMITES.descripcion} caracteres.`;
+    if ((d.descripcion_larga ?? '').length > LIMITES.descripcion_larga) errores.descripcion_larga = `La descripción larga no puede superar los ${LIMITES.descripcion_larga} caracteres.`;
+    if (d.items.length > LIMITES.items) errores.items = `Máximo ${LIMITES.items} ítems.`;
+    else if (d.items.some((i) => i.length > LIMITES.item)) errores.items = `Cada ítem puede tener hasta ${LIMITES.item} caracteres.`;
+    return errores;
+  }
+
+  function mostrarErrores(errores: Record<string, string>) {
+    for (const nombre of ['nombre', 'descripcion', 'descripcion_larga', 'items']) marcarError(nombre, errores[nombre] ?? null);
+    const primero = Object.keys(errores)[0];
+    if (primero) (form.elements.namedItem(primero) as HTMLElement | null ?? $('[data-agregar-item]')).focus();
+  }
+
+  // ---------- Pintar el servicio ----------
+
+  function pintarDatos(s: ServicioAdmin | null) {
+    campo('nombre').value = s?.nombre ?? '';
+    campo('descripcion').value = s?.descripcion ?? '';
+    campo('descripcion_larga').value = s?.descripcion_larga ?? '';
+    campo<HTMLInputElement>('publicado').checked = s?.publicado ?? true;
+    listaItems.replaceChildren();
+    (s?.items ?? []).forEach((i) => agregarItem(i));
+    if (!s) agregarItem();
+    actualizarContador();
+    guardadoInicial = JSON.stringify(leerDatos());
+  }
+
+  function pintarEncabezado() {
+    const titulo = servicio ? `Editar: ${servicio.nombre}` : 'Nuevo servicio';
+    $('.topbar__titulo').textContent = servicio ? 'Editar servicio' : 'Nuevo servicio';
+    document.title = `${titulo} · Panel SIIE`;
+    const ver = $<HTMLAnchorElement>('[data-ver-sitio]');
+    ver.hidden = !servicio?.publicado;
+    if (servicio) ver.href = `/servicios/${servicio.id}`;
+    $('[data-eliminar]').hidden = !servicio;
+    $('[data-fotos-nuevo]').hidden = Boolean(servicio);
+    $('[data-fotos-panel]').hidden = !servicio;
+  }
+
+  function pintarFotos() {
+    const fotos = servicio?.fotos ?? [];
+    $('[data-fotos-conteo]').textContent = fotos.length ? (fotos.length === 1 ? '1 foto' : `${fotos.length} fotos`) : '';
+    $('[data-fotos-vacio]').hidden = fotos.length > 0;
+    galeria.replaceChildren(...fotos.map((f, i) => tarjetaFoto(f, i, fotos.length)));
+  }
+
+  function tarjetaFoto(f: ServicioFoto, i: number, total: number) {
+    const li = plantillaFoto.content.firstElementChild!.cloneNode(true) as HTMLLIElement;
+    li.dataset.fotoId = String(f.id);
+    li.classList.toggle('is-portada', f.es_portada);
+    const img = $<HTMLImageElement>('[data-foto-img]', li);
+    img.src = mediaUrl(f.srcset.split(',')[0].trim().split(' ')[0]);
+    img.alt = f.alt;
+    $('[data-foto-portada]', li).hidden = !f.es_portada;
+    const alt = $<HTMLInputElement>('[data-foto-alt]', li);
+    alt.value = f.alt;
+    alt.dataset.guardado = f.alt;
+    const n = `foto ${i + 1}`;
+    $('[data-foto-izq]', li).setAttribute('aria-label', `Mover ${n} a la izquierda`);
+    $('[data-foto-der]', li).setAttribute('aria-label', `Mover ${n} a la derecha`);
+    $('[data-foto-eliminar]', li).setAttribute('aria-label', `Eliminar ${n}`);
+    $<HTMLButtonElement>('[data-foto-izq]', li).disabled = i === 0;
+    $<HTMLButtonElement>('[data-foto-der]', li).disabled = i === total - 1;
+    const portada = $<HTMLButtonElement>('[data-foto-hacer-portada]', li);
+    portada.hidden = f.es_portada;
+    return li;
+  }
+
+  // ---------- Fotos: acciones ----------
+
+  /** Ejecuta una operación de fotos (una a la vez) y repinta con el servicio que devuelve la API. */
+  async function operarFotos(op: () => Promise<ServicioAdmin>, estado: HTMLElement | null, enfocar?: (fotos: ServicioFoto[]) => string | null) {
+    if (ocupadoFotos || !servicio) return;
+    ocupadoFotos = true;
+    galeria.setAttribute('aria-busy', 'true');
+    try {
+      servicio = await op();
+      pintarFotos();
+      const selector = enfocar?.(servicio.fotos);
+      if (selector) galeria.querySelector<HTMLElement>(selector)?.focus();
+    } catch (err) {
+      if (esSesionExpirada(err)) return;
+      const msg = err instanceof AdminError && err.status === 400 ? err.message : mensajeError(err, 'No se pudo completar la acción.');
+      if (estado) {
+        estado.textContent = msg;
+        estado.classList.add('is-error');
+      } else {
+        estadoSubida.textContent = msg;
+      }
+    } finally {
+      ocupadoFotos = false;
+      galeria.removeAttribute('aria-busy');
+    }
+  }
+
+  galeria.addEventListener('click', (e) => {
+    const boton = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
+    const li = boton?.closest<HTMLLIElement>('li[data-foto-id]');
+    if (!boton || !li || !servicio) return;
+    const id = servicio.id;
+    const fotoId = Number(li.dataset.fotoId);
+    const ids = servicio.fotos.map((f) => f.id);
+    const pos = ids.indexOf(fotoId);
+    const estado = $('[data-foto-estado]', li);
+
+    if (boton.matches('[data-foto-izq], [data-foto-der]')) {
+      const destino = pos + (boton.matches('[data-foto-izq]') ? -1 : 1);
+      [ids[pos], ids[destino]] = [ids[destino], ids[pos]];
+      const lado = boton.matches('[data-foto-izq]') ? 'izq' : 'der';
+      operarFotos(() => admin.ordenarFotos(id, ids), estado, () => `li[data-foto-id="${fotoId}"] [data-foto-${lado}]:not(:disabled)`);
+    } else if (boton.matches('[data-foto-hacer-portada]')) {
+      operarFotos(() => admin.editarFoto(id, fotoId, { es_portada: true }), estado, () => `li[data-foto-id="${fotoId}"] [data-foto-alt]`);
+    } else if (boton.matches('[data-foto-eliminar]')) {
+      const f = servicio.fotos[pos];
+      const extra = f.es_portada && servicio.fotos.length > 1 ? ' La siguiente foto pasará a ser la portada.' : '';
+      if (!confirm(`¿Eliminar esta foto («${f.alt}»)?${extra} Esta acción no se puede deshacer.`)) return;
+      operarFotos(() => admin.eliminarFoto(id, fotoId), estado, (fotos) =>
+        fotos.length ? `li[data-foto-id="${fotos[Math.min(pos, fotos.length - 1)].id}"] [data-foto-alt]` : null
+      );
+    }
+  });
+
+  // Texto alternativo: se guarda al salir del campo (o con Enter) si cambió.
+  galeria.addEventListener('change', (e) => guardarAlt(e.target as HTMLElement));
+  galeria.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.target as HTMLElement).matches('[data-foto-alt]')) {
+      e.preventDefault();
+      guardarAlt(e.target as HTMLElement);
+    }
+  });
+
+  async function guardarAlt(el: HTMLElement) {
+    if (!el.matches('[data-foto-alt]') || !servicio) return;
+    const input = el as HTMLInputElement;
+    const li = input.closest<HTMLLIElement>('li[data-foto-id]')!;
+    const estado = $('[data-foto-estado]', li);
+    const valor = input.value.trim();
+    if (valor === input.dataset.guardado) return;
+    estado.classList.remove('is-error');
+    if (!valor) {
+      input.setAttribute('aria-invalid', 'true');
+      estado.textContent = 'Describe brevemente lo que muestra la foto.';
+      estado.classList.add('is-error');
+      return;
+    }
+    input.removeAttribute('aria-invalid');
+    estado.textContent = 'Guardando…';
+    const id = servicio.id;
+    const fotoId = Number(li.dataset.fotoId);
+    try {
+      servicio = await admin.editarFoto(id, fotoId, { alt: valor });
+      input.dataset.guardado = valor;
+      estado.textContent = 'Texto guardado.';
+      li.querySelector<HTMLImageElement>('[data-foto-img]')!.alt = valor;
+    } catch (err) {
+      if (esSesionExpirada(err)) return;
+      estado.textContent = err instanceof AdminError && err.status === 400 ? err.message : mensajeError(err, 'No se pudo guardar el texto.');
+      estado.classList.add('is-error');
+    }
+  }
+
+  // ---------- Fotos: subida ----------
+
+  async function subir(archivos: File[]) {
+    if (!servicio || archivos.length === 0 || ocupadoFotos) return;
+    erroresSubida.replaceChildren();
+    // Revisión rápida en el navegador; el servidor valida el contenido real del archivo.
+    const rechazados: string[] = [];
+    const validos = archivos.filter((a) => {
+      if (!FORMATOS.includes(a.type)) rechazados.push(`${a.name}: formato no permitido. Usa JPG, PNG o WebP.`);
+      else if (a.size > MAX_BYTES) rechazados.push(`${a.name}: supera los 8 MB.`);
+      else return true;
+      return false;
+    });
+    const mostrarRechazos = (lista: string[]) =>
+      erroresSubida.replaceChildren(
+        ...lista.map((t) => {
+          const li = document.createElement('li');
+          li.textContent = t;
+          return li;
+        })
+      );
+    mostrarRechazos(rechazados);
+    if (validos.length === 0) {
+      estadoSubida.textContent = '';
+      return;
+    }
+
+    ocupadoFotos = true;
+    zonaSubida.classList.add('is-ocupada');
+    estadoSubida.textContent = validos.length === 1 ? 'Subiendo y optimizando 1 foto…' : `Subiendo y optimizando ${validos.length} fotos…`;
+    try {
+      const r = await admin.subirFotos(servicio.id, validos);
+      servicio = r.servicio;
+      pintarFotos();
+      const ok = validos.length - r.errores.length;
+      estadoSubida.textContent = ok === 1 ? '1 foto subida. Revisa su texto alternativo.' : `${ok} fotos subidas. Revisa sus textos alternativos.`;
+      mostrarRechazos([...rechazados, ...r.errores.map((x) => `${x.archivo}: ${x.error}`)]);
+    } catch (err) {
+      if (esSesionExpirada(err)) return;
+      estadoSubida.textContent = '';
+      if (err instanceof AdminError && err.errores.length) mostrarRechazos([...rechazados, ...err.errores.map((x) => `${x.archivo}: ${x.error}`)]);
+      else mostrarRechazos([...rechazados, err instanceof AdminError && err.status === 400 ? err.message : mensajeError(err, 'No se pudieron subir las fotos.')]);
+    } finally {
+      ocupadoFotos = false;
+      zonaSubida.classList.remove('is-ocupada');
+      inputFotos.value = '';
+    }
+  }
+
+  inputFotos.addEventListener('change', () => subir([...(inputFotos.files ?? [])]));
+  for (const ev of ['dragenter', 'dragover'] as const) {
+    zonaSubida.addEventListener(ev, (e) => {
+      e.preventDefault();
+      zonaSubida.classList.add('is-encima');
+    });
+  }
+  for (const ev of ['dragleave', 'drop'] as const) {
+    zonaSubida.addEventListener(ev, () => zonaSubida.classList.remove('is-encima'));
+  }
+  zonaSubida.addEventListener('drop', (e) => {
+    e.preventDefault();
+    subir([...(e.dataTransfer?.files ?? [])]);
+  });
+
+  // ---------- Guardar y eliminar ----------
+
+  form.addEventListener('input', (e) => {
+    const t = e.target as HTMLElement;
+    if (t.matches('[name="descripcion"]')) actualizarContador();
+    if (t.matches('[name]') && t.getAttribute('aria-invalid')) marcarError((t as HTMLInputElement).name, null);
+    if (estadoGuardado.textContent && hayCambios()) estadoGuardado.textContent = '';
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorForm.hidden = true;
+    estadoGuardado.classList.remove('is-error');
+    const datos = leerDatos();
+    const errores = validar(datos);
+    mostrarErrores(errores);
+    if (Object.keys(errores).length) {
+      estadoGuardado.textContent = 'Revisa los campos marcados.';
+      estadoGuardado.classList.add('is-error');
+      return;
+    }
+
+    botonGuardar.disabled = true;
+    estadoGuardado.textContent = 'Guardando…';
+    try {
+      const nuevo = !servicio;
+      servicio = nuevo ? await admin.crearServicio(datos) : await admin.editarServicio(servicio!.id, datos);
+      pintarDatos(servicio);
+      pintarEncabezado();
+      pintarFotos();
+      if (nuevo) {
+        history.replaceState(null, '', `/admin/servicios/editar?id=${servicio.id}`);
+        estadoGuardado.textContent = 'Servicio creado. Ya puedes subir sus fotos.';
+        $('[data-subida]').scrollIntoView({ block: 'center', behavior: 'smooth' });
+      } else {
+        estadoGuardado.textContent = 'Cambios guardados.';
+      }
+    } catch (err) {
+      if (esSesionExpirada(err)) return;
+      if (err instanceof AdminError && Object.keys(err.campos).length) {
+        mostrarErrores(err.campos);
+        estadoGuardado.textContent = err.message;
+      } else {
+        estadoGuardado.textContent = mensajeError(err, 'No se pudieron guardar los cambios.');
+      }
+      estadoGuardado.classList.add('is-error');
+    } finally {
+      botonGuardar.disabled = false;
+    }
+  });
+
+  $('[data-eliminar]').addEventListener('click', async () => {
+    if (!servicio) return;
+    const n = servicio.fotos.length;
+    const fotos = n ? ` y ${n === 1 ? 'su foto' : `sus ${n} fotos`}` : '';
+    if (!confirm(`¿Eliminar el servicio «${servicio.nombre}»${fotos}? Desaparecerá del sitio y esta acción no se puede deshacer.`)) return;
+    try {
+      await admin.eliminarServicio(servicio.id);
+      guardadoInicial = JSON.stringify(leerDatos()); // no avisar de cambios al salir
+      location.replace('/admin/servicios');
+    } catch (err) {
+      if (esSesionExpirada(err)) return;
+      errorForm.textContent = mensajeError(err, 'No se pudo eliminar el servicio.');
+      errorForm.hidden = false;
+    }
+  });
+
+  // ---------- Aviso al salir sin guardar ----------
+
+  window.addEventListener('beforeunload', (e) => {
+    if (servicio !== undefined && guardadoInicial && hayCambios()) e.preventDefault();
+  });
+  // Enlaces del panel (barra lateral, volver, cancelar): confirmación propia, más clara que la del navegador.
+  document.addEventListener('click', (e) => {
+    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href]');
+    if (!a || a.target === '_blank' || !guardadoInicial || !hayCambios()) return;
+    if (!confirm('Tienes cambios sin guardar en este servicio. ¿Salir sin guardar?')) e.preventDefault();
+    else guardadoInicial = JSON.stringify(leerDatos());
+  });
+
+  // ---------- Inicio ----------
+
+  async function cargar() {
+    vista(contenedor, 'cargando');
+    try {
+      servicio = parametroId > 0 ? await admin.servicio(parametroId) : null;
+      pintarDatos(servicio);
+      pintarEncabezado();
+      pintarFotos();
+      vista(contenedor, 'listo');
+      if (!servicio) campo('nombre').focus();
+    } catch (err) {
+      if (esSesionExpirada(err)) return;
+      if (err instanceof AdminError && err.status === 404) vista(contenedor, 'vacio');
+      else vista(contenedor, 'error', mensajeError(err, 'No se pudo cargar el servicio.'));
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('[data-reintentar="editor"]')) cargar();
+  });
+
+  panelListo().then(cargar);
+</script>

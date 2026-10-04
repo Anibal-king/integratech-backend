@@ -1,87 +1,105 @@
 ---
-import { Image } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
 import Section from '../../components/Section.astro';
 import StatusMessage from '../../components/StatusMessage.astro';
 import Galeria from '../../components/Galeria.astro';
-import { api, dataOr } from '../../lib/api';
-import { fotosDeCategoria } from '../../lib/imagenes';
+import NoEncontrado from '../../components/NoEncontrado.astro';
+import { api, mediaUrl, mediaSrcset } from '../../lib/api';
 
-export async function getStaticPaths() {
-  const servicios = dataOr(await api.servicios(), []);
-  return servicios.map((s) => ({ params: { id: String(s.id) } }));
-}
+// Se renderiza en cada visita: un servicio nuevo tiene página al instante y uno
+// oculto o eliminado responde 404.
+export const prerender = false;
 
-const { id } = Astro.params;
-const servicio = dataOr(await api.servicio(id!), null);
+const resultado = await api.servicio(Astro.params.id!);
+const servicio = resultado.status === 'ok' ? resultado.data : null;
+const noExiste = resultado.status === 'http' && resultado.code === 404;
+if (!servicio) Astro.response.status = noExiste ? 404 : 503;
 
-if (!servicio) {
-  return Astro.redirect('/#servicios');
-}
-
-const fotos = fotosDeCategoria(servicio.nombre);
-const portada = fotos[0]?.img ?? null;
-const galeria = fotos.slice(1);
+const portada = servicio?.portada ?? null;
+// La portada va de fondo en el encabezado; la galería muestra las demás.
+const galeria = servicio?.fotos.filter((f) => f.id !== portada?.id) ?? [];
 ---
 
-<Layout title={`${servicio.nombre} — IntegraTech`} description={servicio.descripcion ?? undefined}>
-  <!-- Encabezado con imagen -->
-  <Section variant="dark" class="svc-hero">
-    {portada && (
-      <Image
-        class="svc-hero__bg"
-        src={portada}
-        alt={servicio.nombre}
-        widths={[600, 1000, 1600]}
-        sizes="100vw"
-        loading="eager"
-      />
+{!servicio ? (
+  <Layout title={noExiste ? 'Servicio no encontrado — IntegraTech' : 'Servicio no disponible — IntegraTech'}>
+    {noExiste ? (
+      <NoEncontrado titulo="Este servicio no está disponible" mensaje="Puede que se haya retirado o que la dirección no sea correcta. Revisa nuestros servicios actuales." />
+    ) : (
+      <Section variant="light" class="section">
+        <div class="container">
+          <p><a href="/#servicios">← Volver a servicios</a></p>
+          <StatusMessage resultado={resultado.status === 'ok' ? undefined : resultado} />
+        </div>
+      </Section>
     )}
-    <div class="svc-hero__overlay"></div>
-    <div class="container svc-hero__inner">
-      <p><a href="/#servicios" class="svc-hero__back">← Volver a servicios</a></p>
-      <span class="eyebrow">Servicio</span>
-      <h1>{servicio.nombre}</h1>
-      <p>{servicio.descripcion}</p>
-    </div>
-  </Section>
-
-  <Section variant="light" class="section">
-    <div class="container">
-      <div class="detail">
-        <div>
-          <h2>Qué incluye</h2>
-          {servicio.items.length === 0 ? (
-            <StatusMessage tipo="empty" mensaje="Sin ítems registrados para esta categoría." />
-          ) : (
-            <ul class="detail__list">
-              {servicio.items.map((i) => <li>{i}</li>)}
-            </ul>
-          )}
-        </div>
-
-        <aside class="detail__aside">
-          <h3>¿Te interesa este servicio?</h3>
-          <p>Agenda una visita técnica o pide una cotización sin compromiso.</p>
-          <a href="/#contacto" class="btn btn--primary btn--block">Solicitar cotización</a>
-        </aside>
-      </div>
-    </div>
-  </Section>
-
-  {galeria.length > 0 && (
-    <Section variant="muted" class="section">
-      <div class="container">
-        <div class="section__head">
-          <span class="eyebrow">Trabajos realizados</span>
-          <h2>Galería del servicio</h2>
-          <p>Ejemplos reales de proyectos ejecutados en esta línea.</p>
-        </div>
-        <Galeria fotos={galeria} />
+  </Layout>
+) : (
+  <Layout title={`${servicio.nombre} — IntegraTech`} description={servicio.descripcion ?? undefined}>
+    <!-- Encabezado con imagen -->
+    <Section variant="dark" class="svc-hero">
+      {portada && (
+        <img
+          class="svc-hero__bg"
+          src={mediaUrl(portada.src)}
+          srcset={mediaSrcset(portada.srcset)}
+          sizes="100vw"
+          width={portada.ancho}
+          height={portada.alto}
+          alt=""
+          fetchpriority="high"
+        />
+      )}
+      <div class="svc-hero__overlay"></div>
+      <div class="container svc-hero__inner">
+        <p><a href="/#servicios" class="svc-hero__back">← Volver a servicios</a></p>
+        <span class="eyebrow">Servicio</span>
+        <h1>{servicio.nombre}</h1>
+        <p>{servicio.descripcion}</p>
       </div>
     </Section>
-  )}
-</Layout>
+
+    <Section variant="light" class="section">
+      <div class="container">
+        <div class="detail">
+          <div>
+            {servicio.descripcion_larga && (
+              <div class="detail__larga">
+                {servicio.descripcion_larga.split(/\n{2,}/).map((p) => <p>{p}</p>)}
+              </div>
+            )}
+            <h2>Qué incluye</h2>
+            {servicio.items.length === 0 ? (
+              <StatusMessage tipo="empty" mensaje="Escríbenos y te contamos el alcance de este servicio para tu proyecto." />
+            ) : (
+              <ul class="detail__list">
+                {servicio.items.map((i) => <li>{i}</li>)}
+              </ul>
+            )}
+          </div>
+
+          <aside class="detail__aside">
+            <h3>¿Te interesa este servicio?</h3>
+            <p>Agenda una visita técnica o pide una cotización sin compromiso.</p>
+            <a href="/#contacto" class="btn btn--primary btn--block">Solicitar cotización</a>
+          </aside>
+        </div>
+      </div>
+    </Section>
+
+    {galeria.length > 0 && (
+      <Section variant="muted" class="section">
+        <div class="container">
+          <div class="section__head">
+            <span class="eyebrow">Trabajos realizados</span>
+            <h2>Galería del servicio</h2>
+            <p>Ejemplos reales de proyectos ejecutados en esta línea.</p>
+          </div>
+          <Galeria fotos={galeria} />
+        </div>
+      </Section>
+    )}
+  </Layout>
+)}
 
 <style>
   .svc-hero {
@@ -118,6 +136,8 @@ const galeria = fotos.slice(1);
     gap: 2.5rem;
     align-items: start;
   }
+  .detail__larga { margin-bottom: 2rem; max-width: 70ch; }
+  .detail__larga p { color: var(--text-muted); font-size: 1.05rem; }
   .detail__list { columns: 2; column-gap: 2rem; }
   .detail__list li { break-inside: avoid; }
   .detail__aside {

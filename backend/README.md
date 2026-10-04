@@ -24,12 +24,13 @@ Si la base no existe o está sin contenido, `npm start` ejecuta el seed automát
 | Script | Qué hace |
 |---|---|
 | `npm run db:migrate` | Crea las tablas que falten; no toca los datos |
-| `npm run db:seed` | Vacía y recarga las tablas de contenido. Idempotente y en una transacción; no toca `mensajes_contacto`, `leads_chatbot` ni `admin_*` |
+| `npm run db:seed` | Vacía y recarga las tablas de contenido. Idempotente y en una transacción; no toca `mensajes_contacto`, `leads_chatbot`, `admin_*` ni los servicios (solo los crea si no hay ninguno) |
 | `npm run crear-admin` | Crea un usuario del panel (pide correo y contraseña; mínimo 12 caracteres) |
 | `npm run cambiar-password` | Contraseña nueva para un usuario del panel (sirve si se olvidó); cierra sus sesiones |
+| `npm run migrar-fotos-servicios` | Fotos iniciales de los servicios → `UPLOADS_DIR` (idempotente) |
 | `npm run typecheck` | `tsc` sobre el JS (JSDoc + `checkJs`) contra `../shared/api-types.ts` |
 
-Variables de entorno: ver [`.env.example`](.env.example) (`PORT`, `NODE_ENV`, `DATABASE_PATH`, `CORS_ORIGIN`, `TRUST_PROXY`, `SMTP_*`).
+Variables de entorno: ver [`.env.example`](.env.example) (`PORT`, `NODE_ENV`, `DATABASE_PATH`, `UPLOADS_DIR`, `CORS_ORIGIN`, `TRUST_PROXY`, `SMTP_*`).
 
 ## Estructura del proyecto
 
@@ -44,13 +45,17 @@ backend/
 │   └── siie.db         # (generado, ignorado por git)
 ├── lib/
 │   ├── auth.js         # Panel: Argon2id, sesiones en SQLite, cookie, requireAdmin, origen
+│   ├── fotos.js        # Fotos: validación del contenido, versiones WebP, archivos en UPLOADS_DIR
 │   ├── mailer.js       # Correo SMTP (chatbot y formulario de contacto)
-│   └── security.js     # Límite de envíos, cabeceras, validación de campos
+│   ├── security.js     # Límite de envíos, cabeceras, validación de campos
+│   └── servicios.js    # Lectura de servicios con ítems y fotos (API pública y panel)
 ├── routes/             # Un archivo por recurso: /api/<recurso> (admin.js: /api/admin)
 ├── scripts/
 │   ├── crear-admin.js       # npm run crear-admin
 │   ├── cambiar-password.js  # npm run cambiar-password
-│   └── lector.js            # entrada por terminal (contraseña oculta) para ambos
+│   ├── migrar-fotos-servicios.js  # npm run migrar-fotos-servicios
+│   └── lector.js            # entrada por terminal (contraseña oculta)
+├── storage/uploads/    # (generado, ignorado por git) fotos subidas: respaldar con la base
 ├── server.js           # Punto de entrada de Express
 └── tsconfig.json       # Solo verificación de tipos (no compila)
 ```
@@ -67,8 +72,9 @@ el mismo archivo que usa el frontend.
 | `clientes`                | Clientes principales (Avícola Salvadoreña, Banco Hipotecario, etc.)   |
 | `servicios_por_cliente`   | Bullets de servicios realizados para cada cliente                     |
 | `otros_clientes`          | Lista simple de clientes adicionales (SIGET, Pollo Campero, etc.)     |
-| `categorias_servicios`    | Categorías del catálogo (Área Comercial, Industrial, Energía, etc.)   |
-| `servicios`               | Ítems específicos dentro de cada categoría                            |
+| `categorias_servicios`    | Servicios del sitio: título (`nombre`), descripción corta y larga, orden, publicado. Se administran en el panel; el seed solo los crea si no hay ninguno |
+| `servicios`               | Ítems de «Qué incluye» de cada servicio                               |
+| `servicio_fotos`          | Fotos de cada servicio: archivo generado, anchos, alt, orden, portada |
 | `contratos_mantenimiento` | Contratos de mantenimiento recurrentes con fechas de ejecución        |
 | `proyectos_destacados`    | Proyectos relevantes (data centers, subestaciones, iluminación, etc.) |
 | `marcas`                  | Marcas representadas (AKSA, Tripp-Lite, Loxone, ABB, etc.)            |
@@ -104,9 +110,11 @@ GET /api/clientes/otros/lista     → lista de "otros clientes"
 
 ### Catálogo de servicios
 ```
-GET /api/servicios        → categorías con sus ítems
-GET /api/servicios/:id    → detalle de una categoría
+GET /api/servicios        → servicios publicados, en el orden del panel, con ítems, portada y fotos
+GET /api/servicios/:id    → un servicio publicado (404 si no existe o está oculto)
 ```
+Las fotos traen `src` y `srcset` relativos (`/media/servicios/<archivo>-<ancho>.webp`):
+el frontend antepone la URL de la API.
 
 ### Proyectos
 ```
@@ -152,6 +160,26 @@ PATCH /api/admin/solicitudes/:origen/:id      Body: { estado?, notas? } → soli
 GET   /api/admin/estadisticas
       → { total, sin_atender, mes_actual, por_mes (6 meses × origen), por_estado }
 ```
+#### Servicios y fotos
+```
+GET    /api/admin/servicios                       → todos (incluidos los ocultos)
+GET    /api/admin/servicios/:id
+POST   /api/admin/servicios                       Body: { nombre, descripcion, descripcion_larga?, items[], publicado }
+PUT    /api/admin/servicios/:id                   (mismo cuerpo)
+PUT    /api/admin/servicios/orden                 Body: { ids: [...] } con todos los servicios
+DELETE /api/admin/servicios/:id                   → 204; borra ítems, fotos y sus archivos
+POST   /api/admin/servicios/:id/fotos             multipart, campo "fotos" (hasta 20 por envío)
+PATCH  /api/admin/servicios/:id/fotos/:fotoId     Body: { alt?, es_portada?: true }
+PUT    /api/admin/servicios/:id/fotos/orden       Body: { ids: [...] } con todas sus fotos
+DELETE /api/admin/servicios/:id/fotos/:fotoId     (si era la portada, pasa a serlo la siguiente)
+```
+- **Validación:** 400 con `{ error, campos: { nombre?, descripcion?, ... } }`; título repetido → 409.
+- **Fotos:** máximo 8 MB. El tipo se decide por el contenido (sharp), no por la extensión
+  ni el Content-Type: solo JPEG, PNG y WebP. Se corrige la orientación, se quitan los
+  metadatos (EXIF/GPS) y se generan WebP de 400, 800 y 1600 px (y el ancho original si es
+  menor), sin agrandar. Los nombres son aleatorios; se sirven en `/media` con caché de un año.
+  Si en un envío algunas fotos fallan, las válidas se guardan y las otras vienen en `errores`.
+
 - **Estados:** `nuevo` (por defecto), `contactado`, `cotizado`, `cerrado`, `descartado`.
   Columnas `estado`, `notas` y `fecha_actualizacion` en `mensajes_contacto` y
   `leads_chatbot`; `db/index.js` las agrega a bases existentes al arrancar (o con

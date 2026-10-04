@@ -1,12 +1,210 @@
 ---
 import AdminShell from '../../components/admin/AdminShell.astro';
-import Proximamente from '../../components/admin/Proximamente.astro';
+import Vista from '../../components/admin/Vista.astro';
+import Icono from '../../components/admin/Icono.astro';
 ---
 
 <AdminShell activo="servicios" titulo="Servicios">
-  <Proximamente
-    icono="servicios"
-    titulo="La gestión de servicios está en preparación"
-    descripcion="Aquí podrás revisar las líneas de servicio que se muestran en el sitio web."
-  />
+  <div class="cabecera">
+    <p>
+      Los servicios publicados aparecen en la página principal en este orden. Los cambios se ven en el sitio al
+      recargar la página.
+    </p>
+    <a href="/admin/servicios/editar" class="btn btn--primary"><Icono nombre="mas" tamano={18} />Agregar servicio</a>
+  </div>
+
+  <p class="admin-alert" data-error-orden role="alert" hidden></p>
+
+  <section class="admin-card" aria-labelledby="lista-servicios">
+    <h2 id="lista-servicios" class="sr-only">Lista de servicios</h2>
+    <Vista id="servicios" cargando="Cargando servicios…" vacio="Todavía no hay servicios. Agrega el primero con el botón «Agregar servicio».">
+      <ol class="servicios" data-lista></ol>
+    </Vista>
+  </section>
+
+  <!-- Plantilla de cada fila (se clona en el navegador; no contiene datos) -->
+  <template data-plantilla-fila>
+    <li class="servicio">
+      <div class="servicio__orden">
+        <button type="button" class="icono-btn" data-subir><Icono nombre="arriba" tamano={18} /></button>
+        <button type="button" class="icono-btn" data-bajar><Icono nombre="abajo" tamano={18} /></button>
+      </div>
+      <div class="servicio__portada" data-portada><Icono nombre="imagen" tamano={22} /></div>
+      <div class="servicio__txt">
+        <h3 data-titulo></h3>
+        <p data-descripcion></p>
+        <p class="servicio__meta"><span data-estado></span><span data-fotos></span></p>
+      </div>
+      <a class="btn btn--secondary btn--sm servicio__editar" data-editar><Icono nombre="editar" tamano={16} />Editar</a>
+    </li>
+  </template>
 </AdminShell>
+
+<style>
+  .cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .cabecera p { margin: 0; color: var(--text-muted); font-size: 0.92rem; max-width: 60ch; }
+  .admin-alert { margin-bottom: 1rem; }
+
+  .servicios { list-style: none; margin: 0; padding: 0; }
+  .servicios :global(.servicio) {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0;
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .servicios :global(.servicio:last-child) { border-bottom: 0; }
+  .servicios :global(.servicio.is-oculto .servicio__portada img) { opacity: 0.5; }
+  .servicios :global(.servicio__orden) { display: flex; flex-direction: column; gap: 0.2rem; }
+  .servicios :global(.icono-btn) {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-card);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .servicios :global(.icono-btn:hover:not(:disabled)) { background: var(--surface-muted); }
+  .servicios :global(.icono-btn:disabled) { opacity: 0.35; cursor: default; }
+  .servicios :global(.servicio__portada) {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 96px;
+    height: 64px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface-muted);
+    color: var(--placeholder-border);
+  }
+  .servicios :global(.servicio__portada img) { width: 100%; height: 100%; object-fit: cover; }
+  .servicios :global(.servicio__txt) { flex: 1; min-width: 0; }
+  .servicios :global(.servicio__txt h3) { margin: 0; font-size: 1rem; }
+  .servicios :global(.servicio__txt p) {
+    margin: 0.15rem 0 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .servicios :global(.servicio__meta) { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.35rem !important; }
+  .servicios :global(.chip--publicado) { --chip-color: var(--estado-cerrado); }
+  .servicios :global(.chip--oculto) { --chip-color: var(--estado-descartado); }
+
+  @media (max-width: 640px) {
+    .cabecera .btn { width: 100%; justify-content: center; }
+    .servicios :global(.servicio) { flex-wrap: wrap; gap: 0.75rem; padding: 0.9rem 1rem; }
+    .servicios :global(.servicio__portada) { width: 72px; height: 54px; }
+    .servicios :global(.servicio__txt) { flex-basis: calc(100% - 140px); }
+    .servicios :global(.servicio__txt p[data-descripcion]) { display: none; }
+    .servicios :global(.servicio__editar) { margin-left: auto; }
+  }
+</style>
+
+<script>
+  import { admin, mediaUrl, type ServicioAdmin } from '../../lib/admin';
+  import { panelListo, vista, mensajeError, esSesionExpirada } from '../../lib/admin-ui';
+
+  const $ = <T extends HTMLElement>(sel: string, raiz: ParentNode = document) => raiz.querySelector<T>(sel)!;
+  const contenedor = $('[data-vista-de="servicios"]');
+  const lista = $('[data-lista]');
+  const plantilla = $<HTMLTemplateElement>('[data-plantilla-fila]');
+  const errorOrden = $('[data-error-orden]');
+
+  let servicios: ServicioAdmin[] = [];
+  let guardando = false;
+
+  function fila(s: ServicioAdmin, i: number) {
+    const li = plantilla.content.firstElementChild!.cloneNode(true) as HTMLLIElement;
+    li.classList.toggle('is-oculto', !s.publicado);
+    $('[data-titulo]', li).textContent = s.nombre;
+    $('[data-descripcion]', li).textContent = s.descripcion ?? '';
+    const estado = $('[data-estado]', li);
+    estado.className = `chip chip--${s.publicado ? 'publicado' : 'oculto'}`;
+    estado.textContent = s.publicado ? 'Publicado' : 'Oculto';
+    $('[data-fotos]', li).textContent = s.fotos.length === 1 ? '1 foto' : `${s.fotos.length} fotos`;
+
+    if (s.portada) {
+      const img = document.createElement('img');
+      img.src = mediaUrl(s.portada.srcset.split(',')[0].trim().split(' ')[0]); // la versión más chica
+      img.alt = '';
+      img.loading = 'lazy';
+      $('[data-portada]', li).replaceChildren(img);
+    }
+
+    const editar = $<HTMLAnchorElement>('[data-editar]', li);
+    editar.href = `/admin/servicios/editar?id=${s.id}`;
+    editar.setAttribute('aria-label', `Editar ${s.nombre}`);
+
+    const subir = $<HTMLButtonElement>('[data-subir]', li);
+    const bajar = $<HTMLButtonElement>('[data-bajar]', li);
+    subir.setAttribute('aria-label', `Subir ${s.nombre}`);
+    bajar.setAttribute('aria-label', `Bajar ${s.nombre}`);
+    subir.disabled = i === 0;
+    bajar.disabled = i === servicios.length - 1;
+    subir.addEventListener('click', () => mover(i, -1));
+    bajar.addEventListener('click', () => mover(i, 1));
+    return li;
+  }
+
+  function pintar() {
+    lista.replaceChildren(...servicios.map(fila));
+  }
+
+  /** Mueve un servicio una posición; se guarda al instante y se revierte si falla. */
+  async function mover(i: number, delta: -1 | 1) {
+    const j = i + delta;
+    if (guardando || j < 0 || j >= servicios.length) return;
+    const anterior = servicios;
+    const nuevo = [...servicios];
+    [nuevo[i], nuevo[j]] = [nuevo[j], nuevo[i]];
+    servicios = nuevo;
+    pintar();
+    // Conserva el foco en el mismo botón del servicio movido (para seguir moviéndolo con el teclado).
+    lista.children[j]?.querySelector<HTMLButtonElement>(delta < 0 ? '[data-subir]' : '[data-bajar]')?.focus();
+
+    guardando = true;
+    errorOrden.hidden = true;
+    try {
+      servicios = await admin.ordenarServicios(servicios.map((s) => s.id));
+    } catch (err) {
+      if (esSesionExpirada(err)) return;
+      servicios = anterior;
+      pintar();
+      errorOrden.textContent = mensajeError(err, 'No se pudo guardar el nuevo orden.');
+      errorOrden.hidden = false;
+    } finally {
+      guardando = false;
+    }
+  }
+
+  async function cargar() {
+    vista(contenedor, 'cargando');
+    try {
+      servicios = await admin.servicios();
+      if (servicios.length === 0) return vista(contenedor, 'vacio');
+      pintar();
+      vista(contenedor, 'listo');
+    } catch (err) {
+      if (!esSesionExpirada(err)) vista(contenedor, 'error', mensajeError(err, 'No se pudieron cargar los servicios.'));
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('[data-reintentar="servicios"]')) cargar();
+  });
+
+  panelListo().then(cargar);
+</script>

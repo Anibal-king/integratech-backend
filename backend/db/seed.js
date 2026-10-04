@@ -1,10 +1,12 @@
-const { db, initSchema, DB_PATH } = require('./index');
+const { db, get, initSchema, DB_PATH, separarDescripcion } = require('./index');
 
 /**
  * Carga los datos reales de la empresa (tomados de su documentación comercial).
  * Idempotente: cada tabla de contenido se vacía y se vuelve a poblar. No toca
- * mensajes_contacto ni leads_chatbot. Todo corre en una transacción: si algo
- * falla, la base queda como estaba.
+ * mensajes_contacto, leads_chatbot ni los usuarios del panel. Los servicios
+ * (categorias_servicios, sus ítems y fotos) se administran desde el panel: solo
+ * se crean si todavía no hay ninguno, nunca se borran ni se sobrescriben.
+ * Todo corre en una transacción: si algo falla, la base queda como estaba.
  */
 function seed() {
   initSchema();
@@ -148,8 +150,77 @@ function poblar() {
   ].forEach(n => insOtro.run(n));
 
   // ---------- CATEGORÍAS DE SERVICIOS + SERVICIOS ----------
-  db.exec('DELETE FROM servicios; DELETE FROM categorias_servicios;');
-  const insCategoria = db.prepare('INSERT INTO categorias_servicios (nombre, descripcion) VALUES (?, ?)');
+  // Contenido inicial: desde aquí en adelante se administran en el panel.
+  if (!get('SELECT 1 AS x FROM categorias_servicios LIMIT 1')) poblarServicios();
+
+  // ---------- CONTRATOS DE MANTENIMIENTO ----------
+  db.exec('DELETE FROM contratos_mantenimiento;');
+  const insContrato = db.prepare('INSERT INTO contratos_mantenimiento (nombre_proyecto, ejecucion, descripcion) VALUES (?, ?, ?)');
+  [
+    ['Contrato de mantenimiento de plantas de emergencia para división pecuaria CMI, Avícola Salvadoreña', '2020 al 2025', 'Mantenimiento de equipos y atención de fallas para un parque de 85 unidades con capacidad de 80KVA a 1,000KVA.'],
+    ['Contrato de mantenimiento de plantas de emergencia para Harisa, Molinos Modernos', '2023 al 2024', 'Mantenimiento de equipos y atención de fallas para un parque de 10 unidades con capacidad de 150 KVA a 2,000 KVA.'],
+    ['Contrato de mantenimiento de plantas de emergencia para Hospital Ginecológico, Gasolinera Texaco Grupo Fe', '2023', 'Mantenimiento de equipos y atención de fallas para un parque de 10 unidades con capacidad de 5 KVA a 1,250 KVA.'],
+    ['Contrato de mantenimiento de UPS, aires acondicionados de precisión e infraestructura de Data Center principal en Edificio Senda Florida, San Salvador y redundante en Santa Ana, Agencia Centro', '2012 al 2025', 'Mantenimiento de equipos y atención de fallas para UPS, aires de precisión, infraestructura eléctrica y de datos.'],
+  ].forEach(row => insContrato.run(...row));
+
+  // ---------- PROYECTOS DESTACADOS ----------
+  db.exec('DELETE FROM proyectos_destacados;');
+  const insProyecto = db.prepare('INSERT INTO proyectos_destacados (nombre_proyecto, ejecucion, descripcion) VALUES (?, ?, ?)');
+  [
+    ['Proyecto automatización de proceso industrial de Plycem con brazos robot marca KUKA y equipo National Instruments', '2012-2013', 'Automatización de línea de producción con National Instruments y robots KUKA.'],
+    ['Proyectos de suministro e implementación de filtros de polvo asbesto en Plycem', '2014', 'Filtros de extracción de polvo de proceso.'],
+    ['Proyectos de suministro e implementación de filtros de polvo y vapores de proceso pinturas en Sherwin Williams', '2016', 'Filtros de extracción de polvo y vapores.'],
+    ['Diseño y construcción de Data Center principal para Banco Hipotecario, incluye obra civil, mecánica, eléctrica y equipos (UPS, aires de precisión, gabinetes, etc.)', '2012', 'Construcción de Data Center de Banco Hipotecario y migraciones.'],
+    ['Diseño y construcción de Data Center redundante para Banco Hipotecario, incluye obra civil, mecánica, eléctrica y equipos (UPS, aires de precisión, gabinetes, etc.)', '2016', 'Construcción de Data Center alterno para Banco Hipotecario.'],
+    ['Diseño y construcción de Data Center principal para Financiera Enlace, incluye obra civil, mecánica, eléctrica y equipos (UPS, aires de precisión, gabinetes, etc.)', '2016', 'Construcción de Data Center de Financiera Enlace y migraciones.'],
+    ['Diseño de Data Center TIER 4 redundante para CNR, incluye obra civil, mecánica, eléctrica y equipos (UPS, aires de precisión, gabinetes, etc.)', '2018', 'Diseño de Data Center para CNR con TIER 4.'],
+    ['Suministro de generadores y transferencias automáticas para Infored, Avícola Salvadoreña, Texaco (50 KVA a 1,000 KVA)', '2021 al 2023', 'Granjas La Esperanza, Guazapa, Las Torres, San Ramón, San Juan, San José, Primavera: 5 generadores AKSA de 250 KVA, 3 de 500 KVA, 1 de 344 KVA, 1 de 300 KVA, 1 de 1000 KVA y 14 transferencias automáticas de 800 a 1200 amperios marca McPherson.'],
+    ['Diseño, suministro e instalación de red eléctrica de granjas avícola', '2021', 'Suministro de 3 subestaciones desde 225 KVA a 501 KVA al piso y en estructura H, cableados secundarios, cuartos eléctricos, etc.'],
+    ['Diseño, suministro e instalación de obra eléctrica y automatización de galpones avícolas para Avícola Salvadoreña (34 galpones)', '2023-2024', 'Cableado primario y secundario, subestaciones de 300 KVA y 501 KVA en estructuras H y al piso.'],
+    ['Diseño, suministro e instalación de obra civil y mecánica de galpones avícolas para Avícola Salvadoreña (34 galpones)', '2023-2024', 'Instalación eléctrica y automatización del sistema de clima de galpones.'],
+    ['Red eléctrica de granja Suchitlán de Avícola Salvadoreña', '2023-2024', 'Diseño, suministro e instalación de red eléctrica de 1 km de cableado primario, subestación, cuarto eléctrico, cableado secundario, generador, transferencia, etc.'],
+    ['Proyecto de infraestructura eléctrica con desarrollo de pozos eléctricos, iluminación de complejo deportivo, iluminación de 3 escenarios deportivos para BCR, con automatización y control por equipo domótica Loxone', '2024-2025', 'Red eléctrica desde subestación, cuarto eléctrico, generador, 27 pozos eléctricos, 37 pozos de comunicación, tomas, luminarias, tableros, etc.'],
+    ['Suministro de generadores y transferencias automáticas para BCR (1 equipo UL de 1,200 KVA y 2 de 320 KVA) y para Casa Presidencial y Canal 10 (2 equipos de 300 KVA)', '2024-2025', 'Cambio de generadores de edificio centro y cableado de 175 metros para generadores.'],
+    ['Automatización de climatización con Loxone para Casa Presidencial de aires acondicionados con aplicativos en red', '2024', 'Automatización de aires acondicionados de despacho presidencial y luminarias.'],
+    ['Mantenimientos y construcción de subestaciones, obra eléctrica para Iglesia de Jesucristo de los Santos de los Últimos Días', '2020-2025', 'Construcción de red eléctrica, mantenimiento, instalación de aires acondicionados, etc.'],
+    ['Proyecto de iluminación de estadio de Ilobasco', '2025', 'Construcción de 6 torres de iluminación para escenarios deportivos.'],
+    ['Iluminación de planta de procesos y cableados de equipos en Sello de Oro', '2025-2026', 'Proyecto de iluminación, sistema de baja tensión para planta de harinas y cableados y conexiones de equipos para control y fuerza.'],
+    ['Proyecto de mejora de red eléctrica en edificios de Corte Suprema de Justicia', '2026', 'Suministro de 4 celdas de media tensión, transformador seco de 2,500 KVA, bancos de capacitores de 750 KVAR, filtros de armónicos, supresores de transientes, acometidas subterráneas de media tensión, etc.'],
+    ['UPS 80 KVA en Century Tower', '2026', 'Suministro e instalación de UPS de 80 KVA con sistema de fuerza para alimentación de elevadores y así evitar emergencias en fallos eléctricos con elevadores.'],
+  ].forEach(row => insProyecto.run(...row));
+
+  // ---------- MARCAS ----------
+  db.exec('DELETE FROM marcas;');
+  const insMarca = db.prepare('INSERT INTO marcas (nombre, funcion) VALUES (?, ?)');
+  [
+    ['AKSA Power Generation', 'Generadores eléctricos desde 15 KVA hasta 3,000 KVA.'],
+    ['Tripp-Lite by Eaton', 'Aires de precisión, UPS monofásicos, trifásicos y modulares, PDU, etc.'],
+    ['McPherson Controls', 'Transferencias automáticas desde 125 A hasta 3,000 A. Repuestos de generadores.'],
+    ['Loxone', 'Automatización de edificios, oficinas, hogares, etc.'],
+    ['Nederman', 'Extracción y filtración de polvo, partículas, humos, gases, etc.'],
+    ['Citel', 'Soluciones de protección contra las sobretensiones transitorias de equipos eléctricos, informáticos, telefónicos (fija y móvil) y RF.'],
+    ['Smartbitt', 'UPS desde 10 KVA a 120 KVA.'],
+    ['ABB', 'Protecciones térmicas, contactores, guardamotores, transformadores.'],
+    ['Deep Sea Electronics', 'Controladores de generadores.'],
+    ['Sylvania', 'Iluminación y sistemas solares.'],
+  ].forEach(row => insMarca.run(...row));
+
+  // ---------- DOCUMENTACIÓN LEGAL ----------
+  db.exec('DELETE FROM documentacion_legal;');
+  const insLegal = db.prepare('INSERT INTO documentacion_legal (tipo, numero, fecha_expedicion, descripcion) VALUES (?, ?, ?, ?)');
+  [
+    ['NIT (Número de Identificación Tributaria)', '0614-120722-106-0', null, 'Ministerio de Hacienda, Gobierno de El Salvador.'],
+    ['NRC (Número de Registro de Contribuyente)', '317094-1', '25/07/2022', 'Dirección General de Impuestos Internos - tarjeta de registro de contribuyentes, giro: instalaciones eléctricas.'],
+  ].forEach(row => insLegal.run(...row));
+}
+
+if (require.main === module) {
+  seed();
+}
+
+/** Servicios iniciales (solo si la tabla está vacía; ver poblar()). */
+function poblarServicios() {
+  const insCategoria = db.prepare('INSERT INTO categorias_servicios (nombre, descripcion, descripcion_larga, orden) VALUES (?, ?, ?, ?)');
   const insServicio = db.prepare('INSERT INTO servicios (categoria_id, nombre, orden) VALUES (?, ?, ?)');
 
   const categorias = [
@@ -223,75 +294,12 @@ function poblar() {
     },
   ];
 
-  categorias.forEach(cat => {
-    const info = insCategoria.run(cat.nombre, cat.descripcion);
+  categorias.forEach((cat, orden) => {
+    const { corta, larga } = separarDescripcion(cat.nombre, cat.descripcion);
+    const info = insCategoria.run(cat.nombre, corta, larga, orden + 1);
     const catId = Number(info.lastInsertRowid);
     cat.items.forEach((item, i) => insServicio.run(catId, item, i));
   });
-
-  // ---------- CONTRATOS DE MANTENIMIENTO ----------
-  db.exec('DELETE FROM contratos_mantenimiento;');
-  const insContrato = db.prepare('INSERT INTO contratos_mantenimiento (nombre_proyecto, ejecucion, descripcion) VALUES (?, ?, ?)');
-  [
-    ['Contrato de mantenimiento de plantas de emergencia para división pecuaria CMI, Avícola Salvadoreña', '2020 al 2025', 'Mantenimiento de equipos y atención de fallas para un parque de 85 unidades con capacidad de 80KVA a 1,000KVA.'],
-    ['Contrato de mantenimiento de plantas de emergencia para Harisa, Molinos Modernos', '2023 al 2024', 'Mantenimiento de equipos y atención de fallas para un parque de 10 unidades con capacidad de 150 KVA a 2,000 KVA.'],
-    ['Contrato de mantenimiento de plantas de emergencia para Hospital Ginecológico, Gasolinera Texaco Grupo Fe', '2023', 'Mantenimiento de equipos y atención de fallas para un parque de 10 unidades con capacidad de 5 KVA a 1,250 KVA.'],
-    ['Contrato de mantenimiento de UPS, aires acondicionados de precisión e infraestructura de Data Center principal en Edificio Senda Florida, San Salvador y redundante en Santa Ana, Agencia Centro', '2012 al 2025', 'Mantenimiento de equipos y atención de fallas para UPS, aires de precisión, infraestructura eléctrica y de datos.'],
-  ].forEach(row => insContrato.run(...row));
-
-  // ---------- PROYECTOS DESTACADOS ----------
-  db.exec('DELETE FROM proyectos_destacados;');
-  const insProyecto = db.prepare('INSERT INTO proyectos_destacados (nombre_proyecto, ejecucion, descripcion) VALUES (?, ?, ?)');
-  [
-    ['Proyecto automatización de proceso industrial de Plycem con brazos robot marca KUKA y equipo National Instruments', '2012-2013', 'Automatización de línea de producción con National Instruments y robots KUKA.'],
-    ['Proyectos de suministro e implementación de filtros de polvo asbesto en Plycem', '2014', 'Filtros de extracción de polvo de proceso.'],
-    ['Proyectos de suministro e implementación de filtros de polvo y vapores de proceso pinturas en Sherwin Williams', '2016', 'Filtros de extracción de polvo y vapores.'],
-    ['Diseño y construcción de Data Center principal para Banco Hipotecario, incluye obra civil, mecánica, eléctrica y equipos (UPS, aires de precisión, gabinetes, etc.)', '2012', 'Construcción de Data Center de Banco Hipotecario y migraciones.'],
-    ['Diseño y construcción de Data Center redundante para Banco Hipotecario, incluye obra civil, mecánica, eléctrica y equipos (UPS, aires de precisión, gabinetes, etc.)', '2016', 'Construcción de Data Center alterno para Banco Hipotecario.'],
-    ['Diseño y construcción de Data Center principal para Financiera Enlace, incluye obra civil, mecánica, eléctrica y equipos (UPS, aires de precisión, gabinetes, etc.)', '2016', 'Construcción de Data Center de Financiera Enlace y migraciones.'],
-    ['Diseño de Data Center TIER 4 redundante para CNR, incluye obra civil, mecánica, eléctrica y equipos (UPS, aires de precisión, gabinetes, etc.)', '2018', 'Diseño de Data Center para CNR con TIER 4.'],
-    ['Suministro de generadores y transferencias automáticas para Infored, Avícola Salvadoreña, Texaco (50 KVA a 1,000 KVA)', '2021 al 2023', 'Granjas La Esperanza, Guazapa, Las Torres, San Ramón, San Juan, San José, Primavera: 5 generadores AKSA de 250 KVA, 3 de 500 KVA, 1 de 344 KVA, 1 de 300 KVA, 1 de 1000 KVA y 14 transferencias automáticas de 800 a 1200 amperios marca McPherson.'],
-    ['Diseño, suministro e instalación de red eléctrica de granjas avícola', '2021', 'Suministro de 3 subestaciones desde 225 KVA a 501 KVA al piso y en estructura H, cableados secundarios, cuartos eléctricos, etc.'],
-    ['Diseño, suministro e instalación de obra eléctrica y automatización de galpones avícolas para Avícola Salvadoreña (34 galpones)', '2023-2024', 'Cableado primario y secundario, subestaciones de 300 KVA y 501 KVA en estructuras H y al piso.'],
-    ['Diseño, suministro e instalación de obra civil y mecánica de galpones avícolas para Avícola Salvadoreña (34 galpones)', '2023-2024', 'Instalación eléctrica y automatización del sistema de clima de galpones.'],
-    ['Red eléctrica de granja Suchitlán de Avícola Salvadoreña', '2023-2024', 'Diseño, suministro e instalación de red eléctrica de 1 km de cableado primario, subestación, cuarto eléctrico, cableado secundario, generador, transferencia, etc.'],
-    ['Proyecto de infraestructura eléctrica con desarrollo de pozos eléctricos, iluminación de complejo deportivo, iluminación de 3 escenarios deportivos para BCR, con automatización y control por equipo domótica Loxone', '2024-2025', 'Red eléctrica desde subestación, cuarto eléctrico, generador, 27 pozos eléctricos, 37 pozos de comunicación, tomas, luminarias, tableros, etc.'],
-    ['Suministro de generadores y transferencias automáticas para BCR (1 equipo UL de 1,200 KVA y 2 de 320 KVA) y para Casa Presidencial y Canal 10 (2 equipos de 300 KVA)', '2024-2025', 'Cambio de generadores de edificio centro y cableado de 175 metros para generadores.'],
-    ['Automatización de climatización con Loxone para Casa Presidencial de aires acondicionados con aplicativos en red', '2024', 'Automatización de aires acondicionados de despacho presidencial y luminarias.'],
-    ['Mantenimientos y construcción de subestaciones, obra eléctrica para Iglesia de Jesucristo de los Santos de los Últimos Días', '2020-2025', 'Construcción de red eléctrica, mantenimiento, instalación de aires acondicionados, etc.'],
-    ['Proyecto de iluminación de estadio de Ilobasco', '2025', 'Construcción de 6 torres de iluminación para escenarios deportivos.'],
-    ['Iluminación de planta de procesos y cableados de equipos en Sello de Oro', '2025-2026', 'Proyecto de iluminación, sistema de baja tensión para planta de harinas y cableados y conexiones de equipos para control y fuerza.'],
-    ['Proyecto de mejora de red eléctrica en edificios de Corte Suprema de Justicia', '2026', 'Suministro de 4 celdas de media tensión, transformador seco de 2,500 KVA, bancos de capacitores de 750 KVAR, filtros de armónicos, supresores de transientes, acometidas subterráneas de media tensión, etc.'],
-    ['UPS 80 KVA en Century Tower', '2026', 'Suministro e instalación de UPS de 80 KVA con sistema de fuerza para alimentación de elevadores y así evitar emergencias en fallos eléctricos con elevadores.'],
-  ].forEach(row => insProyecto.run(...row));
-
-  // ---------- MARCAS ----------
-  db.exec('DELETE FROM marcas;');
-  const insMarca = db.prepare('INSERT INTO marcas (nombre, funcion) VALUES (?, ?)');
-  [
-    ['AKSA Power Generation', 'Generadores eléctricos desde 15 KVA hasta 3,000 KVA.'],
-    ['Tripp-Lite by Eaton', 'Aires de precisión, UPS monofásicos, trifásicos y modulares, PDU, etc.'],
-    ['McPherson Controls', 'Transferencias automáticas desde 125 A hasta 3,000 A. Repuestos de generadores.'],
-    ['Loxone', 'Automatización de edificios, oficinas, hogares, etc.'],
-    ['Nederman', 'Extracción y filtración de polvo, partículas, humos, gases, etc.'],
-    ['Citel', 'Soluciones de protección contra las sobretensiones transitorias de equipos eléctricos, informáticos, telefónicos (fija y móvil) y RF.'],
-    ['Smartbitt', 'UPS desde 10 KVA a 120 KVA.'],
-    ['ABB', 'Protecciones térmicas, contactores, guardamotores, transformadores.'],
-    ['Deep Sea Electronics', 'Controladores de generadores.'],
-    ['Sylvania', 'Iluminación y sistemas solares.'],
-  ].forEach(row => insMarca.run(...row));
-
-  // ---------- DOCUMENTACIÓN LEGAL ----------
-  db.exec('DELETE FROM documentacion_legal;');
-  const insLegal = db.prepare('INSERT INTO documentacion_legal (tipo, numero, fecha_expedicion, descripcion) VALUES (?, ?, ?, ?)');
-  [
-    ['NIT (Número de Identificación Tributaria)', '0614-120722-106-0', null, 'Ministerio de Hacienda, Gobierno de El Salvador.'],
-    ['NRC (Número de Registro de Contribuyente)', '317094-1', '25/07/2022', 'Dirección General de Impuestos Internos - tarjeta de registro de contribuyentes, giro: instalaciones eléctricas.'],
-  ].forEach(row => insLegal.run(...row));
-}
-
-if (require.main === module) {
-  seed();
 }
 
 module.exports = { seed };

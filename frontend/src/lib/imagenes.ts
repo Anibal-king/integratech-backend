@@ -165,30 +165,8 @@ export const todasLasFotos: FotoProyecto[] = Array.from(PROYECTOS.keys())
   .map((id) => foto(id)!)
   .filter(Boolean);
 
-// ---------- Mapa categoría de servicio -> fotos ----------
-
-const CATEGORIA_FOTOS: Record<string, string[]> = {
-  'Proyectos de Automatización': ['proyecto_017', 'proyecto_027', 'proyecto_028', 'proyecto_019', 'proyecto_053', 'proyecto_005'],
-  'Soluciones Área Comercial': ['proyecto_001', 'proyecto_040', 'proyecto_045', 'proyecto_049', 'proyecto_025', 'proyecto_026'],
-  'Soluciones Área Industrial': ['proyecto_018', 'proyecto_020', 'proyecto_003', 'proyecto_010', 'proyecto_002', 'proyecto_016'],
-  'Soluciones Energía Renovable y Calidad': ['proyecto_043', 'proyecto_044', 'proyecto_042', 'proyecto_004', 'proyecto_055', 'proyecto_056'],
-  'Auditorías Energéticas': ['proyecto_021', 'proyecto_013', 'proyecto_006'],
-  'Mantenimiento de Infraestructura': ['proyecto_013', 'proyecto_014', 'proyecto_008', 'proyecto_038', 'proyecto_039', 'proyecto_036'],
-  'Asesoría para Ahorro Energético': ['proyecto_021', 'proyecto_042', 'proyecto_029', 'proyecto_041'],
-};
-
-const FOTOS_POR_DEFECTO = ['proyecto_001', 'proyecto_009', 'proyecto_017', 'proyecto_036'];
-
-/** Fotos asociadas a una categoría de servicio (por nombre de la API). */
-export function fotosDeCategoria(nombre: string): FotoProyecto[] {
-  const ids = CATEGORIA_FOTOS[nombre.trim()] ?? FOTOS_POR_DEFECTO;
-  return ids.map(foto).filter((f): f is FotoProyecto => f !== null);
-}
-
-/** Una sola foto representativa de la categoría (para tarjetas/miniaturas). */
-export function portadaDeCategoria(nombre: string): ImageMetadata | null {
-  return fotosDeCategoria(nombre)[0]?.img ?? null;
-}
+// Las fotos de cada servicio ya no se definen aquí: se administran en el panel
+// (/admin/servicios) y llegan por la API (ver backend/scripts/migrar-fotos-servicios.js).
 
 // ---------- Selección para la portada ----------
 

@@ -38,3 +38,6 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# Fotos subidas desde el panel (se respaldan aparte, junto con la base)
+backend/storage/

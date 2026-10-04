@@ -11,9 +11,12 @@
     "db:seed": "node backend/db/seed.js",
     "crear-admin": "npm --prefix backend run crear-admin",
     "cambiar-password": "npm --prefix backend run cambiar-password",
+    "migrar-fotos-servicios": "npm --prefix backend run migrar-fotos-servicios",
     "seed": "node backend/db/seed.js",
     "check:api": "node scripts/check-api.mjs",
     "build": "npm --prefix frontend run build",
+    "start:backend": "node backend/server.js",
+    "start:frontend": "node frontend/dist/server/entry.mjs",
     "typecheck": "npm --prefix backend run typecheck",
     "install:all": "npm --prefix backend install && npm --prefix frontend install"
   },

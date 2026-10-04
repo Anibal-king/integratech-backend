@@ -11,6 +11,7 @@ const {
   requireAdmin,
 } = require('../lib/auth');
 const panelRoutes = require('./admin-panel');
+const serviciosRoutes = require('./admin-servicios');
 
 /** @typedef {import('../../shared/api-types').AdminUsuario} AdminUsuario */
 
@@ -58,7 +59,8 @@ router.get('/me', requireAdmin, (req, res) => {
   res.json(respuesta);
 });
 
-// Solicitudes y estadísticas del panel (todas con requireAdmin).
+// Servicios y fotos; solicitudes y estadísticas (todas con requireAdmin).
+router.use('/servicios', serviciosRoutes);
 router.use(panelRoutes);
 
 module.exports = router;

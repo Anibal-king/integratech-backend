@@ -85,6 +85,11 @@ interface Step {
   options?: Opcion[];
 }
 
+/**
+ * Lista de respaldo: al abrir el chat se piden los servicios publicados a la API
+ * (los del panel); esta solo se usa si la API no responde.
+ */
+const OTRO_SERVICIO = 'Otro / No estoy seguro';
 const SERVICIOS = [
   'Proyectos de Automatización',
   'Soluciones Área Comercial',
@@ -93,8 +98,10 @@ const SERVICIOS = [
   'Auditorías Energéticas',
   'Mantenimiento de Infraestructura',
   'Asesoría para Ahorro Energético',
-  'Otro / No estoy seguro',
+  OTRO_SERVICIO,
 ];
+
+const opcionesServicio = (nombres: string[]): Opcion[] => nombres.map((s) => ({ label: s, value: s, next: 'alcance' }));
 
 const STEPS: Record<StepId, Step> = {
   inicio: {
@@ -110,7 +117,7 @@ const STEPS: Record<StepId, Step> = {
     kind: 'choice',
     field: 'tipo_servicio',
     next: 'alcance',
-    options: SERVICIOS.map((s) => ({ label: s, value: s, next: 'alcance' })),
+    options: opcionesServicio(SERVICIOS),
   },
   alcance: {
     bot: 'Contame brevemente el alcance: ¿qué necesitás resolver o qué equipos/áreas involucra?',
@@ -251,8 +258,23 @@ export default function ChatWidget() {
   const [errorCampo, setErrorCampo] = useState<string | null>(null);
   const [mensajes, setMensajes] = useState<Burbuja[]>([{ de: 'bot', texto: textoBot(STEPS.inicio, LEAD_VACIO) }]);
 
+  const [servicios, setServicios] = useState<Opcion[] | null>(null);
+
   const bodyRef = useRef<HTMLDivElement>(null);
   const step = STEPS[stepId];
+  const opciones = stepId === 'tipo_servicio' && servicios ? servicios : step.options;
+
+  // Servicios publicados en el panel, una vez por visita y solo si se abre el chat.
+  useEffect(() => {
+    if (!abierto || servicios) return;
+    fetch(`${API_URL}/api/servicios`, { signal: AbortSignal.timeout(5000) })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((lista: { nombre?: unknown }[]) => {
+        const nombres = lista.map((s) => s.nombre).filter((n): n is string => typeof n === 'string');
+        if (nombres.length) setServicios(opcionesServicio([...nombres, OTRO_SERVICIO]));
+      })
+      .catch(() => {}); // se queda con la lista de respaldo
+  }, [abierto, servicios]);
 
   // Autoscroll al último mensaje
   useEffect(() => {
@@ -381,7 +403,7 @@ export default function ChatWidget() {
           <div className="chat__controls">
             {step.kind === 'choice' && (
               <div className="chat__quick">
-                {step.options
+                {opciones
                   ?.filter((op) => op.action !== 'whatsapp' || mostrarWhatsAppEnInicio || stepId !== 'inicio')
                   .map((op, i) => (
                     <button key={i} type="button" className="chat__chip" onClick={() => elegirOpcion(op)}>

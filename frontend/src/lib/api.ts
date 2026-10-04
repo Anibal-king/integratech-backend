@@ -28,6 +28,7 @@ import type {
 } from '../../../shared/api-types';
 
 export type {
+  ServicioFoto,
   CategoriaServicio,
   Cliente,
   ContactoPayload,
@@ -41,7 +42,21 @@ export type {
 } from '../../../shared/api-types';
 
 const BASE_URL = (import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-export const TIMEOUT_MS = 8000;
+/**
+ * Las páginas que dependen de servicios se renderizan en cada visita: si la API
+ * no responde, mejor mostrar el aviso pronto que dejar la página esperando.
+ */
+export const TIMEOUT_MS = 4000;
+
+/** URL absoluta de un archivo del backend (/media/...). */
+export const mediaUrl = (ruta: string) => `${BASE_URL}${ruta}`;
+
+/** srcset con URLs absolutas a partir del srcset relativo que devuelve la API. */
+export const mediaSrcset = (srcset: string) =>
+  srcset
+    .split(',')
+    .map((parte) => mediaUrl(parte.trim()))
+    .join(', ');
 
 // ---------- Resultado ----------
 
@@ -80,7 +95,8 @@ function cumple(valor: unknown, forma: Forma): boolean {
 }
 
 const FORMAS = {
-  categoria: { id: 'number', nombre: 'string', descripcion: 'string?', items: 'string[]' },
+  categoria: { id: 'number', nombre: 'string', descripcion: 'string?', descripcion_larga: 'string?', items: 'string[]' },
+  foto: { id: 'number', alt: 'string', src: 'string', srcset: 'string', ancho: 'number', alto: 'number' },
   cliente: { id: 'number', nombre: 'string', servicios: 'string[]' },
   otroCliente: { id: 'number', nombre: 'string' },
   proyecto: { id: 'number', nombre_proyecto: 'string', ejecucion: 'string?', descripcion: 'string?' },
@@ -91,6 +107,11 @@ const FORMAS = {
 } satisfies Record<string, Forma>;
 
 const lista = (forma: Forma) => (v: unknown) => Array.isArray(v) && v.every((x) => cumple(x, forma));
+const esServicio = (v: unknown) => {
+  if (!cumple(v, FORMAS.categoria)) return false;
+  const { portada, fotos } = v as { portada?: unknown; fotos?: unknown };
+  return (portada === null || cumple(portada, FORMAS.foto)) && lista(FORMAS.foto)(fotos);
+};
 const esEmpresa = (v: unknown) =>
   cumple(v, FORMAS.empresa) && lista(FORMAS.valor)((v as { valores?: unknown }).valores);
 
@@ -125,7 +146,8 @@ async function get<T>(
 
   if (!res.ok) {
     const detail = `HTTP ${res.status} en GET ${url}`;
-    console.error(`[api] ${detail}`);
+    // Un 404 es una respuesta esperada (p. ej. servicio oculto o dirección inventada), no un fallo.
+    if (res.status !== 404) console.error(`[api] ${detail}`);
     return { status: 'http', code: res.status, detail };
   }
 
@@ -179,10 +201,11 @@ export const api = {
       ApiResult<Empresa>
     >,
 
-  servicios: () => getLista<CategoriaServicio>('/api/servicios', FORMAS.categoria),
+  servicios: () =>
+    get<CategoriaServicio[]>('/api/servicios', (v) => Array.isArray(v) && v.every(esServicio), vacia),
 
-  servicio: (id: number | string) =>
-    get<CategoriaServicio>(`/api/servicios/${id}`, (v) => cumple(v, FORMAS.categoria), () => false),
+  /** Un servicio publicado; { status: 'http', code: 404 } si no existe o está oculto. */
+  servicio: (id: number | string) => get<CategoriaServicio>(`/api/servicios/${id}`, esServicio, () => false),
 
   clientes: () => getLista<Cliente>('/api/clientes', FORMAS.cliente),
 

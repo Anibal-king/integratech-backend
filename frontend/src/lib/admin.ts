@@ -14,21 +14,44 @@ import type {
   SolicitudAdmin,
   SolicitudCambios,
   SolicitudesPagina,
+  ServicioAdmin,
+  ServicioDatos,
+  ServicioFoto,
 } from '../../../shared/api-types';
 
-export type { AdminUsuario, EstadisticasAdmin, EstadoSolicitud, OrigenSolicitud, SolicitudAdmin, SolicitudesPagina };
+export type {
+  AdminUsuario,
+  EstadisticasAdmin,
+  EstadoSolicitud,
+  OrigenSolicitud,
+  SolicitudAdmin,
+  SolicitudesPagina,
+  ServicioAdmin,
+  ServicioDatos,
+  ServicioFoto,
+};
 
 const BASE_URL = (import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 const TIMEOUT_MS = 10_000;
+/** Las subidas de fotos pueden tardar (varias imágenes de hasta 8 MB). */
+const TIMEOUT_SUBIDA_MS = 120_000;
+
+/** URL absoluta de un archivo del backend (/media/...). */
+export const mediaUrl = (ruta: string) => `${BASE_URL}${ruta}`;
 
 export const LOGIN_PATH = '/admin/login';
 export const DASHBOARD_PATH = '/admin/dashboard';
 
-/** Error con el estado HTTP (0 = sin conexión) y el mensaje del servidor, si lo hubo. */
+/**
+ * Error con el estado HTTP (0 = sin conexión), el mensaje del servidor y, si los
+ * hubo, los errores por campo (`campos`) o por archivo (`errores`).
+ */
 export class AdminError extends Error {
   constructor(
     readonly status: number,
-    message: string
+    message: string,
+    readonly campos: Record<string, string> = {},
+    readonly errores: { archivo: string; error: string }[] = []
   ) {
     super(message);
   }
@@ -41,12 +64,13 @@ function irAlLogin(): never {
 }
 
 async function pedir(path: string, init: RequestInit = {}): Promise<Response> {
+  const esArchivo = init.body instanceof FormData; // el navegador pone el boundary del multipart
   try {
     return await fetch(`${BASE_URL}${path}`, {
       ...init,
       credentials: 'include',
-      headers: { Accept: 'application/json', ...(init.body ? { 'Content-Type': 'application/json' } : {}) },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      headers: { Accept: 'application/json', ...(init.body && !esArchivo ? { 'Content-Type': 'application/json' } : {}) },
+      signal: AbortSignal.timeout(esArchivo ? TIMEOUT_SUBIDA_MS : TIMEOUT_MS),
     });
   } catch {
     throw new AdminError(0, 'No se pudo conectar con el servidor.');
@@ -58,13 +82,24 @@ async function mensajeDe(res: Response, porDefecto: string): Promise<string> {
   return typeof data?.error === 'string' ? data.error : porDefecto;
 }
 
-/** Petición a una ruta protegida: 401 → login; otro error → AdminError. */
+/** Petición a una ruta protegida: 401 → login; otro error → AdminError (con campos/errores). */
 async function protegido<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await pedir(path, init);
   if (res.status === 401) irAlLogin();
-  if (!res.ok) throw new AdminError(res.status, await mensajeDe(res, `Error ${res.status}`));
-  return (await res.json()) as T;
+  if (res.status === 204) return undefined as T;
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new AdminError(
+      res.status,
+      typeof data?.error === 'string' ? data.error : `Error ${res.status}`,
+      data?.campos && typeof data.campos === 'object' ? data.campos : {},
+      Array.isArray(data?.errores) ? data.errores : []
+    );
+  }
+  return data as T;
 }
+
+const json = (method: string, body: unknown): RequestInit => ({ method, body: JSON.stringify(body) });
 
 export interface FiltrosSolicitudes {
   estado?: EstadoSolicitud | '';
@@ -106,8 +141,28 @@ export const admin = {
     protegido<SolicitudAdmin>(`/api/admin/solicitudes/${origen}/${id}`),
 
   actualizarSolicitud: (origen: OrigenSolicitud, id: number, cambios: SolicitudCambios) =>
-    protegido<SolicitudAdmin>(`/api/admin/solicitudes/${origen}/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(cambios),
-    }),
+    protegido<SolicitudAdmin>(`/api/admin/solicitudes/${origen}/${id}`, json('PATCH', cambios)),
+
+  // ---------- Servicios ----------
+  servicios: () => protegido<ServicioAdmin[]>('/api/admin/servicios'),
+  servicio: (id: number) => protegido<ServicioAdmin>(`/api/admin/servicios/${id}`),
+  crearServicio: (datos: ServicioDatos) => protegido<ServicioAdmin>('/api/admin/servicios', json('POST', datos)),
+  editarServicio: (id: number, datos: ServicioDatos) => protegido<ServicioAdmin>(`/api/admin/servicios/${id}`, json('PUT', datos)),
+  ordenarServicios: (ids: number[]) => protegido<ServicioAdmin[]>('/api/admin/servicios/orden', json('PUT', { ids })),
+  eliminarServicio: (id: number) => protegido<void>(`/api/admin/servicios/${id}`, { method: 'DELETE' }),
+
+  /** Sube una o varias fotos. Las que no se pudieron procesar vienen en `errores`. */
+  subirFotos(id: number, archivos: File[]) {
+    const fd = new FormData();
+    for (const a of archivos) fd.append('fotos', a);
+    return protegido<{ servicio: ServicioAdmin; errores: { archivo: string; error: string }[] }>(
+      `/api/admin/servicios/${id}/fotos`,
+      { method: 'POST', body: fd }
+    );
+  },
+  editarFoto: (id: number, fotoId: number, cambios: { alt?: string; es_portada?: true }) =>
+    protegido<ServicioAdmin>(`/api/admin/servicios/${id}/fotos/${fotoId}`, json('PATCH', cambios)),
+  ordenarFotos: (id: number, ids: number[]) => protegido<ServicioAdmin>(`/api/admin/servicios/${id}/fotos/orden`, json('PUT', { ids })),
+  eliminarFoto: (id: number, fotoId: number) => protegido<ServicioAdmin>(`/api/admin/servicios/${id}/fotos/${fotoId}`, { method: 'DELETE' }),
+
 };

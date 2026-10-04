@@ -4,7 +4,9 @@ import Section from '../../components/Section.astro';
 import StatusMessage from '../../components/StatusMessage.astro';
 import Galeria from '../../components/Galeria.astro';
 import { api, dataOr } from '../../lib/api';
-import { fotosDeCategoria } from '../../lib/imagenes';
+
+// Se renderiza en cada visita: las galerías son las fotos de cada servicio del panel.
+export const prerender = false;
 
 const [servicios, proyectos, contratos] = await Promise.all([
   api.servicios(),
@@ -21,7 +23,7 @@ const slug = (nombre: string) =>
     .replace(/(^-|-$)/g, '');
 
 const categorias = dataOr(servicios, [])
-  .map((s) => ({ ...s, fotos: fotosDeCategoria(s.nombre), slug: slug(s.nombre) }))
+  .map((s) => ({ ...s, slug: slug(s.nombre) }))
   .filter((c) => c.fotos.length > 0);
 
 const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);

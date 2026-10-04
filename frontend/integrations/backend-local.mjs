@@ -1,6 +1,7 @@
 /**
  * Integración de Astro: garantiza que la API local esté disponible mientras
- * corren `astro dev` y `astro build` (el sitio lee los datos en el servidor).
+ * corre `astro dev` (las páginas leen los datos en el servidor). El build ya no
+ * la necesita: ninguna página prerenderizada usa la API.
  *
  * Si PUBLIC_API_URL apunta a esta máquina y la API no responde, arranca
  * backend/server.js con el mismo Node y lo detiene al cerrar Astro. Si la API
@@ -67,8 +68,7 @@ export default function backendLocal() {
     logger.info(`La API no responde en ${api.origin}: arrancando backend/server.js…`);
     hijo = spawn(process.execPath, ['server.js'], {
       cwd: BACKEND_DIR,
-      // Siempre en modo desarrollo: `astro build` define NODE_ENV=production y el backend
-      // lo heredaría (sin orígenes CORS por defecto). Este backend es solo local.
+      // Siempre en modo desarrollo: este backend es solo local.
       env: { ...process.env, NODE_ENV: 'development', PORT: api.port || '3000' },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -98,8 +98,6 @@ export default function backendLocal() {
     hooks: {
       'astro:server:setup': ({ logger }) => asegurarBackend(logger),
       'astro:server:done': detener,
-      'astro:build:start': ({ logger }) => asegurarBackend(logger),
-      'astro:build:done': detener,
     },
   };
 }

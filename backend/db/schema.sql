@@ -50,19 +50,42 @@ CREATE TABLE IF NOT EXISTS otros_clientes (
 -- Categorías del catálogo de Productos y Servicios
 -- (Soluciones Área Comercial, Área Industrial, Energía Renovable y Calidad,
 --  Auditorías Energéticas, Mantenimiento de Infraestructura, etc.)
+-- Son los "servicios" del sitio y del panel: nombre = título, descripcion = corta.
 CREATE TABLE IF NOT EXISTS categorias_servicios (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nombre TEXT NOT NULL UNIQUE,
-  descripcion TEXT
+  descripcion TEXT,
+  descripcion_larga TEXT,               -- página de detalle (si falta, se usa la corta)
+  orden INTEGER NOT NULL DEFAULT 0,
+  publicado INTEGER NOT NULL DEFAULT 1, -- 0 = oculto en el sitio público
+  fecha_actualizacion TEXT
 );
 
--- Servicios / capacidades específicas dentro de cada categoría
+-- Ítems de "Qué incluye" de cada servicio (categoría)
 CREATE TABLE IF NOT EXISTS servicios (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   categoria_id INTEGER REFERENCES categorias_servicios(id) ON DELETE CASCADE,
   nombre TEXT NOT NULL,
   orden INTEGER DEFAULT 0
 );
+
+-- Fotos de cada servicio, subidas desde el panel. Los archivos viven en
+-- UPLOADS_DIR/servicios/<archivo>-<ancho>.webp (nombre generado por el servidor).
+CREATE TABLE IF NOT EXISTS servicio_fotos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  categoria_id INTEGER NOT NULL REFERENCES categorias_servicios(id) ON DELETE CASCADE,
+  archivo TEXT NOT NULL UNIQUE,         -- identificador aleatorio, sin extensión ni ancho
+  anchos TEXT NOT NULL,                 -- anchos generados, p. ej. '400,800'
+  ancho INTEGER NOT NULL,               -- tamaño de la versión más grande
+  alto INTEGER NOT NULL,
+  alt TEXT NOT NULL,                    -- texto alternativo
+  orden INTEGER NOT NULL DEFAULT 0,
+  es_portada INTEGER NOT NULL DEFAULT 0,
+  fecha_creacion TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_servicio_fotos_categoria ON servicio_fotos(categoria_id, orden);
+-- Una sola portada por servicio
+CREATE UNIQUE INDEX IF NOT EXISTS idx_servicio_fotos_portada ON servicio_fotos(categoria_id) WHERE es_portada = 1;
 
 -- Contratos de mantenimiento (tabla del PDF)
 CREATE TABLE IF NOT EXISTS contratos_mantenimiento (
@@ -159,3 +182,4 @@ CREATE TABLE IF NOT EXISTS admin_sesiones (
   expira TEXT NOT NULL                  -- datetime UTC, formato 'YYYY-MM-DD HH:MM:SS'
 );
 CREATE INDEX IF NOT EXISTS idx_admin_sesiones_usuario ON admin_sesiones(usuario_id);
+
