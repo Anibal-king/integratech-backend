@@ -28,11 +28,29 @@ const Titulo = `h${nivelTitulo}` as 'h2' | 'h3';
 
 /**
  * Texto en el que busca el filtro: título, descripción y TODOS los ítems (también
- * los que la tarjeta no muestra), en minúsculas y sin tildes. El script normaliza
- * lo que escribe el visitante de la misma forma.
+ * los que la tarjeta no muestra), sin mayúsculas, tildes, símbolos ni espacios
+ * repetidos. El script normaliza lo que escribe el visitante con la misma función.
  */
-const normalizar = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const normalizar = (t: string) =>
+  t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9ñ]+/g, ' ').trim();
 const textoBusqueda = (s: CategoriaServicio) => normalizar([s.nombre, s.descripcion ?? '', ...s.items].join(' '));
+
+/**
+ * Sugerencias: títulos de todos los servicios (también los que no se ven en la
+ * portada) y sus ítems, sin repetidos. Van como JSON en la página: el navegador
+ * las filtra sin llamar al backend.
+ */
+const sugerencias: { t: string; s: string | null }[] = [];
+const vistas = new Set<string>();
+for (const sv of servicios) {
+  for (const [t, de] of [[sv.nombre, null], ...sv.items.map((it) => [it, sv.nombre])] as [string, string | null][]) {
+    const clave = normalizar(t);
+    if (clave && !vistas.has(clave)) {
+      vistas.add(clave);
+      sugerencias.push({ t, s: de });
+    }
+  }
+}
 ---
 
 <div class="svc-catalogo" data-svc-raiz>
@@ -41,17 +59,39 @@ const textoBusqueda = (s: CategoriaServicio) => normalizar([s.nombre, s.descripc
     <label for="svc-q" class="svc-sr">Buscar un servicio</label>
     <div class="svc-buscar__campo">
       <svg class="svc-buscar__icono" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
-      <input id="svc-q" type="search" placeholder="Buscar un servicio…" autocomplete="off" spellcheck="false" enterkeyhint="search" maxlength="80" data-svc-q />
+      <input
+        id="svc-q"
+        type="search"
+        placeholder="Buscar un servicio…"
+        autocomplete="off"
+        spellcheck="false"
+        enterkeyhint="search"
+        maxlength="80"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded="false"
+        aria-controls="svc-sugerencias"
+        aria-describedby="svc-ayuda"
+        data-svc-q
+      />
       <button type="button" class="svc-buscar__limpiar" aria-label="Limpiar búsqueda" data-svc-limpiar hidden>
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
       </button>
+      <ul id="svc-sugerencias" class="svc-sugerencias" role="listbox" aria-label="Sugerencias" data-svc-lista hidden></ul>
     </div>
+    <p id="svc-ayuda" class="svc-sr">Escribe para ver sugerencias; usa las flechas para recorrerlas y Enter para elegir una.</p>
+    <script type="application/json" data-svc-sugerencias set:html={JSON.stringify(sugerencias).replace(/</g, '\\u003c')} />
     <p class="svc-sr" aria-live="polite" data-svc-estado></p>
   </div>
 
   <div class="svc-vacio" data-svc-vacio hidden>
-    <p>No encontramos servicios para '<span data-svc-texto></span>'. Cuéntanos qué necesitas y te preparamos una propuesta.</p>
-    <a href="/#contacto" class="btn btn--primary">Ir al formulario de contacto</a>
+    <p class="svc-vacio__titulo">Tu proyecto merece una solución a la medida</p>
+    <p>
+      Aún no tenemos “<span data-svc-texto></span>” en nuestro catálogo, pero diseñamos soluciones a la medida
+      todos los días. Tu proyecto suena como un caso especial y nos encantaría conocerlo: cuéntanos qué
+      necesitas y te preparamos una cotización sin compromiso.
+    </p>
+    <a href="/#contacto" class="btn btn--primary" data-svc-cotizar>Solicitar mi cotización</a>
   </div>
 
   <div class="svc-grid">
@@ -157,7 +197,46 @@ const textoBusqueda = (s: CategoriaServicio) => normalizar([s.nombre, s.descripc
     color: var(--text);
   }
   .svc-vacio[hidden] { display: none; }
-  .svc-vacio p { margin: 0 0 1rem; max-width: 60ch; }
+
+  /* ---------- Sugerencias ---------- */
+  .svc-sugerencias {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    margin: 0;
+    padding: 0.35rem;
+    list-style: none;
+    max-height: min(22rem, 60vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--surface-card);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+  }
+  .svc-sugerencias[hidden] { display: none; }
+  .svc-sugerencias :global(li) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.4rem;
+    min-height: 44px; /* área táctil */
+    margin: 0;
+    padding: 0.6rem 0.75rem;
+    border-radius: calc(var(--radius) - 4px);
+    color: var(--text);
+    line-height: 1.35;
+    cursor: pointer;
+  }
+  .svc-sugerencias :global(li[aria-selected='true']),
+  .svc-sugerencias :global(li:hover) { background: color-mix(in srgb, var(--color-accent) 18%, var(--surface-card)); }
+  .svc-sugerencias :global(mark) { background: none; color: inherit; font-weight: 700; text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: 3px; }
+  .svc-sugerencias :global(.svc-sug__servicio) { color: var(--text-muted); font-size: 0.85rem; }
+  .svc-sugerencias :global(.svc-sug__servicio)::before { content: '· '; }
+  .svc-vacio p { margin: 0 0 1rem; max-width: 62ch; }
+  .svc-vacio .svc-vacio__titulo { margin-bottom: 0.4rem; font-size: 1.15rem; font-weight: 700; color: var(--heading); }
   .svc-vacio span { font-weight: 700; overflow-wrap: anywhere; }
 
   .svc-card[hidden] { display: none; }
@@ -263,29 +342,107 @@ const textoBusqueda = (s: CategoriaServicio) => normalizar([s.nombre, s.descripc
 
 <script>
   /*
-   * Filtro de servicios: oculta o muestra las tarjetas que ya están en el HTML (no
-   * llama al backend ni las vuelve a generar). Ignora mayúsculas y tildes; con
-   * varias palabras deben aparecer todas, en cualquier orden. Busca en todos los
-   * servicios, también en los que quedan detrás de «Ver más». Se reinicia en cada
-   * astro:page-load.
+   * Filtro de servicios y sugerencias. Oculta o muestra las tarjetas que ya están
+   * en el HTML (no llama al backend ni las vuelve a generar). Ignora mayúsculas,
+   * tildes, símbolos y espacios repetidos; con varias palabras deben aparecer todas,
+   * en cualquier orden. Busca en todos los servicios, también en los que quedan
+   * detrás de «Ver más». Se reinicia en cada astro:page-load.
    */
-  const normalizar = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const normalizar = (t: string) =>
+    t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9ñ]+/g, ' ').trim();
+
+  const MAX_SUGERENCIAS = 6;
+  const CLAVE_PRELLENAR = 'svc:cotizar';
+
+  interface Sugerencia {
+    t: string;
+    s: string | null;
+    /** Palabras normalizadas del texto (para coincidir por inicio de palabra). */
+    palabras: string[];
+  }
+
+  /** Texto con las partes que coinciden resaltadas (siempre como texto, nunca HTML). */
+  function resaltar(texto: string, tokens: string[]): Node[] {
+    const nodos: Node[] = [];
+    // Recorre las palabras del texto original; cada carácter normaliza a 0 o 1 caracteres.
+    const re = /[\p{L}\p{N}]+/gu;
+    let ultimo = 0;
+    for (const m of texto.matchAll(re)) {
+      const palabra = m[0];
+      const norm = normalizar(palabra);
+      const token = tokens.filter((t) => norm.startsWith(t)).sort((a, b) => b.length - a.length)[0];
+      if (!token) continue;
+      // Caracteres originales que cubren el prefijo normalizado
+      let n = 0;
+      let cubiertos = 0;
+      for (const ch of palabra) {
+        if (cubiertos >= token.length) break;
+        cubiertos += normalizar(ch).length;
+        n += ch.length;
+      }
+      const inicio = m.index!;
+      if (inicio > ultimo) nodos.push(document.createTextNode(texto.slice(ultimo, inicio)));
+      const mark = document.createElement('mark');
+      mark.textContent = texto.slice(inicio, inicio + n);
+      nodos.push(mark);
+      ultimo = inicio + n;
+    }
+    if (ultimo < texto.length) nodos.push(document.createTextNode(texto.slice(ultimo)));
+    return nodos;
+  }
+
+  /** Espera a que la isla del formulario de contacto esté activa y escribe el mensaje. */
+  function prellenarContacto() {
+    let texto: string | null = null;
+    try {
+      texto = sessionStorage.getItem(CLAVE_PRELLENAR);
+    } catch {
+      return;
+    }
+    if (!texto) return;
+    let intentos = 0;
+    const probar = () => {
+      const area = document.querySelector<HTMLTextAreaElement>('#contacto textarea[name="mensaje"]');
+      const isla = area?.closest('astro-island');
+      // Hasta que React no hidrata la isla (sin atributo ssr), un valor escrito podría perderse.
+      if (area && isla && !isla.hasAttribute('ssr')) {
+        if (!area.value.trim()) area.value = texto!;
+        try {
+          sessionStorage.removeItem(CLAVE_PRELLENAR);
+        } catch {
+          /* sin almacenamiento: no pasa nada */
+        }
+        return;
+      }
+      if (++intentos < 50) setTimeout(probar, 200); // hasta ~10 s (la isla se activa al verse)
+    };
+    if (document.getElementById('contacto')) probar();
+  }
 
   function iniciarBuscador() {
+    prellenarContacto();
     const raiz = document.querySelector<HTMLElement>('[data-svc-raiz]');
     if (!raiz) return;
     const caja = raiz.querySelector<HTMLElement>('[data-svc-buscador]')!;
     const input = raiz.querySelector<HTMLInputElement>('[data-svc-q]')!;
     const limpiar = raiz.querySelector<HTMLButtonElement>('[data-svc-limpiar]')!;
+    const lista = raiz.querySelector<HTMLUListElement>('[data-svc-lista]')!;
     const estado = raiz.querySelector<HTMLElement>('[data-svc-estado]')!;
     const vacio = raiz.querySelector<HTMLElement>('[data-svc-vacio]')!;
     const mas = raiz.querySelector<HTMLElement>('[data-svc-mas]');
     const tarjetas = [...raiz.querySelectorAll<HTMLElement>('[data-svc-card]')];
+    const datos: Sugerencia[] = JSON.parse(raiz.querySelector('[data-svc-sugerencias]')!.textContent || '[]').map(
+      (x: { t: string; s: string | null }) => ({ ...x, palabras: normalizar(x.t).split(' ') })
+    );
     let aviso: number | undefined;
+    let opciones: Sugerencia[] = [];
+    let activa = -1;
+
+    // ---------- Filtro de tarjetas ----------
 
     function filtrar() {
       const texto = input.value.trim();
-      const palabras = normalizar(texto).split(/\s+/).filter(Boolean);
+      const palabras = normalizar(texto).split(' ').filter(Boolean);
       const buscando = palabras.length > 0;
       let visibles = 0;
       for (const t of tarjetas) {
@@ -302,33 +459,168 @@ const textoBusqueda = (s: CategoriaServicio) => normalizar([s.nombre, s.descripc
       // Aviso para lectores de pantalla, cuando se deja de escribir un momento
       clearTimeout(aviso);
       aviso = window.setTimeout(() => {
-        estado.textContent = !buscando
+        const resultados = !buscando
           ? `Se muestran ${visibles} de ${tarjetas.length} servicios.`
           : visibles === 0
             ? `No se encontraron servicios para ${texto}.`
             : visibles === 1
               ? '1 servicio encontrado.'
               : `${visibles} servicios encontrados.`;
+        const sug = !lista.hidden && opciones.length ? ` ${opciones.length === 1 ? '1 sugerencia' : `${opciones.length} sugerencias`}.` : '';
+        estado.textContent = resultados + sug;
       }, 400);
     }
 
-    input.addEventListener('input', filtrar);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && input.value) {
-        e.preventDefault();
-        input.value = '';
-        filtrar();
+    // ---------- Sugerencias (combobox) ----------
+
+    /** Coincidencias por inicio de palabra: cada palabra escrita empieza alguna palabra de la sugerencia. */
+    function buscarSugerencias(texto: string): Sugerencia[] {
+      const tokens = normalizar(texto).split(' ').filter(Boolean);
+      if (!tokens.length) return datos.filter((d) => d.s === null); // campo vacío: nombres de los servicios
+      const puntaje = (d: Sugerencia) =>
+        (d.palabras[0].startsWith(tokens[0]) ? 0 : 2) + (d.s === null ? 0 : 1); // empieza igual y títulos primero
+      return datos
+        .filter((d) => tokens.every((t) => d.palabras.some((p) => p.startsWith(t))))
+        .sort((a, b) => puntaje(a) - puntaje(b) || a.t.length - b.t.length)
+        .slice(0, MAX_SUGERENCIAS);
+    }
+
+    function cerrar() {
+      lista.hidden = true;
+      lista.replaceChildren();
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+      opciones = [];
+      activa = -1;
+    }
+
+    function marcar(i: number) {
+      activa = i;
+      [...lista.children].forEach((li, n) => li.setAttribute('aria-selected', String(n === i)));
+      if (i >= 0) {
+        const li = lista.children[i] as HTMLElement;
+        input.setAttribute('aria-activedescendant', li.id);
+        li.scrollIntoView({ block: 'nearest' });
+      } else input.removeAttribute('aria-activedescendant');
+    }
+
+    /** En pantallas chicas, la lista termina antes del botón flotante del chat. */
+    function ajustarAlto() {
+      const espacio = window.innerHeight - lista.getBoundingClientRect().top - 96; // 96 px: zona del chat
+      lista.style.maxHeight = window.innerWidth < 640 ? `${Math.max(132, espacio)}px` : '';
+    }
+
+    function abrir() {
+      opciones = buscarSugerencias(input.value);
+      if (!opciones.length) return cerrar();
+      const tokens = normalizar(input.value).split(' ').filter(Boolean);
+      lista.replaceChildren(
+        ...opciones.map((o, i) => {
+          const li = document.createElement('li');
+          li.id = `svc-sug-${i}`;
+          li.setAttribute('role', 'option');
+          li.setAttribute('aria-selected', 'false');
+          const t = document.createElement('span');
+          t.append(...resaltar(o.t, tokens));
+          li.append(t);
+          if (o.s) {
+            const sv = document.createElement('span');
+            sv.className = 'svc-sug__servicio';
+            sv.textContent = o.s;
+            li.append(sv);
+          }
+          return li;
+        })
+      );
+      lista.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      activa = -1;
+      ajustarAlto();
+      // Si en móvil no caben al menos 3 sugerencias sobre el chat, sube el campo.
+      if (window.innerWidth < 640 && parseFloat(lista.style.maxHeight) < 3 * 48) {
+        input.scrollIntoView({ block: 'start' });
+        requestAnimationFrame(ajustarAlto);
       }
-      if (e.key === 'Enter') e.preventDefault(); // no hay formulario que enviar
+    }
+
+    function elegir(i: number) {
+      const o = opciones[i];
+      if (!o) return;
+      input.value = o.t;
+      cerrar();
+      filtrar();
+      input.focus();
+    }
+
+    // ---------- Eventos ----------
+
+    input.addEventListener('input', () => {
+      filtrar();
+      abrir();
     });
+    input.addEventListener('focus', () => abrir());
+    input.addEventListener('keydown', (e) => {
+      const abierta = !lista.hidden;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!abierta) return abrir();
+        marcar(activa < opciones.length - 1 ? activa + 1 : 0);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (abierta) marcar(activa > 0 ? activa - 1 : opciones.length - 1);
+      } else if (e.key === 'Enter') {
+        e.preventDefault(); // no hay formulario que enviar
+        if (abierta && activa >= 0) elegir(activa);
+        else cerrar();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        if (abierta) cerrar(); // primero cierra la lista; un segundo Escape limpia
+        else if (input.value) {
+          input.value = '';
+          filtrar();
+        }
+      } else if (e.key === 'Tab') cerrar();
+    });
+    // mousedown sin perder el foco del campo; el clic (o toque) elige
+    lista.addEventListener('mousedown', (e) => e.preventDefault());
+    lista.addEventListener('click', (e) => {
+      const li = (e.target as HTMLElement).closest<HTMLElement>('[role="option"]');
+      if (li) elegir([...lista.children].indexOf(li));
+    });
+    lista.addEventListener('mousemove', (e) => {
+      const li = (e.target as HTMLElement).closest<HTMLElement>('[role="option"]');
+      if (li) {
+        const i = [...lista.children].indexOf(li);
+        if (i !== activa) marcar(i);
+      }
+    });
+    // Clic o toque fuera del buscador: cierra
+    const fuera = (e: PointerEvent) => {
+      if (!caja.contains(e.target as Node)) cerrar();
+    };
+    document.addEventListener('pointerdown', fuera);
+    window.addEventListener('resize', () => !lista.hidden && ajustarAlto());
+
     limpiar.addEventListener('click', () => {
       input.value = '';
       filtrar();
       input.focus();
     });
 
+    // «Solicitar mi cotización»: deja escrito el término en el mensaje del formulario
+    raiz.querySelector('[data-svc-cotizar]')!.addEventListener('click', () => {
+      try {
+        sessionStorage.setItem(CLAVE_PRELLENAR, `Estoy buscando: ${input.value.trim()}`);
+      } catch {
+        return;
+      }
+      // En el inicio el header hace el desplazamiento; aquí solo se espera al formulario.
+      if (location.pathname === '/') prellenarContacto();
+    });
+
     caja.hidden = false;
     if (input.value) filtrar(); // el navegador puede restaurar el texto al volver atrás
+    document.addEventListener('astro:before-swap', () => document.removeEventListener('pointerdown', fuera), { once: true });
   }
 
   document.addEventListener('astro:page-load', iniciarBuscador);
