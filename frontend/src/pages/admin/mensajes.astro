@@ -76,6 +76,7 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
           <a class="btn btn--secondary btn--sm" data-r="telefono" hidden><Icono nombre="telefono" tamano={16} />Llamar</a>
           <a class="btn btn--secondary btn--sm" data-r="whatsapp" target="_blank" rel="noopener noreferrer" hidden><Icono nombre="whatsapp" tamano={16} />WhatsApp</a>
           <p class="responder__nada" data-r="nada" hidden>No dejó correo ni teléfono.</p>
+          <a class="btn btn--secondary btn--sm responder__agendar" data-agendar><Icono nombre="calendario" tamano={16} />Agendar cita</a>
         </div>
 
         <dl class="datos">
@@ -219,6 +220,7 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
 
   .responder { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .responder__nada { margin: 0; font-size: 0.88rem; color: var(--text-muted); }
+  .responder__agendar { margin-left: auto; }
 
   .datos { margin: 0; display: grid; gap: 0.1rem; }
   .datos div { display: grid; grid-template-columns: 110px 1fr; gap: 0.75rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
@@ -454,6 +456,8 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     enlace('telefono', s.telefono ? enlaceTelefono(s.telefono) : null);
     enlace('whatsapp', s.telefono ? enlaceWhatsApp(s.telefono, s.nombre) : null);
     $('[data-r="nada"]', dialogo).hidden = Boolean(s.correo || s.telefono);
+    // Abre el calendario con el formulario de cita ya lleno con los datos del cliente.
+    $<HTMLAnchorElement>('[data-agendar]', dialogo).href = `/admin/calendario?solicitud=${claveSolicitud(s.origen, s.id)}`;
 
     const esChatbot = s.chatbot !== null;
     $('[data-d="mensaje"]', dialogo).hidden = esChatbot;
@@ -515,6 +519,10 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     cerrarDetalle();
   });
   $('[data-detalle-cerrar]').addEventListener('click', cerrarDetalle);
+  // «Agendar cita» sale de la página: avisar si hay estado o notas sin guardar.
+  $('[data-agendar]', dialogo).addEventListener('click', (e) => {
+    if (hayCambiosSinGuardar() && !confirm('Hay cambios sin guardar en esta solicitud. ¿Ir al calendario de todos modos?')) e.preventDefault();
+  });
   // Clic en el fondo (fuera del panel) cierra.
   dialogo.addEventListener('click', (e) => {
     if (e.target === dialogo) cerrarDetalle();

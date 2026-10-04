@@ -91,6 +91,82 @@ export const mesCorto = (ym: string) => fmtMes.format(new Date(`${ym}-01T00:00:0
 /** 'YYYY-MM' → "octubre de 2026" */
 export const mesLargo = (ym: string) => fmtMesLargo.format(new Date(`${ym}-01T00:00:00Z`));
 
+// ---------- Citas ----------
+
+/** Día de hoy en El Salvador: 'YYYY-MM-DD'. */
+export const hoyLocal = () => new Date(Date.now() - 6 * 3_600_000).toISOString().slice(0, 10);
+
+/** Suma días a un día local 'YYYY-MM-DD'. */
+export function sumarDiasLocal(dia: string, n: number): string {
+  const d = new Date(`${dia}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+const fmtHora = new Intl.DateTimeFormat('es-SV', { hour: 'numeric', minute: '2-digit', timeZone: ZONA });
+const fmtDiaLargo = new Intl.DateTimeFormat('es-SV', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+const fmtDiaCorto = new Intl.DateTimeFormat('es-SV', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+/** ISO con desplazamiento → "9:00 a. m." */
+export const horaCita = (iso: string) => fmtHora.format(new Date(iso));
+/** "9:00 a. m. – 10:30 a. m." */
+export const rangoHoras = (inicio: string, fin: string) => `${horaCita(inicio)} – ${horaCita(fin)}`;
+/** 'YYYY-MM-DD' → "lunes, 5 de octubre" */
+export const diaLargo = (dia: string) => fmtDiaLargo.format(new Date(`${dia}T12:00:00Z`));
+/** Primera letra en mayúscula ("octubre de 2026" → "Octubre de 2026"); el resto igual. */
+export const mayuscula = (s: string) => s.charAt(0).toLocaleUpperCase('es') + s.slice(1);
+/** 'YYYY-MM-DD' → "lun, 5 oct" */
+export const diaCorto = (dia: string) => fmtDiaCorto.format(new Date(`${dia}T12:00:00Z`)).replace(/\./g, '');
+
+export const ESTADOS_CITA: { valor: import('./admin').EstadoCita; etiqueta: string }[] = [
+  { valor: 'programada', etiqueta: 'Programada' },
+  { valor: 'completada', etiqueta: 'Completada' },
+  { valor: 'cancelada', etiqueta: 'Cancelada' },
+];
+export const etiquetaEstadoCita = (e: import('./admin').EstadoCita) => ESTADOS_CITA.find((x) => x.valor === e)?.etiqueta ?? e;
+
+/**
+ * Elemento de lista de una próxima cita (fecha, título, horario, cliente y lugar).
+ * Con `href` es un enlace; sin él, un botón (el llamador agrega el clic).
+ * Estilos: .lista-citas / .cita-item en AdminLayout.
+ */
+export function itemCita(c: import('./admin').Cita, href?: string): { li: HTMLLIElement; control: HTMLElement } {
+  const li = document.createElement('li');
+  const control = document.createElement(href ? 'a' : 'button');
+  if (control instanceof HTMLAnchorElement) control.href = href!;
+  else (control as HTMLButtonElement).type = 'button';
+  control.className = 'cita-item';
+  const dia = c.inicio_local.slice(0, 10);
+  const [semana, , mesTxt] = diaCorto(dia).replace(',', '').split(' ');
+
+  const fecha = document.createElement('span');
+  fecha.className = 'cita-item__fecha';
+  fecha.setAttribute('aria-hidden', 'true');
+  const m = document.createElement('small');
+  m.textContent = mesTxt ?? '';
+  const n = document.createElement('strong');
+  n.textContent = String(Number(dia.slice(8)));
+  fecha.append(m, n);
+
+  const txt = document.createElement('span');
+  txt.className = 'cita-item__txt';
+  const t = document.createElement('strong');
+  t.textContent = c.titulo;
+  const h = document.createElement('span');
+  // La fecha ya está en la insignia: aquí solo el día de la semana y el horario.
+  h.textContent = `${mayuscula(semana)} · ${rangoHoras(c.inicio, c.fin)}`;
+  txt.append(t, h);
+  const extra = [c.cliente, c.lugar].filter(Boolean).join(' · ');
+  if (extra) {
+    const e = document.createElement('span');
+    e.textContent = extra;
+    txt.append(e);
+  }
+  control.append(fecha, txt);
+  li.append(control);
+  return { li, control };
+}
+
 // ---------- Responder ----------
 
 const ASUNTO = 'Su solicitud a Servicios Integrales de Ingeniería';

@@ -48,7 +48,8 @@ backend/
 │   ├── fotos.js        # Fotos: validación del contenido, versiones WebP, archivos en UPLOADS_DIR
 │   ├── mailer.js       # Correo SMTP (chatbot y formulario de contacto)
 │   ├── security.js     # Límite de envíos, cabeceras, validación de campos
-│   └── servicios.js    # Lectura de servicios con ítems y fotos (API pública y panel)
+│   ├── servicios.js    # Lectura de servicios con ítems y fotos (API pública y panel)
+│   └── zona.js         # Hora de El Salvador (UTC-6) ↔ UTC de la base
 ├── routes/             # Un archivo por recurso: /api/<recurso> (admin.js: /api/admin)
 ├── scripts/
 │   ├── crear-admin.js       # npm run crear-admin
@@ -75,6 +76,7 @@ el mismo archivo que usa el frontend.
 | `categorias_servicios`    | Servicios del sitio: título (`nombre`), descripción corta y larga, orden, publicado. Se administran en el panel; el seed solo los crea si no hay ninguno |
 | `servicios`               | Ítems de «Qué incluye» de cada servicio                               |
 | `servicio_fotos`          | Fotos de cada servicio: archivo generado, anchos, alt, orden, portada |
+| `citas`                   | Calendario del panel: título, cliente, contacto, servicio y solicitud de origen (opcionales), inicio/fin en UTC, lugar, notas, estado |
 | `contratos_mantenimiento` | Contratos de mantenimiento recurrentes con fechas de ejecución        |
 | `proyectos_destacados`    | Proyectos relevantes (data centers, subestaciones, iluminación, etc.) |
 | `marcas`                  | Marcas representadas (AKSA, Tripp-Lite, Loxone, ABB, etc.)            |
@@ -179,6 +181,25 @@ DELETE /api/admin/servicios/:id/fotos/:fotoId     (si era la portada, pasa a ser
   metadatos (EXIF/GPS) y se generan WebP de 400, 800 y 1600 px (y el ancho original si es
   menor), sin agrandar. Los nombres son aleatorios; se sirven en `/media` con caché de un año.
   Si en un envío algunas fotos fallan, las válidas se guardan y las otras vienen en `errores`.
+
+#### Citas (calendario)
+```
+GET  /api/admin/citas?desde=YYYY-MM-DD&hasta=YYYY-MM-DD   → citas que tocan esos días locales (máx. 62 días)
+GET  /api/admin/citas/proximas?limite=5                  → { proximos_7_dias, items } (solo programadas)
+GET  /api/admin/citas/:id
+POST /api/admin/citas          Body: { titulo, inicio_local, fin_local, cliente?, telefono?, correo?,
+                                       servicio_id?, solicitud?: { origen, id }, lugar?, notas?, estado?,
+                                       confirmar_traslape? }
+PUT  /api/admin/citas/:id      (mismo cuerpo; reemplaza todos los campos)
+POST /api/admin/citas/:id/cancelar   (no se borra: queda como cancelada)
+```
+- **Zona horaria:** las fechas viajan en hora de El Salvador (`'2026-10-05T09:00'`, como un
+  `<input type="datetime-local">`) y se guardan en UTC. Las respuestas traen también ISO con
+  desplazamiento (`'2026-10-05T09:00:00-06:00'`). El Salvador no tiene horario de verano.
+- **Traslapes:** si la cita se cruza con otra **programada** (las canceladas y completadas no
+  cuentan; una que empieza justo cuando otra termina tampoco), responde 409 con
+  `{ error, traslapes: [...] }`. Se guarda igual reenviando con `confirmar_traslape: true`.
+- **Validación:** 400 con `campos`; fin posterior al inicio, máximo 14 días de duración.
 
 - **Estados:** `nuevo` (por defecto), `contactado`, `cotizado`, `cerrado`, `descartado`.
   Columnas `estado`, `notas` y `fecha_actualizacion` en `mensajes_contacto` y

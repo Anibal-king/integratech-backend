@@ -40,6 +40,10 @@ const { title } = Astro.props;
         --estado-cerrado: #2f855a;
         --estado-descartado: var(--color-brand-gray);
 
+        --cita-programada: var(--color-accent);
+        --cita-completada: var(--estado-cerrado);
+        --cita-cancelada: var(--color-brand-gray);
+
         --serie-formulario: var(--color-brand-blue);
         --serie-chatbot: var(--color-accent);
 
@@ -140,6 +144,10 @@ const { title } = Astro.props;
       .chip--cotizado { --chip-color: var(--estado-cotizado); }
       .chip--cerrado { --chip-color: var(--estado-cerrado); }
       .chip--descartado { --chip-color: var(--estado-descartado); }
+      /* Estados de cita */
+      .chip--programada { --chip-color: var(--cita-programada); }
+      .chip--completada { --chip-color: var(--cita-completada); }
+      .chip--cancelada { --chip-color: var(--cita-cancelada); }
 
       .chip-origen {
         display: inline-block;
@@ -158,6 +166,11 @@ const { title } = Astro.props;
       .admin input[type='text'],
       .admin input[type='email'],
       .admin input[type='password'],
+      .admin input[type='tel'],
+      .admin input[type='number'],
+      .admin input[type='date'],
+      .admin input[type='time'],
+      .admin input[type='datetime-local'],
       .admin select,
       .admin textarea {
         font: inherit;
@@ -174,6 +187,43 @@ const { title } = Astro.props;
         outline-offset: 2px;
       }
       .btn--sm { padding: 0.4rem 0.85rem; font-size: 0.85rem; }
+
+      /* ---------- Lista de próximas citas (calendario y Resumen) ---------- */
+      .lista-citas { list-style: none; margin: 0; padding: 0.25rem 0 0.5rem; }
+      .lista-citas li { margin: 0; }
+      .cita-item {
+        display: flex;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.7rem 1.25rem;
+        border: 0;
+        border-bottom: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+      .lista-citas li:last-child .cita-item { border-bottom: 0; }
+      .cita-item:hover { background: var(--surface-muted); text-decoration: none; }
+      .cita-item__fecha {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 46px;
+        height: 50px;
+        border-radius: 10px;
+        background: var(--color-brand-blue-tint);
+        color: var(--color-brand-blue);
+        line-height: 1.05;
+      }
+      .cita-item__fecha small { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
+      .cita-item__fecha strong { font-size: 1.15rem; }
+      .cita-item__txt { min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+      .cita-item__txt strong { color: var(--heading); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .cita-item__txt span { font-size: 0.8rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
       .sr-only {
         position: absolute;

@@ -9,26 +9,29 @@ const TARJETAS = [
   { id: 'mes', titulo: 'Este mes', icono: 'reloj', nota: '', href: null },
   { id: 'seguimiento', titulo: 'En seguimiento', icono: 'seguimiento', nota: 'contactadas o cotizadas', href: null },
   { id: 'total', titulo: 'Total recibidas', icono: 'bandeja', nota: 'formulario y chatbot', href: '/admin/mensajes' },
+  { id: 'citas', titulo: 'Citas (7 días)', icono: 'calendario', nota: 'programadas', href: '/admin/calendario' },
 ] as const;
 ---
 
 <AdminShell activo="resumen" titulo="Resumen">
-  <Vista id="estadisticas" cargando="Cargando cifras…" vacio="Aún no hay solicitudes. Las del formulario de contacto y el chatbot aparecerán aquí.">
-    <section class="kpis" aria-label="Cifras clave">
-      {TARJETAS.map((t) => (
-        <article class="admin-card kpi" data-kpi={t.id}>
-          <div class="kpi__icono"><Icono nombre={t.icono} /></div>
-          <div class="kpi__txt">
-            <h2 class="kpi__titulo">{t.titulo}</h2>
-            <p class="kpi__valor" data-kpi-valor>—</p>
-            <p class="kpi__nota" data-kpi-nota>{t.nota}</p>
-          </div>
-          {t.href && <a class="kpi__link" href={t.href} aria-label={`Ver: ${t.titulo}`}>Ver</a>}
-        </article>
-      ))}
-    </section>
+  <!-- Las cifras muestran «—» hasta que llegan los datos -->
+  <section class="kpis" aria-label="Cifras clave">
+    {TARJETAS.map((t) => (
+      <article class="admin-card kpi" data-kpi={t.id}>
+        <div class="kpi__icono"><Icono nombre={t.icono} /></div>
+        <div class="kpi__txt">
+          <h2 class="kpi__titulo">{t.titulo}</h2>
+          <p class="kpi__valor" data-kpi-valor>—</p>
+          <p class="kpi__nota" data-kpi-nota>{t.nota}</p>
+        </div>
+        {t.href && <a class="kpi__link" href={t.href} aria-label={`Ver: ${t.titulo}`}>Ver</a>}
+      </article>
+    ))}
+  </section>
 
-    <div class="graficas">
+  <div class="resumen">
+    <!-- Columna principal -->
+    <div class="resumen__col">
       <section class="admin-card grafica">
         <div class="admin-card__head">
           <h2>Solicitudes por mes</h2>
@@ -37,53 +40,70 @@ const TARJETAS = [
             <li><span class="punto punto--chatbot"></span>Chatbot</li>
           </ul>
         </div>
-        <div class="admin-card__body">
-          <div class="grafica__lienzo grafica__lienzo--barras">
-            <canvas data-grafica-meses role="img"></canvas>
+        <Vista id="meses" cargando="Cargando cifras…" vacio="Aún no hay solicitudes. Las del formulario de contacto y el chatbot aparecerán aquí.">
+          <div class="admin-card__body">
+            <div class="grafica__lienzo grafica__lienzo--barras">
+              <canvas data-grafica-meses role="img"></canvas>
+            </div>
           </div>
-        </div>
+        </Vista>
       </section>
 
+      <section class="admin-card recientes">
+        <div class="admin-card__head">
+          <h2>Solicitudes recientes</h2>
+          <a href="/admin/mensajes" class="btn btn--secondary btn--sm">Ver todas</a>
+        </div>
+        <Vista id="recientes" cargando="Cargando solicitudes…" vacio="Aún no hay solicitudes.">
+          <table class="tabla-recientes">
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Origen</th>
+                <th scope="col">Estado</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody data-recientes></tbody>
+          </table>
+        </Vista>
+      </section>
+    </div>
+
+    <!-- Columna derecha -->
+    <div class="resumen__col">
       <section class="admin-card grafica">
         <div class="admin-card__head"><h2>Por estado</h2></div>
-        <div class="admin-card__body dona">
-          <div class="grafica__lienzo grafica__lienzo--dona">
-            <canvas data-grafica-estados role="img"></canvas>
-            <p class="dona__centro"><strong data-dona-total></strong><span>total</span></p>
+        <Vista id="estados" cargando="Cargando…" vacio="Sin solicitudes todavía.">
+          <div class="admin-card__body dona">
+            <div class="grafica__lienzo grafica__lienzo--dona">
+              <canvas data-grafica-estados role="img"></canvas>
+              <p class="dona__centro"><strong data-dona-total></strong><span>total</span></p>
+            </div>
+            <ul class="dona__leyenda" data-leyenda-estados></ul>
           </div>
-          <ul class="dona__leyenda" data-leyenda-estados></ul>
+        </Vista>
+      </section>
+
+      <section class="admin-card citas" aria-labelledby="t-citas">
+        <div class="admin-card__head">
+          <h2 id="t-citas">Próximas citas</h2>
+          <a href="/admin/calendario" class="btn btn--secondary btn--sm">Calendario</a>
         </div>
+        <Vista id="citas" cargando="Cargando citas…" vacio="No hay citas programadas." iconoVacio="calendario">
+          <ul class="lista-citas" data-citas></ul>
+        </Vista>
       </section>
     </div>
-  </Vista>
-
-  <section class="admin-card recientes">
-    <div class="admin-card__head">
-      <h2>Solicitudes recientes</h2>
-      <a href="/admin/mensajes" class="btn btn--secondary btn--sm">Ver todas</a>
-    </div>
-    <Vista id="recientes" cargando="Cargando solicitudes…" vacio="Aún no hay solicitudes.">
-      <table class="tabla-recientes">
-        <thead>
-          <tr>
-            <th scope="col">Fecha</th>
-            <th scope="col">Nombre</th>
-            <th scope="col">Origen</th>
-            <th scope="col">Estado</th>
-            <th scope="col"><span class="sr-only">Acciones</span></th>
-          </tr>
-        </thead>
-        <tbody data-recientes></tbody>
-      </table>
-    </Vista>
-  </section>
+  </div>
 </AdminShell>
 
 <style>
   /* ---------- Cifras clave ---------- */
   .kpis {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
     gap: 1rem;
   }
   .kpi {
@@ -111,14 +131,17 @@ const TARJETAS = [
   .kpi__valor { margin: 0.1rem 0 0; font-size: 1.9rem; font-weight: 700; line-height: 1.15; color: var(--heading); }
   .kpi__nota { margin: 0.15rem 0 0; font-size: 0.8rem; color: var(--text-muted); }
   .kpi__link { position: absolute; top: 1rem; right: 1.1rem; font-size: 0.82rem; font-weight: 600; }
+  .kpi:has(.kpi__link) .kpi__txt { padding-right: 1.6rem; }
 
-  /* ---------- Gráficas ---------- */
-  .graficas {
+  /* ---------- Columnas: principal (gráfica, recientes) y derecha (estados, citas) ---------- */
+  .resumen {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     gap: 1rem;
     margin-top: 1rem;
+    align-items: start;
   }
+  .resumen__col { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
   .leyenda { display: flex; gap: 1rem; list-style: none; margin: 0; padding: 0; font-size: 0.8rem; color: var(--text-muted); }
   .leyenda li { display: flex; align-items: center; gap: 0.4rem; margin: 0; }
   .punto { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
@@ -126,11 +149,10 @@ const TARJETAS = [
   .punto--chatbot { background: var(--serie-chatbot); }
 
   .grafica { display: flex; flex-direction: column; }
-  .grafica > .admin-card__body { flex: 1; display: flex; }
+  .grafica :global(.admin-card__body) { display: flex; }
   .grafica__lienzo { position: relative; }
   .grafica__lienzo--barras { flex: 1; min-height: 280px; }
   .grafica__lienzo--dona { width: 200px; height: 200px; flex-shrink: 0; }
-  .grafica > .admin-card__body.dona { display: flex; }
   .dona { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
   .dona__centro {
     position: absolute;
@@ -160,7 +182,6 @@ const TARJETAS = [
   .dona__leyenda :global(strong) { color: var(--heading); }
 
   /* ---------- Recientes ---------- */
-  .recientes { margin-top: 1rem; }
   .recientes :global(.vista) { padding: 0.5rem 0 0.25rem; }
   .tabla-recientes { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .tabla-recientes th {
@@ -180,11 +201,12 @@ const TARJETAS = [
   .tabla-recientes :global(.c-accion) { text-align: right; }
 
   @media (max-width: 1100px) {
-    .graficas { grid-template-columns: 1fr; }
+    .resumen { grid-template-columns: minmax(0, 1fr); }
   }
   /* Móvil: cifras en 2 columnas y cada fila de la tabla como tarjeta */
   @media (max-width: 640px) {
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+    .kpi:last-child:nth-child(odd) { grid-column: span 2; }
     .kpi { flex-direction: column; gap: 0.5rem; padding: 0.9rem; }
     .kpi__icono { width: 34px; height: 34px; border-radius: 10px; }
     .kpi__valor { font-size: 1.6rem; }
@@ -234,14 +256,19 @@ const TARJETAS = [
     fechaCorta,
     mesCorto,
     mesLargo,
+    itemCita,
+    diaLargo,
+    rangoHoras,
   } from '../../lib/admin-ui';
 
   // Solo los módulos que se usan: el resto de Chart.js no entra al bundle.
   Chart.register(BarController, BarElement, CategoryScale, LinearScale, DoughnutController, ArcElement, Tooltip);
 
   const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
-  const vistaEst = $('[data-vista-de="estadisticas"]');
+  const vistaMeses = $('[data-vista-de="meses"]');
+  const vistaEstados = $('[data-vista-de="estados"]');
   const vistaRec = $('[data-vista-de="recientes"]');
+  const vistaCitas = $('[data-vista-de="citas"]');
   const css = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const animar = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -254,12 +281,14 @@ const TARJETAS = [
     if (nota) card.querySelector('[data-kpi-nota]')!.textContent = nota;
   }
 
-  function pintarEstadisticas(e: EstadisticasAdmin) {
+  function llenarKpis(e: EstadisticasAdmin) {
     kpi('sin_atender', e.sin_atender);
     kpi('mes', e.mes_actual.total, mesLargo(e.mes_actual.mes));
     kpi('seguimiento', e.por_estado.contactado + e.por_estado.cotizado);
     kpi('total', e.total);
+  }
 
+  function pintarEstadisticas(e: EstadisticasAdmin) {
     // Barras: solicitudes por mes, formulario y chatbot
     const lienzoMeses = $<HTMLCanvasElement>('[data-grafica-meses]');
     lienzoMeses.setAttribute(
@@ -344,15 +373,43 @@ const TARJETAS = [
   }
 
   async function cargarEstadisticas() {
-    vista(vistaEst, 'cargando');
+    vista(vistaMeses, 'cargando');
+    vista(vistaEstados, 'cargando');
     try {
       const e = await admin.estadisticas();
-      if (e.total === 0) return vista(vistaEst, 'vacio');
+      llenarKpis(e);
+      if (e.total === 0) {
+        vista(vistaMeses, 'vacio');
+        vista(vistaEstados, 'vacio');
+        return;
+      }
       // Se muestra antes de dibujar: Chart.js necesita el lienzo visible para medirlo.
-      vista(vistaEst, 'listo');
+      vista(vistaMeses, 'listo');
+      vista(vistaEstados, 'listo');
       pintarEstadisticas(e);
     } catch (err) {
-      if (!esSesionExpirada(err)) vista(vistaEst, 'error', mensajeError(err, 'No se pudieron cargar las cifras.'));
+      if (esSesionExpirada(err)) return;
+      vista(vistaMeses, 'error', mensajeError(err, 'No se pudieron cargar las cifras.'));
+      vista(vistaEstados, 'error', mensajeError(err, 'No se pudieron cargar las cifras.'));
+    }
+  }
+
+  async function cargarCitas() {
+    vista(vistaCitas, 'cargando');
+    try {
+      const r = await admin.citasProximas(5);
+      kpi('citas', r.proximos_7_dias);
+      if (r.items.length === 0) return vista(vistaCitas, 'vacio');
+      $('[data-citas]').replaceChildren(
+        ...r.items.map((c) => {
+          const { li, control } = itemCita(c, `/admin/calendario?mes=${c.inicio_local.slice(0, 7)}&cita=${c.id}`);
+          control.setAttribute('aria-label', `${c.titulo}, ${diaLargo(c.inicio_local.slice(0, 10))}, ${rangoHoras(c.inicio, c.fin)}`);
+          return li;
+        })
+      );
+      vista(vistaCitas, 'listo');
+    } catch (err) {
+      if (!esSesionExpirada(err)) vista(vistaCitas, 'error', mensajeError(err, 'No se pudieron cargar las citas.'));
     }
   }
 
@@ -370,12 +427,14 @@ const TARJETAS = [
 
   document.addEventListener('click', (e) => {
     const id = (e.target as HTMLElement).closest<HTMLElement>('[data-reintentar]')?.dataset.reintentar;
-    if (id === 'estadisticas') cargarEstadisticas();
+    if (id === 'meses' || id === 'estados') cargarEstadisticas();
     if (id === 'recientes') cargarRecientes();
+    if (id === 'citas') cargarCitas();
   });
 
   panelListo().then(() => {
     cargarEstadisticas();
     cargarRecientes();
+    cargarCitas();
   });
 </script>

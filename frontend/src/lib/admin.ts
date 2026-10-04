@@ -17,9 +17,17 @@ import type {
   ServicioAdmin,
   ServicioDatos,
   ServicioFoto,
+  Cita,
+  CitaDatos,
+  CitasProximas,
+  EstadoCita,
 } from '../../../shared/api-types';
 
 export type {
+  Cita,
+  CitaDatos,
+  CitasProximas,
+  EstadoCita,
   AdminUsuario,
   EstadisticasAdmin,
   EstadoSolicitud,
@@ -51,7 +59,9 @@ export class AdminError extends Error {
     readonly status: number,
     message: string,
     readonly campos: Record<string, string> = {},
-    readonly errores: { archivo: string; error: string }[] = []
+    readonly errores: { archivo: string; error: string }[] = [],
+    /** Citas que se cruzan (409 al crear/editar una cita sin confirmar el traslape). */
+    readonly traslapes: Cita[] = []
   ) {
     super(message);
   }
@@ -93,7 +103,8 @@ async function protegido<T>(path: string, init?: RequestInit): Promise<T> {
       res.status,
       typeof data?.error === 'string' ? data.error : `Error ${res.status}`,
       data?.campos && typeof data.campos === 'object' ? data.campos : {},
-      Array.isArray(data?.errores) ? data.errores : []
+      Array.isArray(data?.errores) ? data.errores : [],
+      Array.isArray(data?.traslapes) ? data.traslapes : []
     );
   }
   return data as T;
@@ -165,4 +176,13 @@ export const admin = {
   ordenarFotos: (id: number, ids: number[]) => protegido<ServicioAdmin>(`/api/admin/servicios/${id}/fotos/orden`, json('PUT', { ids })),
   eliminarFoto: (id: number, fotoId: number) => protegido<ServicioAdmin>(`/api/admin/servicios/${id}/fotos/${fotoId}`, { method: 'DELETE' }),
 
+  // ---------- Citas (fechas en hora de El Salvador) ----------
+  /** Citas que tocan el rango de días locales [desde, hasta] ('YYYY-MM-DD', ambos incluidos). */
+  citas: (desde: string, hasta: string) => protegido<Cita[]>(`/api/admin/citas?desde=${desde}&hasta=${hasta}`),
+  citasProximas: (limite = 5) => protegido<CitasProximas>(`/api/admin/citas/proximas?limite=${limite}`),
+  cita: (id: number) => protegido<Cita>(`/api/admin/citas/${id}`),
+  /** 409 con `traslapes` si se cruza con otra cita programada y no se confirmó. */
+  crearCita: (datos: CitaDatos) => protegido<Cita>('/api/admin/citas', json('POST', datos)),
+  editarCita: (id: number, datos: CitaDatos) => protegido<Cita>(`/api/admin/citas/${id}`, json('PUT', datos)),
+  cancelarCita: (id: number) => protegido<Cita>(`/api/admin/citas/${id}/cancelar`, { method: 'POST' }),
 };

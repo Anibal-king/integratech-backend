@@ -105,14 +105,20 @@ Si la base no existe o no tiene contenido, el backend ejecuta el seed al arranca
 
 `/admin/login` y las páginas del panel (no enlazadas desde el sitio, con `noindex`):
 
-- **Resumen** (`/admin/dashboard`): cifras clave, solicitudes por mes, conteo por estado y recientes.
+- **Resumen** (`/admin/dashboard`): cifras clave (incluidas las citas de los próximos 7 días),
+  solicitudes por mes, recientes y, en la columna derecha, conteo por estado y próximas citas.
 - **Mensajes** (`/admin/mensajes`): todas las solicitudes del formulario y del chatbot con
   búsqueda, filtros y paginación; en el detalle se cambia el estado, se escriben notas
   internas y se responde por correo, teléfono o WhatsApp.
 - **Servicios** (`/admin/servicios`): crear, editar, ocultar, ordenar y eliminar los
   servicios del sitio; galería por servicio con subida de fotos, portada, orden y texto
   alternativo.
-- **Calendario**: próximamente.
+- **Calendario** (`/admin/calendario`): citas de la empresa (visitas técnicas,
+  instalaciones, mantenimientos) en vista mensual —en móvil, lista por día— con las
+  próximas citas al lado. Clic en un día crea una cita; clic en una cita la edita. Avisa
+  si una cita se traslapa con otra y permite guardarla de todos modos. Desde el detalle
+  de una solicitud (Mensajes), «Agendar cita» abre el formulario con los datos del cliente.
+  Horas en la zona de El Salvador.
 
 Las gráficas usan Chart.js, que solo carga la página del Resumen.
 

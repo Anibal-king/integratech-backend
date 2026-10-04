@@ -194,6 +194,63 @@ export interface EstadisticasAdmin {
   por_estado: Record<EstadoSolicitud, number>;
 }
 
+// ---------- Calendario de citas ----------
+
+export type EstadoCita = 'programada' | 'completada' | 'cancelada';
+
+/** Cita del calendario. Fechas en hora de El Salvador (UTC-6). */
+export interface Cita {
+  id: number;
+  titulo: string;
+  cliente: string | null;
+  telefono: string | null;
+  correo: string | null;
+  servicio: { id: number; nombre: string } | null;
+  /** Solicitud de la que salió la cita (formulario o chatbot), si la hay. */
+  solicitud: { origen: OrigenSolicitud; id: number; nombre: string | null } | null;
+  /** ISO con desplazamiento: '2026-10-05T09:00:00-06:00'. */
+  inicio: string;
+  fin: string;
+  /** Hora local para <input type="datetime-local">: '2026-10-05T09:00'. */
+  inicio_local: string;
+  fin_local: string;
+  lugar: string | null;
+  notas: string | null;
+  estado: EstadoCita;
+  fecha_actualizacion: string | null;
+}
+
+/** Cuerpo de POST /api/admin/citas y PUT /api/admin/citas/:id. Fechas 'YYYY-MM-DDTHH:MM' locales. */
+export interface CitaDatos {
+  titulo: string;
+  cliente?: string | null;
+  telefono?: string | null;
+  correo?: string | null;
+  servicio_id?: number | null;
+  solicitud?: { origen: OrigenSolicitud; id: number } | null;
+  inicio_local: string;
+  fin_local: string;
+  lugar?: string | null;
+  notas?: string | null;
+  estado?: EstadoCita;
+  /** true para guardar aunque se traslape con otra cita programada. */
+  confirmar_traslape?: boolean;
+}
+
+/** 409 de crear/editar cuando hay traslape y no se confirmó. */
+export interface TraslapeRespuesta {
+  error: string;
+  traslapes: Cita[];
+}
+
+/** GET /api/admin/citas/proximas */
+export interface CitasProximas {
+  /** Citas programadas que empiezan en los próximos 7 días. */
+  proximos_7_dias: number;
+  /** Próximas citas programadas (aún no terminadas), en orden. */
+  items: Cita[];
+}
+
 /** Fila de GET /api/contacto. */
 export interface MensajeContacto {
   id: number;

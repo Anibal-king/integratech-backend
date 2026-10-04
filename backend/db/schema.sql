@@ -183,3 +183,27 @@ CREATE TABLE IF NOT EXISTS admin_sesiones (
 );
 CREATE INDEX IF NOT EXISTS idx_admin_sesiones_usuario ON admin_sesiones(usuario_id);
 
+-- Citas del calendario del panel (visitas técnicas, instalaciones, mantenimientos).
+-- Fechas en UTC ('YYYY-MM-DD HH:MM:SS'); la API las recibe y entrega en hora de
+-- El Salvador (UTC-6, sin horario de verano). Ver lib/zona.js.
+CREATE TABLE IF NOT EXISTS citas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  titulo TEXT NOT NULL,
+  cliente TEXT,                         -- cliente o empresa
+  telefono TEXT,
+  correo TEXT,
+  categoria_id INTEGER REFERENCES categorias_servicios(id) ON DELETE SET NULL, -- servicio relacionado
+  solicitud_origen TEXT CHECK (solicitud_origen IN ('formulario', 'chatbot')),
+  solicitud_id INTEGER,                 -- id en mensajes_contacto o leads_chatbot según el origen
+  inicio TEXT NOT NULL,
+  fin TEXT NOT NULL,
+  lugar TEXT,
+  notas TEXT,
+  estado TEXT NOT NULL DEFAULT 'programada' CHECK (estado IN ('programada', 'completada', 'cancelada')),
+  fecha_creacion TEXT DEFAULT (datetime('now')),
+  fecha_actualizacion TEXT,
+  CHECK (fin > inicio),
+  CHECK ((solicitud_origen IS NULL) = (solicitud_id IS NULL))
+);
+CREATE INDEX IF NOT EXISTS idx_citas_inicio ON citas(inicio);
+CREATE INDEX IF NOT EXISTS idx_citas_solicitud ON citas(solicitud_origen, solicitud_id);
