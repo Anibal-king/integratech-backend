@@ -1,0 +1,36 @@
+---
+/** Catálogo completo de servicios (destino de la tarjeta «Ver más» del inicio). */
+import Layout from '../../layouts/Layout.astro';
+import Section from '../../components/Section.astro';
+import StatusMessage from '../../components/StatusMessage.astro';
+import ServiciosCatalogo from '../../components/ServiciosCatalogo.astro';
+import { api } from '../../lib/api';
+
+const servicios = await api.servicios();
+---
+
+<Layout
+  title="Servicios — IntegraTech"
+  description="Catálogo completo de servicios de ingeniería: automatización, soluciones comerciales e industriales, energía renovable, auditorías y mantenimiento de infraestructura."
+>
+  <Section variant="dark" class="section" aria-labelledby="catalogo-title">
+    <div class="container">
+      <p><a href="/#servicios" class="volver">← Volver al inicio</a></p>
+      <div class="section__head">
+        <span class="eyebrow">Catálogo</span>
+        <h1 id="catalogo-title">Todos nuestros servicios</h1>
+        <p>Busca una línea de servicio o recorre el catálogo completo. Cada una agrupa capacidades que ejecutamos con personal propio y marcas representadas.</p>
+      </div>
+
+      {servicios.length === 0 ? (
+        <StatusMessage detalle={`GET ${api.baseUrl}/api/servicios no devolvió categorías`} />
+      ) : (
+        <ServiciosCatalogo servicios={servicios} nivelTitulo={2} />
+      )}
+    </div>
+  </Section>
+</Layout>
+
+<style>
+  .volver { font-weight: 600; }
+</style>

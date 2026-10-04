@@ -7,9 +7,8 @@ import react from '@astrojs/react';
 export default defineConfig({
   integrations: [react()],
   // Las secciones viven en la landing: las rutas antiguas redirigen a su ancla.
-  // /proyectos se mantiene como página de detalle (galería completa).
+  // /proyectos y /servicios (catálogo completo) son páginas propias.
   redirects: {
-    '/servicios': '/#servicios',
     '/clientes': '/#clientes',
     '/nosotros': '/#nosotros',
     '/contacto': '/#contacto',
