@@ -1,8 +1,8 @@
 ---
 /**
  * Tarjetas de servicios con buscador. Lo usan la sección Servicios del inicio
- * (5 tarjetas + «Ver más» cuando hay más de 6 servicios) y el catálogo /servicios
- * (todas).
+ * (5 tarjetas + «Ver más», que lleva a /proyectos, cuando hay más de 6 servicios)
+ * y el catálogo /servicios (todas).
  *
  * Todas las tarjetas van en el HTML (visibles para buscadores). Las que pasan del
  * límite llevan `hidden` y solo aparecen al buscar; sin JavaScript se ven las
@@ -128,7 +128,7 @@ for (const sv of servicios) {
     })}
 
     {conMas && (
-      <a href="/servicios" class="svc-card svc-card--mas" data-svc-mas>
+      <a href="/proyectos" class="svc-card svc-card--mas" data-svc-mas>
         <Titulo class="svc-mas__titulo">Ver más</Titulo>
         <p class="svc-mas__frase">Explora el resto de nuestras líneas de servicio</p>
         <span class="svc-mas__flecha" aria-hidden="true">
