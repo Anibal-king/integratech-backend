@@ -1,7 +1,8 @@
 ---
 import Section, { type SectionVariant } from '../Section.astro';
 import StatusMessage from '../StatusMessage.astro';
-import { api, mediaUrl, mediaSrcset, type ApiResult, type CategoriaServicio } from '../../lib/api';
+import ServiciosCatalogo from '../ServiciosCatalogo.astro';
+import { api, type ApiResult, type CategoriaServicio } from '../../lib/api';
 
 interface Props {
   variant: SectionVariant;
@@ -26,82 +27,8 @@ const servicios = Astro.props.servicios ?? (await api.servicios());
     {servicios.status !== 'ok' ? (
       <StatusMessage resultado={servicios} vacio="Pronto publicaremos nuestros servicios aquí." />
     ) : (
-      <div class="svc-grid">
-        {servicios.data.map((s) => {
-          const portada = s.portada;
-          return (
-            <a href={`/servicios/${s.id}`} class="svc-card">
-              {portada && (
-                <div class="svc-card__media">
-                  <img
-                    src={mediaUrl(portada.src)}
-                    srcset={mediaSrcset(portada.srcset)}
-                    sizes="(max-width: 700px) 90vw, 45vw"
-                    width={portada.ancho}
-                    height={portada.alto}
-                    alt={portada.alt}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-              )}
-              <div class="svc-card__body">
-                <h3>{s.nombre}</h3>
-                <p>{s.descripcion}</p>
-                {s.items.length > 0 && (
-                  <ul class="svc-items">
-                    {s.items.slice(0, 4).map((i) => <li>{i}</li>)}
-                    {s.items.length > 4 && <li class="muted">+ {s.items.length - 4} más…</li>}
-                  </ul>
-                )}
-                <span class="svc-card__cta">Ver detalle →</span>
-              </div>
-            </a>
-          );
-        })}
-      </div>
+      // 5 servicios + «Ver más» (si hay más de 6); el buscador busca en todos
+      <ServiciosCatalogo servicios={servicios.data} limite={5} />
     )}
   </div>
 </Section>
-
-<style>
-  .svc-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-    gap: 1.75rem;
-  }
-  .svc-card {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    background: var(--surface-card);
-    box-shadow: var(--shadow-sm);
-    color: var(--text);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-  .svc-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-md);
-    text-decoration: none;
-  }
-  .svc-card__media {
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    background: var(--surface-muted);
-  }
-  .svc-card__media img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.4s ease;
-  }
-  .svc-card:hover .svc-card__media img { transform: scale(1.06); }
-  .svc-card__body { padding: 1.4rem 1.5rem 1.6rem; display: flex; flex-direction: column; flex: 1; }
-  .svc-card__body h3 { font-size: 1.2rem; margin-bottom: 0.4rem; }
-  .svc-card__body p { color: var(--text-muted); }
-  .svc-items { margin: 0.5rem 0 1rem; }
-  .svc-items .muted { color: var(--text-muted); list-style: none; margin-left: -1.2rem; }
-  .svc-card__cta { margin-top: auto; font-weight: 700; color: var(--link); }
-</style>

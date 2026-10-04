@@ -12,6 +12,10 @@ const [clientes, otros] = await Promise.all([
   api.clientes(),
   api.otrosClientes().then((r) => dataOr(r, [])),
 ]);
+
+/** Trabajos visibles en la tarjeta; el resto (y el texto completo) va en la ventana. */
+const VISIBLES = 2;
+const etiquetaBoton = (n: number) => (n === 1 ? 'Ver el trabajo completo' : `Ver los ${n} trabajos`);
 ---
 
 <Section variant={variant} id="clientes" class="section reveal" aria-labelledby="clientes-title" tabindex="-1">
@@ -25,15 +29,41 @@ const [clientes, otros] = await Promise.all([
     {clientes.status !== 'ok' ? (
       <StatusMessage resultado={clientes} vacio="Pronto publicaremos aquí las empresas que confían en nosotros." />
     ) : (
-      <div class="grid grid--2">
-        {clientes.data.map((c) => (
-          <article class="card">
-            <h3>{c.nombre}</h3>
+      <div class="grid grid--2 clientes-grid">
+        {clientes.data.map((c, i) => (
+          <article class="card cli" data-cli data-cli-total={c.servicios.length}>
+            <h3 class="cli__nombre">{c.nombre}</h3>
             {c.servicios.length > 0 && (
-              <ul>
-                {c.servicios.map((s) => <li>{s}</li>)}
+              <ul class="cli__trabajos">
+                {c.servicios.slice(0, VISIBLES).map((s) => <li>{s}</li>)}
               </ul>
             )}
+            {/* Visible si hay más de 2 trabajos; si no, el script lo muestra solo cuando algún texto quedó recortado */}
+            <button
+              type="button"
+              class:list={['cli__mas', { 'is-visible': c.servicios.length > VISIBLES }]}
+              aria-haspopup="dialog"
+              aria-controls={`cli-dialogo-${i}`}
+              data-cli-abrir
+            >
+              {etiquetaBoton(c.servicios.length)}
+            </button>
+
+            {/* Lista completa: siempre en el HTML (la leen los buscadores); se muestra en la ventana */}
+            <dialog class="cli__dialogo" id={`cli-dialogo-${i}`} aria-labelledby={`cli-titulo-${i}`} data-cli-dialogo>
+              <div class="cli__dialogo-cabecera">
+                <h3 id={`cli-titulo-${i}`}>{c.nombre}</h3>
+                <button type="button" class="cli__cerrar" aria-label="Cerrar" data-cli-cerrar>
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <div class="cli__dialogo-cuerpo">
+                <p class="cli__dialogo-total">{c.servicios.length === 1 ? '1 trabajo realizado' : `${c.servicios.length} trabajos realizados`}</p>
+                <ul>
+                  {c.servicios.map((s) => <li>{s}</li>)}
+                </ul>
+              </div>
+            </dialog>
           </article>
         ))}
       </div>
@@ -52,8 +82,143 @@ const [clientes, otros] = await Promise.all([
 
 <style>
   .card h3 { font-size: 1.15rem; }
+
+  /* ---------- Tarjetas de cliente: todas de la misma altura ---------- */
+  /* Filas iguales: cada fila mide lo que la tarjeta más alta de toda la grilla */
+  .clientes-grid { grid-auto-rows: 1fr; }
+  .cli { display: flex; flex-direction: column; min-width: 0; }
+  .cli__nombre { margin-bottom: 0.75rem; }
+  .cli__trabajos { margin: 0 0 1rem; padding-left: 1.2rem; }
+  .cli__trabajos li { margin-bottom: 0.4rem; }
+  /* Cada trabajo, máximo 2 líneas con puntos suspensivos */
+  .cli__trabajos li {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  /* list-item se pierde con -webkit-box: la viñeta se dibuja aparte */
+  .cli__trabajos { list-style: none; padding-left: 0; }
+  .cli__trabajos li { position: relative; padding-left: 1.1rem; }
+  .cli__trabajos li::before { content: '•'; position: absolute; left: 0.2rem; color: var(--text-muted); }
+
+  /* «Ver más»: siempre al fondo y en la misma posición; si no hace falta, conserva su espacio */
+  .cli__mas {
+    margin-top: auto;
+    align-self: flex-start;
+    padding: 0.35rem 0;
+    border: 0;
+    background: none;
+    color: var(--link);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    visibility: hidden;
+  }
+  .cli__mas.is-visible { visibility: visible; }
+  .cli__mas::after { content: ' →'; }
+  .cli__mas:hover { text-decoration: underline; }
+  .cli__mas:focus-visible, .cli__cerrar:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 4px; }
+
+  /* ---------- Ventana con la lista completa ---------- */
+  .cli__dialogo {
+    width: min(640px, calc(100vw - 2rem));
+    max-height: min(80vh, 720px);
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-card);
+    color: var(--text);
+    box-shadow: var(--shadow-lg);
+  }
+  .cli__dialogo[open] { display: flex; flex-direction: column; overflow: hidden; }
+  .cli__dialogo::backdrop { background: var(--overlay-backdrop); opacity: 0.7; }
+  .cli__dialogo-cabecera {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .cli__dialogo-cabecera h3 { margin: 0; font-size: 1.2rem; color: var(--heading); }
+  .cli__cerrar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .cli__cerrar:hover { background: var(--surface-muted); }
+  /* El contenido se desplaza dentro de la ventana */
+  /* min-height: 0 deja que el cuerpo se encoja y se desplace (la cabecera queda fija) */
+  .cli__dialogo-cuerpo { flex: 1; min-height: 0; padding: 1rem 1.25rem 1.4rem; overflow-y: auto; overscroll-behavior: contain; }
+  .cli__dialogo-total { margin: 0 0 0.75rem; font-size: 0.88rem; color: var(--text-muted); }
+  .cli__dialogo-cuerpo ul { margin: 0; padding-left: 1.2rem; }
+  .cli__dialogo-cuerpo li { margin-bottom: 0.55rem; }
+
+  @media (max-width: 640px) {
+    /* En móvil ocupa casi toda la pantalla */
+    .cli__dialogo { width: calc(100vw - 1rem); max-width: none; max-height: calc(100dvh - 1rem); }
+  }
   .otros { margin-top: 3rem; }
   .otros h3 { font-size: 1.4rem; }
   .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
   .chips .tag { font-size: 0.85rem; padding: 0.35rem 0.75rem; background: var(--surface-card); border: 1px solid var(--border); }
 </style>
+
+<script>
+  /*
+   * Clientes: muestra «Ver más» también cuando un trabajo quedó recortado a 2
+   * líneas (se mide en el navegador) y abre la ventana nativa con la lista completa.
+   * El dialog nativo cierra con Escape; aquí se suma el botón de cerrar, el clic
+   * fuera y devolver el foco al botón que la abrió. Se reinicia en cada astro:page-load.
+   */
+  function iniciarClientes() {
+    const tarjetas = [...document.querySelectorAll<HTMLElement>('[data-cli]')];
+    if (!tarjetas.length) return;
+
+    /** ¿Algún trabajo visible quedó recortado? */
+    const recortado = (t: HTMLElement) =>
+      [...t.querySelectorAll<HTMLElement>('.cli__trabajos li')].some((li) => li.scrollHeight > li.clientHeight + 1);
+
+    function revisar() {
+      for (const t of tarjetas) {
+        const total = Number(t.dataset.cliTotal);
+        t.querySelector('[data-cli-abrir]')!.classList.toggle('is-visible', total > 2 || recortado(t));
+      }
+    }
+
+    for (const t of tarjetas) {
+      const boton = t.querySelector<HTMLButtonElement>('[data-cli-abrir]')!;
+      const dialogo = t.querySelector<HTMLDialogElement>('[data-cli-dialogo]')!;
+      boton.addEventListener('click', () => dialogo.showModal());
+      dialogo.querySelector('[data-cli-cerrar]')!.addEventListener('click', () => dialogo.close());
+      // Clic fuera de la ventana (en el fondo oscuro): el objetivo es el propio dialog
+      dialogo.addEventListener('click', (e) => {
+        if (e.target === dialogo) dialogo.close();
+      });
+      // Al cerrarse (botón, Escape o clic fuera), el foco vuelve al botón que la abrió
+      dialogo.addEventListener('close', () => boton.focus());
+    }
+
+    revisar();
+    // El recorte depende del ancho: se vuelve a medir al cambiar el tamaño de la ventana
+    let espera: number | undefined;
+    const alCambiar = () => {
+      clearTimeout(espera);
+      espera = window.setTimeout(revisar, 150);
+    };
+    window.addEventListener('resize', alCambiar);
+    document.addEventListener('astro:before-swap', () => window.removeEventListener('resize', alCambiar), { once: true });
+  }
+
+  document.addEventListener('astro:page-load', iniciarClientes);
+</script>

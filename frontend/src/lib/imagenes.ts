@@ -170,8 +170,47 @@ export const todasLasFotos: FotoProyecto[] = Array.from(PROYECTOS.keys())
 
 // ---------- Selección para la portada ----------
 
-/** Foto principal del héroe (panel enmarcado). */
-export const heroHome = foto('proyecto_001')!;
+/**
+ * Diapositivas del carrusel del inicio (hero). Para cambiar textos o fotos,
+ * edita solo esta lista: el componente Hero.astro las recorre en orden.
+ *  - titulo: la primera es el <h1> de la página.
+ *  - frase:  null en la primera = misión de la empresa desde la API (con respaldo).
+ *  - foto:   cualquier archivo de src/assets/img/proyectos (sin extensión).
+ *  - alt:    describe lo que se ve en la foto.
+ */
+export interface DiapositivaHero {
+  titulo: string;
+  frase: string | null;
+  foto: ImageMetadata;
+  alt: string;
+}
+
+const fotoHero = (id: string) => {
+  const img = PROYECTOS.get(id);
+  if (!img) throw new Error(`Diapositiva del hero: no existe la foto "${id}" en assets/img/proyectos`);
+  return img;
+};
+
+export const DIAPOSITIVAS_HERO: DiapositivaHero[] = [
+  {
+    titulo: 'Ingeniería especializada para la industria y el sector corporativo',
+    frase: null,
+    foto: fotoHero('proyecto_001'),
+    alt: 'Pasillo de un data center con racks de servidores y bandejas de cableado en el techo',
+  },
+  {
+    titulo: 'Automatiza tus procesos sin detener tu operación',
+    frase: 'Diseñamos, construimos y programamos tableros de automatización para tu planta, tus oficinas o tu edificio.',
+    foto: fotoHero('proyecto_027'),
+    alt: 'Tablero de automatización con controladores Loxone y contactores numerados',
+  },
+  {
+    titulo: 'Energía limpia y confiable para tu empresa',
+    frase: 'Instalamos sistemas solares, UPS y filtros de armónicos para que reduzcas costos y nunca te quedes sin respaldo.',
+    foto: fotoHero('proyecto_058'),
+    alt: 'Paneles solares instalados sobre el techo de una nave industrial',
+  },
+];
 
 /** Miniaturas de la franja "nuestro trabajo" del inicio (enlazan a /proyectos). */
 export const bandaProyectos: FotoProyecto[] = ['proyecto_009', 'proyecto_043', 'proyecto_030', 'proyecto_036', 'proyecto_017']
