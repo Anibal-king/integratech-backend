@@ -19,7 +19,7 @@ const [empresa, servicios, proyectos] = await Promise.all([
 
 <Layout>
   {/* Ritmo de color al hacer scroll: cambiar el fondo de una sección es cambiar su variant */}
-  <Hero variant="light" descripcion={empresa?.mision ?? undefined} />
+  <Hero descripcion={empresa?.mision ?? undefined} />
   <StatsBar variant="muted" servicios={servicios.length} proyectos={proyectos.length} />
   <ServicesSection variant="dark" />
   <ProjectsSection variant="light" />

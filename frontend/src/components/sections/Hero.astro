@@ -1,109 +1,381 @@
 ---
+/**
+ * Inicio de la página: carrusel a pantalla completa con fundido.
+ * Las diapositivas (textos y fotos) se editan en DIAPOSITIVAS_HERO (lib/imagenes.ts).
+ *
+ * Sin librerías: el HTML trae todas las diapositivas (sin JS se ve la primera) y un
+ * script pequeño hace el avance automático, los puntos, el teclado y el deslizamiento.
+ */
 import { Image } from 'astro:assets';
-import Section, { type SectionVariant } from '../Section.astro';
-import { heroHome } from '../../lib/imagenes';
+import Section from '../Section.astro';
+import { DIAPOSITIVAS_HERO } from '../../lib/imagenes';
 
 interface Props {
+  /** Misión de la empresa (API); si falta se usa el texto de respaldo. */
   descripcion?: string | null;
-  variant: SectionVariant;
 }
 
-const {
-  descripcion = 'Satisfacemos la demanda de servicios profesionales y especializados que requiere el mercado corporativo y empresarial de El Salvador.',
-  variant,
-} = Astro.props;
+const RESPALDO =
+  'Satisfacemos la demanda de servicios profesionales y especializados que requiere el mercado corporativo y empresarial de El Salvador.';
+const descripcion = Astro.props.descripcion || RESPALDO;
+
+const diapositivas = DIAPOSITIVAS_HERO.map((d) => ({ ...d, frase: d.frase ?? descripcion }));
+const total = diapositivas.length;
+
+// Tamaños adaptados a cada pantalla, sin pasar del ancho original de la foto.
+const anchos = (ancho: number) => [...[480, 768, 1280, 1920].filter((w) => w < ancho), ancho];
 ---
 
-<Section variant={variant} id="inicio" class="hero" aria-labelledby="inicio-title" tabindex="-1">
-  <div class="container hero__grid">
-    <div class="hero__text">
-      <span class="hero__eyebrow">Servicios Integrales de Ingeniería</span>
-      <h1 id="inicio-title">Ingeniería especializada para la industria y el sector corporativo</h1>
-      <p>{descripcion}</p>
-      <div class="hero__actions">
-        <a href="/#servicios" class="btn btn--primary btn--lg">Ver servicios</a>
+<Section variant="dark" id="inicio" class="hero" aria-labelledby="inicio-title" tabindex="-1">
+  <div
+    class="hero__carrusel"
+    data-hero
+    role="region"
+    aria-roledescription="carrusel"
+    aria-label="Destacados de Servicios Integrales de Ingeniería"
+  >
+    <!-- Fotos de fondo (decorativas para el lector: el texto de cada diapositiva lleva el mensaje) -->
+    <div class="hero__fondos" aria-hidden="true">
+      {diapositivas.map((d, i) => (
+        <Image
+          class:list={['hero__foto', { 'is-activa': i === 0 }]}
+          data-hero-foto
+          src={d.foto}
+          alt={d.alt}
+          widths={anchos(d.foto.width)}
+          sizes="100vw"
+          loading={i === 0 ? 'eager' : 'lazy'}
+          fetchpriority={i === 0 ? 'high' : 'low'}
+          decoding={i === 0 ? 'sync' : 'async'}
+        />
+      ))}
+      <div class="hero__capa"></div>
+    </div>
+
+    <div class="container hero__contenido">
+      <div class="hero__textos" data-hero-textos aria-live="off">
+        {diapositivas.map((d, i) => (
+          <div
+            class:list={['hero__slide', { 'is-activa': i === 0 }]}
+            data-hero-slide
+            role="group"
+            aria-roledescription="diapositiva"
+            aria-label={`${i + 1} de ${total}`}
+            aria-hidden={i === 0 ? undefined : 'true'}
+            inert={i === 0 ? undefined : true}
+          >
+            {i === 0 ? <h1 id="inicio-title" class="hero__titulo">{d.titulo}</h1> : <h2 class="hero__titulo">{d.titulo}</h2>}
+            <p class="hero__frase">{d.frase}</p>
+          </div>
+        ))}
+      </div>
+
+      <!-- Mismos botones y destinos en todas las diapositivas -->
+      <div class="hero__acciones">
         <a href="/#contacto" class="btn btn--primary btn--lg">Solicitar cotización</a>
+        <a href="/#servicios" class="btn btn--lg hero__btn-borde">Ver servicios</a>
       </div>
     </div>
 
-    <figure class="hero__photo">
-      <Image
-        src={heroHome.img}
-        alt="Pasillo de un data center con racks de servidores y bandejas de cableado en el techo"
-        widths={[480, 760, 1100]}
-        sizes="(max-width: 767px) 92vw, 560px"
-        loading="eager"
-      />
-      <figcaption>Diseño y construcción de data center</figcaption>
-    </figure>
+    <div class="hero__controles">
+      <div class="hero__puntos">
+        {diapositivas.map((d, i) => (
+          <button
+            type="button"
+            class="hero__punto"
+            data-hero-punto={i}
+            aria-label={`Ir a la diapositiva ${i + 1} de ${total}: ${d.titulo}`}
+            aria-current={i === 0 ? 'true' : undefined}
+          ></button>
+        ))}
+      </div>
+      <!-- Detener el avance automático (WCAG 2.2.2); se oculta si no hay avance automático -->
+      <button type="button" class="hero__pausa" data-hero-pausa aria-label="Pausar el carrusel" hidden>
+        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" data-icono-pausa><path d="M7 5h3v14H7zM14 5h3v14h-3z" fill="currentColor" /></svg>
+        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" data-icono-play><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
+      </button>
+    </div>
   </div>
 </Section>
 
 <style>
   .hero {
-    padding-block: clamp(3rem, 7vw, 5rem);
+    position: relative;
+    padding: 0;
+    overflow: hidden;
+    color: var(--overlay-text);
   }
 
-  .hero__grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(2rem, 5vw, 4rem);
+  .hero__carrusel {
+    position: relative;
+    display: flex;
     align-items: center;
+    /* Casi toda la pantalla bajo el header, con límites razonables */
+    min-height: clamp(520px, calc(100svh - var(--header-height)), 900px);
+    touch-action: pan-y; /* el deslizamiento horizontal lo maneja el carrusel */
   }
 
-  .hero__eyebrow {
-    display: block;
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--eyebrow);
-    margin-bottom: 1rem;
+  /* ---------- Fondos ---------- */
+  .hero__fondos { position: absolute; inset: 0; background: var(--color-navy-deep); }
+  .hero__foto {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.9s ease;
+  }
+  .hero__foto.is-activa { opacity: 1; }
+  /* Capa oscura: el texto blanco se lee sobre cualquier foto */
+  .hero__capa {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at center, color-mix(in srgb, var(--color-navy-deep) 45%, transparent) 0%, transparent 70%),
+      linear-gradient(180deg, color-mix(in srgb, var(--color-navy-deep) 62%, transparent) 0%, color-mix(in srgb, var(--color-navy-deep) 80%, transparent) 100%);
   }
 
-  .hero__text h1 {
-    font-size: clamp(2rem, 1.2rem + 3vw, 3rem);
-    color: var(--heading);
-    margin-bottom: 1rem;
+  /* ---------- Contenido ---------- */
+  .hero__contenido {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-block: clamp(3rem, 8vh, 5rem) clamp(6.5rem, 12vh, 8rem); /* abajo: espacio para los puntos */
+  }
+  /* Todas las diapositivas en la misma celda: el bloque mide lo que la más alta,
+     y la frase de cada una queda justo sobre los botones. */
+  .hero__textos { display: grid; width: 100%; max-width: 900px; }
+  .hero__slide {
+    grid-area: 1 / 1;
+    align-self: end;
+    opacity: 0;
+    transition: opacity 0.9s ease;
+  }
+  .hero__slide.is-activa { opacity: 1; }
+  .hero__titulo {
+    margin: 0 auto 1rem;
+    max-width: 22ch;
+    color: var(--overlay-text);
+    font-size: clamp(1.9rem, 1rem + 3.6vw, 3.5rem);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+    text-shadow: 0 2px 16px color-mix(in srgb, var(--color-navy-deep) 60%, transparent);
+  }
+  .hero__frase {
+    margin: 0 auto;
+    max-width: 60ch;
+    color: var(--overlay-text);
+    font-size: clamp(1rem, 0.9rem + 0.45vw, 1.2rem);
+    line-height: 1.55;
+    text-wrap: pretty;
+    text-shadow: 0 1px 10px color-mix(in srgb, var(--color-navy-deep) 70%, transparent);
   }
 
-  .hero__text p {
-    color: var(--text-muted);
-    font-size: 1.1rem;
-    max-width: 48ch;
-  }
-
-  .hero__actions {
+  .hero__acciones {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 0.9rem;
-    margin-top: 1.75rem;
+    margin-top: 2rem;
+  }
+  /* Secundario: borde blanco y fondo transparente */
+  .hero__btn-borde {
+    color: var(--overlay-text);
+    border-color: var(--overlay-text);
+    background: transparent;
+  }
+  .hero__btn-borde:hover { background: var(--overlay-control-bg); }
+  .hero__acciones .btn:focus-visible,
+  .hero__punto:focus-visible,
+  .hero__pausa:focus-visible {
+    outline: 3px solid var(--overlay-text);
+    outline-offset: 3px;
   }
 
-  .hero__photo {
-    margin: 0;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    background: var(--surface-muted);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-lg);
+  /* ---------- Puntos ---------- */
+  .hero__controles {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(1.5rem, 4vh, 2.25rem);
+    z-index: 2;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
-  .hero__photo img {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 4 / 3;
-    object-fit: cover;
+  .hero__puntos { display: flex; gap: 0.25rem; }
+  /* Botón de 32 px (área táctil) con el punto dibujado en el centro */
+  .hero__punto {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
   }
-  .hero__photo figcaption {
-    padding: 0.7rem 1rem;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    background: var(--surface-muted);
+  .hero__punto::before {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    transform: translate(-50%, -50%);
+    background: color-mix(in srgb, var(--overlay-text) 55%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-navy-deep) 40%, transparent);
+    transition: width 0.3s ease, background-color 0.3s ease;
+  }
+  .hero__punto[aria-current='true']::before { width: 26px; background: var(--overlay-text); }
+  .hero__punto:hover::before { background: var(--overlay-text); }
+  .hero__pausa {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--overlay-text) 55%, transparent);
+    background: var(--overlay-control-bg);
+    color: var(--overlay-text);
+    cursor: pointer;
+  }
+  .hero__pausa[hidden] { display: none; }
+  /* Icono según el estado: pausa mientras avanza, reproducir si está detenido */
+  .hero__pausa [data-icono-play],
+  .hero__pausa.is-detenido [data-icono-pausa] { display: none; }
+  .hero__pausa.is-detenido [data-icono-play] { display: block; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero__foto, .hero__slide, .hero__punto::before { transition: none; }
   }
 
-  @media (max-width: 767px) {
-    .hero__grid { grid-template-columns: 1fr; }
-    .hero__actions { flex-direction: column; }
-    .hero__actions .btn { justify-content: center; }
+  /* ---------- Móvil ---------- */
+  @media (max-width: 640px) {
+    .hero__acciones { flex-direction: column; align-items: stretch; width: 100%; max-width: 320px; }
+    .hero__acciones .btn { justify-content: center; }
+    /* Más espacio abajo: puntos centrados y el botón del chat (abajo a la derecha) no tapa los botones */
+    .hero__contenido { padding-bottom: 7.5rem; }
   }
 </style>
+
+<script>
+  /*
+   * Carrusel del inicio. Se reinicia en cada astro:page-load (View Transitions).
+   * - Fundido entre diapositivas; avance cada 6 s, salvo con «reducir movimiento».
+   * - Pausa al pasar el mouse o al enfocar un control; botón para detenerlo.
+   * - Puntos, flechas ← → (con el foco dentro del carrusel) y deslizamiento táctil.
+   */
+  const INTERVALO_MS = 6000;
+  let limpiar: (() => void) | null = null;
+
+  function iniciar() {
+    limpiar?.();
+    limpiar = null;
+    const raiz = document.querySelector<HTMLElement>('[data-hero]');
+    if (!raiz) return;
+
+    const fotos = [...raiz.querySelectorAll<HTMLElement>('[data-hero-foto]')];
+    const slides = [...raiz.querySelectorAll<HTMLElement>('[data-hero-slide]')];
+    const puntos = [...raiz.querySelectorAll<HTMLButtonElement>('[data-hero-punto]')];
+    const textos = raiz.querySelector<HTMLElement>('[data-hero-textos]')!;
+    const pausa = raiz.querySelector<HTMLButtonElement>('[data-hero-pausa]')!;
+    const total = slides.length;
+    if (total < 2) return;
+
+    const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let actual = 0;
+    let temporizador: number | undefined;
+    let encima = false; // mouse o foco dentro
+    let detenido = sinMovimiento; // por el usuario (botón) o por preferencia
+
+    function mostrar(i: number) {
+      actual = (i + total) % total;
+      slides.forEach((s, n) => {
+        const activa = n === actual;
+        s.classList.toggle('is-activa', activa);
+        s.toggleAttribute('inert', !activa);
+        if (activa) s.removeAttribute('aria-hidden');
+        else s.setAttribute('aria-hidden', 'true');
+      });
+      fotos.forEach((f, n) => f.classList.toggle('is-activa', n === actual));
+      puntos.forEach((p, n) => (n === actual ? p.setAttribute('aria-current', 'true') : p.removeAttribute('aria-current')));
+    }
+
+    function programar() {
+      clearInterval(temporizador);
+      temporizador = undefined;
+      const corre = !detenido && !encima && !document.hidden;
+      // Mientras avanza solo, el lector no anuncia cada cambio; al manejarlo a mano, sí.
+      textos.setAttribute('aria-live', corre ? 'off' : 'polite');
+      if (corre) temporizador = window.setInterval(() => mostrar(actual + 1), INTERVALO_MS);
+    }
+
+    /** Cambio hecho por el usuario: reinicia la cuenta de 6 s. */
+    function ir(i: number) {
+      mostrar(i);
+      programar();
+    }
+
+    puntos.forEach((p, n) => p.addEventListener('click', () => ir(n)));
+
+    // Botón de pausa (solo tiene sentido si hay avance automático)
+    pausa.hidden = sinMovimiento;
+    pausa.addEventListener('click', () => {
+      detenido = !detenido;
+      pausa.setAttribute('aria-label', detenido ? 'Reanudar el carrusel' : 'Pausar el carrusel');
+      pausa.classList.toggle('is-detenido', detenido);
+      programar();
+    });
+
+    const alEntrar = () => { encima = true; programar(); };
+    const alSalir = () => { encima = raiz.matches(':hover') || raiz.contains(document.activeElement); programar(); };
+    raiz.addEventListener('mouseenter', alEntrar);
+    raiz.addEventListener('mouseleave', alSalir);
+    raiz.addEventListener('focusin', alEntrar);
+    raiz.addEventListener('focusout', (e) => {
+      if (!raiz.contains(e.relatedTarget as Node | null)) {
+        encima = raiz.matches(':hover');
+        programar();
+      }
+    });
+
+    // Flechas del teclado con el foco dentro del carrusel
+    raiz.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      ir(actual + (e.key === 'ArrowRight' ? 1 : -1));
+      // Si el foco está en un punto, lo lleva al punto de la diapositiva nueva
+      if ((e.target as HTMLElement).matches('[data-hero-punto]')) puntos[actual].focus();
+    });
+
+    // Deslizar en pantallas táctiles
+    let x0 = 0;
+    let y0 = 0;
+    raiz.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+    raiz.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - x0;
+      const dy = e.changedTouches[0].clientY - y0;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) ir(actual + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+
+    // Pestaña oculta: no avanzar
+    const alCambiarVisibilidad = () => programar();
+    document.addEventListener('visibilitychange', alCambiarVisibilidad);
+
+    programar();
+    limpiar = () => {
+      clearInterval(temporizador);
+      document.removeEventListener('visibilitychange', alCambiarVisibilidad);
+    };
+  }
+
+  document.addEventListener('astro:page-load', iniciar);
+  document.addEventListener('astro:before-swap', () => limpiar?.());
+</script>
