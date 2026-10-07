@@ -15,12 +15,16 @@ const procesos = [
     cwd: path.join(root, 'frontend'),
     args: [path.join('node_modules', 'astro', 'bin', 'astro.mjs'), 'dev'],
     color: 35,
+    // Astro 7 se pasa solo a segundo plano si detecta un agente de IA (Claude Code,
+    // Cursor...) y el comando termina al instante, lo que aquí apagaría el backend.
+    // Con esta variable corre en primer plano: este script ya gestiona su ciclo de vida.
+    env: { ASTRO_DEV_BACKGROUND: '1' },
   },
 ];
 
-const hijos = procesos.map(({ nombre, cwd, args, color }) => {
+const hijos = procesos.map(({ nombre, cwd, args, color, env }) => {
   const prefijo = `\x1b[${color}m[${nombre}]\x1b[0m `;
-  const hijo = spawn(process.execPath, args, { cwd, env: process.env });
+  const hijo = spawn(process.execPath, args, { cwd, env: { ...process.env, ...env } });
   const reenviar = (destino) => (chunk) =>
     destino.write(
       chunk
