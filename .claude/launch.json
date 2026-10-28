@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "siie-dev",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "(cd /Users/limbo/Documents/Code/Integra-Tech/integratech-backend/backend && PORT=3100 CORS_ORIGIN=http://localhost:4400 node server.js) & cd /Users/limbo/Documents/Code/Integra-Tech/integratech-backend/frontend && PUBLIC_API_URL=http://localhost:3100 AUTO_BACKEND=false node node_modules/astro/bin/astro.mjs dev --port 4400"
+      ],
+      "port": 4400,
+      "cwd": "/Users/limbo/Documents/Code/Integra-Tech/integratech-backend"
+    },
+    {
+      "name": "siie-build",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "(curl -sf http://localhost:3100/api/health >/dev/null || (cd /Users/limbo/Documents/Code/Integra-Tech/integratech-backend/backend && PORT=3100 CORS_ORIGIN=http://localhost:4400 node server.js &)); cd /Users/limbo/Documents/Code/Integra-Tech/integratech-backend/frontend && PUBLIC_API_URL=http://localhost:3100 AUTO_BACKEND=false node node_modules/astro/bin/astro.mjs build && HOST=localhost PORT=4400 node dist/server/entry.mjs"
+      ],
+      "port": 4400,
+      "cwd": "/Users/limbo/Documents/Code/Integra-Tech/integratech-backend"
+    }
+  ]
+}

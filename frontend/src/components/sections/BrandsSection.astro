@@ -1,0 +1,107 @@
+---
+import { Image } from 'astro:assets';
+import Section, { type SectionVariant } from '../Section.astro';
+import { api, dataOr } from '../../lib/api';
+import { marcaLogo } from '../../lib/imagenes';
+
+interface Props {
+  variant: SectionVariant;
+}
+
+const { variant } = Astro.props;
+const marcas = dataOr(await api.marcas(), []);
+---
+
+{marcas.length > 0 && (
+  <Section variant={variant} id="marcas" class="section reveal" aria-labelledby="marcas-title">
+    <div class="container">
+      <div class="section__head section__head--center">
+        <span class="eyebrow">Respaldo internacional</span>
+        <h2 id="marcas-title">Marcas que representamos</h2>
+        <p>Trabajamos con fabricantes reconocidos en generación, respaldo de energía, protección y automatización.</p>
+      </div>
+
+      <ul class="marcas">
+        {marcas.map((m) => {
+          const logo = marcaLogo(m.nombre);
+          return (
+            <li class="marca">
+              <div class="marca__logo">
+                {logo ? (
+                  <Image src={logo} alt={m.nombre} widths={[200, 400]} sizes="200px" loading="lazy" />
+                ) : (
+                  <span class="marca__nombre">{m.nombre}</span>
+                )}
+              </div>
+              <div class="marca__txt">
+                <h3>{m.nombre}</h3>
+                {m.funcion && <p>{m.funcion}</p>}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  </Section>
+)}
+
+<style>
+  .marcas {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .marca {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--media-plate);
+    transition: background-color 0.25s ease;
+  }
+  .marca__logo {
+    display: grid;
+    place-items: center;
+    height: 120px;
+    padding: 1.25rem 1.5rem;
+  }
+  .marca__logo img {
+    max-width: 100%;
+    max-height: 64px;
+    width: auto;
+    object-fit: contain;
+    filter: grayscale(1);
+    opacity: 0.75;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+  }
+  .marca:hover .marca__logo img { filter: none; opacity: 1; }
+  .marca__nombre { font-weight: 700; text-align: center; color: var(--media-plate-text); }
+  .marca__txt {
+    flex: 1;
+    padding: 0 1.25rem 1.4rem;
+    text-align: center;
+  }
+  .marca__txt h3 {
+    margin: 0 0 0.3rem;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--media-plate-text);
+  }
+  .marca__txt p { margin: 0; font-size: 0.85rem; line-height: 1.45; color: var(--color-navy-soft); }
+
+  @media (max-width: 1023px) {
+    .marcas { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .marcas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .marca__logo { height: 96px; padding: 1rem; }
+    .marca__txt p { display: none; }
+  }
+</style>

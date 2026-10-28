@@ -34,7 +34,7 @@ const activeSection = sectionForPath(pathname);
       </ul>
     </nav>
 
-    <a href={CTA_LINK.href} class="btn header__cta">{CTA_LINK.label}</a>
+    <a href={CTA_LINK.href} class="btn header__cta">{CTA_LINK.label} <span class="btn__arrow" aria-hidden="true">→</span></a>
 
     <MobileMenu client:media="(max-width: 1023px)" links={NAV_LINKS} cta={CTA_LINK} pathname={pathname} />
   </div>
@@ -46,6 +46,8 @@ const activeSection = sectionForPath(pathname);
     top: 0;
     z-index: 60;
     height: var(--header-height);
+    /* Fondo sólido: un backdrop-filter aquí volvería al header el bloque contenedor
+       del panel fijo del menú móvil y lo recortaría a la altura del header. */
     background: var(--color-header-bg);
     border-bottom: 1px solid var(--color-header-divider);
     box-shadow: var(--shadow-header);
@@ -60,7 +62,7 @@ const activeSection = sectionForPath(pathname);
   }
 
   .header__brand { display: block; border-radius: var(--radius); }
-  .header__brand img { height: 48px; width: auto; }
+  .header__brand img { height: 52px; width: auto; mix-blend-mode: multiply; }
 
   .header__brand:focus-visible,
   .header__link:focus-visible,
@@ -79,42 +81,51 @@ const activeSection = sectionForPath(pathname);
   }
   .header__nav li { margin: 0; }
 
+  /* Enlace con barra inferior: azul del logo en hover y en la sección activa */
   .header__link {
+    position: relative;
     display: block;
-    padding: 0.5rem 0.9rem;
-    border-radius: var(--radius);
-    color: var(--color-brand-blue);
-    font-size: 0.9375rem;
+    padding: 0.6rem 0.95rem;
+    color: var(--color-ink);
+    font-size: 0.98rem;
     font-weight: 500;
-    transition: background-color 0.18s ease;
+    transition: color 0.18s ease;
   }
-  .header__link:hover {
-    background: var(--color-brand-blue-tint);
-    text-decoration: none;
+  .header__link::after {
+    content: '';
+    position: absolute;
+    left: 0.95rem;
+    right: 0.95rem;
+    bottom: 0.2rem;
+    height: 2px;
+    background: var(--color-brand-blue);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s var(--ease);
   }
-  .header__link[aria-current='page'] {
-    background: var(--color-brand-blue-tint);
-    font-weight: 600;
-  }
+  .header__link:hover { color: var(--color-brand-blue); text-decoration: none; }
+  .header__link:hover::after,
+  .header__link[aria-current='page']::after { transform: scaleX(1); }
+  .header__link[aria-current='page'] { color: var(--color-brand-blue); font-weight: 600; }
 
   .header__cta {
     white-space: nowrap;
     background: var(--color-brand-blue);
     color: var(--color-on-brand-blue);
-    font-weight: 600;
   }
   .header__cta:hover,
   .header__cta:active { background: var(--color-brand-blue-hover); }
 
-  /* Entre 1024 y 1279px el logo de 212px no deja sitio: se compacta un poco */
+  /* Entre 1024 y 1279px el logo no deja sitio: se compacta un poco */
   @media (max-width: 1279px) {
     .header__inner { gap: 1rem; }
-    .header__brand img { height: 44px; }
-    .header__link { padding-inline: 0.65rem; }
+    .header__brand img { height: 46px; }
+    .header__link { padding-inline: 0.6rem; }
+    .header__link::after { left: 0.6rem; right: 0.6rem; }
   }
 
   @media (max-width: 1023px) {
-    .header__brand img { height: 38px; }
+    .header__brand img { height: 40px; }
     .header__inner { grid-template-columns: auto 1fr; }
     .header__nav,
     .header__cta { display: none; }

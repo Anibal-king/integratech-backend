@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Section from '../../components/Section.astro';
+import PageHeader from '../../components/PageHeader.astro';
 import StatusMessage from '../../components/StatusMessage.astro';
 import Galeria from '../../components/Galeria.astro';
 import { api, dataOr } from '../../lib/api';
@@ -29,28 +30,25 @@ const categorias = dataOr(servicios, [])
 const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
 ---
 
-<Layout title="Proyectos — IntegraTech">
+<Layout title="Proyectos — SIIE" description="Galería de proyectos de Servicios Integrales de Ingeniería: data centers, subestaciones, generadores, automatización, iluminación y energía solar en El Salvador.">
   <!-- Encabezado + navegación por categoría -->
-  <Section variant="light" class="section section--tight">
-    <div class="container">
-      <p><a href="/#proyectos" class="back-link">← Volver a proyectos</a></p>
-      <div class="section__head">
-        <span class="eyebrow">Nuestro trabajo</span>
-        <h1>Galería de proyectos</h1>
-        <p>{totalFotos} imágenes de instalaciones reales, organizadas por línea de servicio. Elige una categoría o recorre la página.</p>
-      </div>
-
-      {categorias.length > 0 && (
-        <nav class="cat-nav" aria-label="Ir a categoría">
-          {categorias.map((c) => (
-            <a href={`#${c.slug}`} class="cat-nav__link">
-              {c.nombre} <span class="cat-nav__count">{c.fotos.length}</span>
-            </a>
-          ))}
-        </nav>
-      )}
-    </div>
-  </Section>
+  <PageHeader
+    eyebrow="Nuestro trabajo"
+    titulo="Galería de proyectos"
+    descripcion={`${totalFotos} fotografías de instalaciones reales, organizadas por línea de servicio, además de nuestros proyectos destacados y contratos de mantenimiento.`}
+    migas={[{ label: 'Proyectos' }]}
+  >
+    {categorias.length > 0 && (
+      <nav class="cat-nav" aria-label="Ir a categoría">
+        {categorias.map((c) => (
+          <a href={`#${c.slug}`} class="cat-nav__link">
+            {c.nombre} <span class="cat-nav__count">{c.fotos.length}</span>
+          </a>
+        ))}
+        <a href="#destacados" class="cat-nav__link">Proyectos destacados</a>
+      </nav>
+    )}
+  </PageHeader>
 
   <!-- Una sección por categoría: fotos a la izquierda, descripción legible a la derecha -->
   {categorias.length === 0 ? (
@@ -81,14 +79,14 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
               </ul>
             )}
 
-            <a href={`/servicios/${c.id}`} class="btn btn--secondary btn--block">Ver servicio completo →</a>
+            <a href={`/servicios/${c.id}`} class="btn btn--secondary btn--block">Ver servicio completo <span class="btn__arrow" aria-hidden="true">→</span></a>
           </aside>
         </div>
       </Section>
     ))
   )}
 
-  <Section variant="muted" class="section">
+  <Section variant="dark" class="section" id="destacados">
     <div class="container">
       <div class="section__head">
         <span class="eyebrow">Trayectoria</span>
@@ -99,15 +97,15 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
       {proyectos.status !== 'ok' ? (
         <StatusMessage resultado={proyectos} vacio="Pronto publicaremos nuestros proyectos aquí." />
       ) : (
-        <div class="grid grid--2">
+        <ol class="hitos">
           {proyectos.data.map((p) => (
-            <article class="card">
-              {p.ejecucion && <span class="tag">{p.ejecucion}</span>}
-              <h2 style="font-size:1.2rem;margin-top:0.6rem;">{p.nombre_proyecto}</h2>
+            <li>
+              {p.ejecucion && <span class="hitos__anio">{p.ejecucion}</span>}
+              <h3>{p.nombre_proyecto}</h3>
               {p.descripcion && <p>{p.descripcion}</p>}
-            </article>
+            </li>
           ))}
-        </div>
+        </ol>
       )}
     </div>
   </Section>
@@ -123,7 +121,7 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
           {contratos.map((c) => (
             <article class="card">
               {c.ejecucion && <span class="tag">{c.ejecucion}</span>}
-              <h3 style="margin-top:0.6rem;">{c.nombre_proyecto}</h3>
+              <h3>{c.nombre_proyecto}</h3>
               {c.descripcion && <p>{c.descripcion}</p>}
             </article>
           ))}
@@ -134,69 +132,117 @@ const totalFotos = categorias.reduce((n, c) => n + c.fotos.length, 0);
 </Layout>
 
 <style>
-  .section--tight { padding-bottom: 0.5rem; }
-  .back-link { font-weight: 600; }
-
-  /* Navegación rápida por categoría */
+  /* Navegación rápida por categoría (dentro del encabezado oscuro) */
   .cat-nav {
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
-    margin-top: 1.5rem;
+    margin-top: 2.25rem;
   }
   .cat-nav__link {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.9rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--surface-muted);
-    color: var(--heading);
-    font-weight: 600;
-    font-size: 0.85rem;
+    gap: 0.5rem;
+    padding: 0.55rem 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: var(--radius);
+    color: var(--color-white);
+    font-weight: 500;
+    font-size: 0.92rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
   }
   .cat-nav__link:hover {
-    background: var(--heading);
-    color: var(--surface);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
     text-decoration: none;
-    border-color: var(--heading);
   }
   .cat-nav__count {
     display: inline-grid;
     place-items: center;
-    min-width: 1.4em;
-    height: 1.4em;
-    padding: 0 0.3em;
+    min-width: 1.5em;
+    height: 1.5em;
+    padding: 0 0.35em;
     border-radius: 999px;
-    background: var(--surface);
-    color: var(--text-muted);
-    font-size: 0.75em;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 0.78em;
   }
-  .cat-nav__link:hover .cat-nav__count { background: var(--surface); color: var(--heading); }
 
   /* Sección por categoría */
   .cat { scroll-margin-top: calc(var(--header-height) + 1rem); }
   .cat__grid {
     display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 2.5rem;
+    grid-template-columns: 1fr 340px;
+    gap: clamp(2rem, 5vw, 3.5rem);
     align-items: start;
   }
   .cat__aside {
     position: sticky;
     top: calc(var(--header-height) + 1.5rem);
   }
-  .cat__aside h2 { margin: 0.35rem 0 0.75rem; font-size: 1.4rem; }
-  .cat__desc { color: var(--text-muted); line-height: 1.55; }
+  .cat__aside h2 { margin: 0 0 0.85rem; font-size: clamp(1.6rem, 1.3rem + 0.8vw, 2rem); }
+  .cat__desc { color: var(--text-muted); line-height: 1.6; }
   .cat__items {
-    margin: 1rem 0 1.5rem;
-    padding-left: 1.1rem;
+    list-style: none;
+    margin: 1.25rem 0 1.75rem;
+    padding: 0;
     color: var(--text-muted);
-    font-size: 0.92rem;
-    line-height: 1.6;
+    font-size: 0.95rem;
   }
-  .cat__items li { margin-bottom: 0.2rem; }
+  .cat__items li {
+    position: relative;
+    margin: 0;
+    padding: 0.55rem 0 0.55rem 1.6rem;
+    border-top: 1px solid var(--border);
+  }
+  .cat__items li::before {
+    content: '';
+    position: absolute;
+    left: 0.2rem;
+    top: 0.8rem;
+    width: 0.4rem;
+    height: 0.7rem;
+    border: solid var(--accent);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* Proyectos destacados: rejilla de hitos con año */
+  .hitos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .hitos li {
+    margin: 0;
+    padding: 1.75rem;
+    background: var(--surface);
+  }
+  .hitos__anio {
+    display: block;
+    margin-bottom: 0.6rem;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .hitos h3 {
+    font-family: var(--font-sans);
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0 0 0.5rem;
+  }
+  .hitos p { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
+
+  #destacados { scroll-margin-top: var(--header-height); }
+  .card h3 { margin-top: 0.75rem; font-size: 1.2rem; }
 
   @media (max-width: 900px) {
     .cat__grid { grid-template-columns: 1fr; }

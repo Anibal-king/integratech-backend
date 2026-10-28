@@ -1,4 +1,9 @@
 ---
+/**
+ * Referencias de clientes: lista de clientes (pestañas) y, a la derecha, todos
+ * los trabajos realizados para el cliente elegido. Sin JavaScript se ven todos
+ * los paneles uno tras otro (las pestañas solo aparecen con <html class="js">).
+ */
 import Section, { type SectionVariant } from '../Section.astro';
 import StatusMessage from '../StatusMessage.astro';
 import { api, dataOr } from '../../lib/api';
@@ -12,213 +17,256 @@ const [clientes, otros] = await Promise.all([
   api.clientes(),
   api.otrosClientes().then((r) => dataOr(r, [])),
 ]);
-
-/** Trabajos visibles en la tarjeta; el resto (y el texto completo) va en la ventana. */
-const VISIBLES = 2;
-const etiquetaBoton = (n: number) => (n === 1 ? 'Ver el trabajo completo' : `Ver los ${n} trabajos`);
+const lista = clientes.status === 'ok' ? clientes.data.filter((c) => c.servicios.length > 0) : [];
+const totalTrabajos = (n: number) => (n === 1 ? '1 trabajo realizado' : `${n} trabajos realizados`);
 ---
 
 <Section variant={variant} id="clientes" class="section reveal" aria-labelledby="clientes-title" tabindex="-1">
   <div class="container">
-    <div class="section__head">
-      <span class="eyebrow">Referencias</span>
-      <h2 id="clientes-title">Clientes</h2>
-      <p>Empresas que han confiado en Servicios Integrales de Ingeniería para sus proyectos y mantenimientos.</p>
+    <div class="section__head section__head--split">
+      <div>
+        <span class="eyebrow">Referencias</span>
+        <h2 id="clientes-title">Clientes que respaldan nuestro trabajo</h2>
+      </div>
+      <p>
+        Banca, industria avícola y alimenticia, energía, gobierno e instituciones: estos son algunos de los trabajos
+        que hemos realizado para ellos.
+      </p>
     </div>
 
     {clientes.status !== 'ok' ? (
       <StatusMessage resultado={clientes} vacio="Pronto publicaremos aquí las empresas que confían en nosotros." />
     ) : (
-      <div class="grid grid--2 clientes-grid">
-        {clientes.data.map((c, i) => (
-          <article class="card cli" data-cli data-cli-total={c.servicios.length}>
-            <h3 class="cli__nombre">{c.nombre}</h3>
-            {c.servicios.length > 0 && (
-              <ul class="cli__trabajos">
-                {c.servicios.slice(0, VISIBLES).map((s) => <li>{s}</li>)}
-              </ul>
-            )}
-            {/* Visible si hay más de 2 trabajos; si no, el script lo muestra solo cuando algún texto quedó recortado */}
+      <div class="ref" data-ref>
+        <div class="ref__tabs" role="tablist" aria-label="Clientes" aria-orientation="vertical">
+          {lista.map((c, i) => (
             <button
               type="button"
-              class:list={['cli__mas', { 'is-visible': c.servicios.length > VISIBLES }]}
-              aria-haspopup="dialog"
-              aria-controls={`cli-dialogo-${i}`}
-              data-cli-abrir
+              role="tab"
+              id={`ref-tab-${i}`}
+              class="ref__tab"
+              aria-controls={`ref-panel-${i}`}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              tabindex={i === 0 ? 0 : -1}
+              data-ref-tab
             >
-              {etiquetaBoton(c.servicios.length)}
+              <span>{c.nombre}</span>
+              <span class="ref__cuenta" aria-hidden="true">{c.servicios.length}</span>
             </button>
+          ))}
+        </div>
 
-            {/* Lista completa: siempre en el HTML (la leen los buscadores); se muestra en la ventana */}
-            <dialog class="cli__dialogo" id={`cli-dialogo-${i}`} aria-labelledby={`cli-titulo-${i}`} data-cli-dialogo>
-              <div class="cli__dialogo-cabecera">
-                <h3 id={`cli-titulo-${i}`}>{c.nombre}</h3>
-                <button type="button" class="cli__cerrar" aria-label="Cerrar" data-cli-cerrar>
-                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                </button>
-              </div>
-              <div class="cli__dialogo-cuerpo">
-                <p class="cli__dialogo-total">{c.servicios.length === 1 ? '1 trabajo realizado' : `${c.servicios.length} trabajos realizados`}</p>
-                <ul>
-                  {c.servicios.map((s) => <li>{s}</li>)}
-                </ul>
-              </div>
-            </dialog>
-          </article>
-        ))}
+        <div class="ref__paneles">
+          {lista.map((c, i) => (
+            <article
+              class:list={['ref__panel', { 'is-activa': i === 0 }]}
+              id={`ref-panel-${i}`}
+              role="tabpanel"
+              aria-labelledby={`ref-tab-${i}`}
+              data-ref-panel
+            >
+              <p class="ref__total">{totalTrabajos(c.servicios.length)}</p>
+              <h3>{c.nombre}</h3>
+              <ul>
+                {c.servicios.map((s) => <li>{s}</li>)}
+              </ul>
+              <a href="/#contacto" class="link-arrow">Solicitar un proyecto similar</a>
+            </article>
+          ))}
+        </div>
       </div>
     )}
 
     {otros.length > 0 && (
       <div class="otros">
-        <h3>Otros clientes</h3>
-        <div class="chips">
-          {otros.map((o) => <span class="tag">{o.nombre}</span>)}
-        </div>
+        <h3>También han trabajado con nosotros</h3>
+        <ul class="chips">
+          {otros.map((o) => <li>{o.nombre}</li>)}
+        </ul>
       </div>
     )}
   </div>
 </Section>
 
 <style>
-  .card h3 { font-size: 1.15rem; }
-
-  /* ---------- Tarjetas de cliente: todas de la misma altura ---------- */
-  /* Filas iguales: cada fila mide lo que la tarjeta más alta de toda la grilla */
-  .clientes-grid { grid-auto-rows: 1fr; }
-  .cli { display: flex; flex-direction: column; min-width: 0; }
-  .cli__nombre { margin-bottom: 0.75rem; }
-  .cli__trabajos { margin: 0 0 1rem; padding-left: 1.2rem; }
-  .cli__trabajos li { margin-bottom: 0.4rem; }
-  /* Cada trabajo, máximo 2 líneas con puntos suspensivos */
-  .cli__trabajos li {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
-  }
-  /* list-item se pierde con -webkit-box: la viñeta se dibuja aparte */
-  .cli__trabajos { list-style: none; padding-left: 0; }
-  .cli__trabajos li { position: relative; padding-left: 1.1rem; }
-  .cli__trabajos li::before { content: '•'; position: absolute; left: 0.2rem; color: var(--text-muted); }
-
-  /* «Ver más»: siempre al fondo y en la misma posición; si no hace falta, conserva su espacio */
-  .cli__mas {
-    margin-top: auto;
-    align-self: flex-start;
-    padding: 0.35rem 0;
-    border: 0;
-    background: none;
-    color: var(--link);
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
-    visibility: hidden;
-  }
-  .cli__mas.is-visible { visibility: visible; }
-  .cli__mas::after { content: ' →'; }
-  .cli__mas:hover { text-decoration: underline; }
-  .cli__mas:focus-visible, .cli__cerrar:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 4px; }
-
-  /* ---------- Ventana con la lista completa ---------- */
-  .cli__dialogo {
-    width: min(640px, calc(100vw - 2rem));
-    max-height: min(80vh, 720px);
-    padding: 0;
+  .ref {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.6fr);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
+    overflow: hidden;
     background: var(--surface-card);
-    color: var(--text);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-sm);
   }
-  .cli__dialogo[open] { display: flex; flex-direction: column; overflow: hidden; }
-  .cli__dialogo::backdrop { background: var(--overlay-backdrop); opacity: 0.7; }
-  .cli__dialogo-cabecera {
-    flex-shrink: 0;
+
+  /* ---------- Pestañas ---------- */
+  .ref__tabs {
+    display: none;
+    flex-direction: column;
+    padding: 0.75rem;
+    background: var(--surface-muted);
+    border-right: 1px solid var(--border);
+  }
+  :global(.js) .ref__tabs { display: flex; }
+  .ref__tab {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1.1rem 1.25rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .cli__dialogo-cabecera h3 { margin: 0; font-size: 1.2rem; color: var(--heading); }
-  .cli__cerrar {
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--border);
-    border-radius: 50%;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 0;
+    border-radius: var(--radius);
     background: transparent;
     color: var(--text);
+    font: inherit;
+    font-size: 0.98rem;
+    font-weight: 500;
+    line-height: 1.3;
+    text-align: left;
     cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
-  .cli__cerrar:hover { background: var(--surface-muted); }
-  /* El contenido se desplaza dentro de la ventana */
-  /* min-height: 0 deja que el cuerpo se encoja y se desplace (la cabecera queda fija) */
-  .cli__dialogo-cuerpo { flex: 1; min-height: 0; padding: 1rem 1.25rem 1.4rem; overflow-y: auto; overscroll-behavior: contain; }
-  .cli__dialogo-total { margin: 0 0 0.75rem; font-size: 0.88rem; color: var(--text-muted); }
-  .cli__dialogo-cuerpo ul { margin: 0; padding-left: 1.2rem; }
-  .cli__dialogo-cuerpo li { margin-bottom: 0.55rem; }
+  .ref__tab:hover { background: var(--surface-card); color: var(--link); }
+  .ref__tab[aria-selected='true'] {
+    background: var(--color-brand-blue);
+    color: var(--color-white);
+  }
+  .ref__tab:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  .ref__cuenta {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 999px;
+    background: var(--surface-card);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .ref__tab[aria-selected='true'] .ref__cuenta { background: rgba(255, 255, 255, 0.18); color: var(--color-white); }
 
-  @media (max-width: 640px) {
-    /* En móvil ocupa casi toda la pantalla */
-    .cli__dialogo { width: calc(100vw - 1rem); max-width: none; max-height: calc(100dvh - 1rem); }
+  /* ---------- Paneles ---------- */
+  .ref__paneles { padding: clamp(1.75rem, 4vw, 3rem); }
+  :global(.js) .ref__panel:not(.is-activa) { display: none; }
+  .ref__panel + .ref__panel { margin-top: 2.5rem; }
+  :global(.js) .ref__panel + .ref__panel { margin-top: 0; }
+  .ref__panel.is-activa { animation: ref-entra 0.4s var(--ease); }
+  @keyframes ref-entra {
+    from { opacity: 0; transform: translateY(8px); }
   }
-  .otros { margin-top: 3rem; }
-  .otros h3 { font-size: 1.4rem; }
-  .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
-  .chips .tag { font-size: 0.85rem; padding: 0.35rem 0.75rem; background: var(--surface-card); border: 1px solid var(--border); }
+  .ref__total {
+    margin: 0 0 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--eyebrow);
+  }
+  .ref__panel h3 { font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.1rem); margin-bottom: 1.5rem; }
+  .ref__panel ul { list-style: none; margin: 0 0 2rem; padding: 0; }
+  .ref__panel li {
+    position: relative;
+    margin: 0;
+    padding: 0.9rem 0 0.9rem 2.25rem;
+    border-top: 1px solid var(--border);
+    line-height: 1.5;
+  }
+  .ref__panel li::before {
+    content: '';
+    position: absolute;
+    left: 0.35rem;
+    top: 1.15rem;
+    width: 0.45rem;
+    height: 0.8rem;
+    border: solid var(--accent);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* ---------- Otros clientes ---------- */
+  .otros { margin-top: clamp(2.5rem, 5vw, 3.5rem); }
+  .otros h3 {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; list-style: none; margin: 0; padding: 0; }
+  .chips li {
+    margin: 0;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-card);
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--heading);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ref__panel.is-activa { animation: none; }
+  }
+  /* Móvil: pestañas en fila con desplazamiento horizontal */
+  @media (max-width: 860px) {
+    .ref { grid-template-columns: 1fr; }
+    .ref__tabs {
+      flex-direction: row;
+      overflow-x: auto;
+      gap: 0.4rem;
+      border-right: 0;
+      border-bottom: 1px solid var(--border);
+      scrollbar-width: thin;
+    }
+    .ref__tab { width: auto; flex-shrink: 0; white-space: nowrap; }
+  }
 </style>
 
 <script>
   /*
-   * Clientes: muestra «Ver más» también cuando un trabajo quedó recortado a 2
-   * líneas (se mide en el navegador) y abre la ventana nativa con la lista completa.
-   * El dialog nativo cierra con Escape; aquí se suma el botón de cerrar, el clic
-   * fuera y devolver el foco al botón que la abrió. Se reinicia en cada astro:page-load.
+   * Pestañas de referencias (patrón WAI-ARIA Tabs, activación automática):
+   * clic o flechas ↑↓←→ / Inicio / Fin. Se reinicia en cada astro:page-load.
    */
-  function iniciarClientes() {
-    const tarjetas = [...document.querySelectorAll<HTMLElement>('[data-cli]')];
-    if (!tarjetas.length) return;
+  function iniciarReferencias() {
+    const raiz = document.querySelector<HTMLElement>('[data-ref]');
+    if (!raiz) return;
+    const tabs = [...raiz.querySelectorAll<HTMLButtonElement>('[data-ref-tab]')];
+    const paneles = [...raiz.querySelectorAll<HTMLElement>('[data-ref-panel]')];
 
-    /** ¿Algún trabajo visible quedó recortado? */
-    const recortado = (t: HTMLElement) =>
-      [...t.querySelectorAll<HTMLElement>('.cli__trabajos li')].some((li) => li.scrollHeight > li.clientHeight + 1);
-
-    function revisar() {
-      for (const t of tarjetas) {
-        const total = Number(t.dataset.cliTotal);
-        t.querySelector('[data-cli-abrir]')!.classList.toggle('is-visible', total > 2 || recortado(t));
+    function activar(i: number, enfocar = false) {
+      tabs.forEach((t, n) => {
+        const on = n === i;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        paneles[n].classList.toggle('is-activa', on);
+      });
+      if (enfocar) {
+        tabs[i].focus();
+        tabs[i].scrollIntoView({ block: 'nearest', inline: 'nearest' });
       }
     }
 
-    for (const t of tarjetas) {
-      const boton = t.querySelector<HTMLButtonElement>('[data-cli-abrir]')!;
-      const dialogo = t.querySelector<HTMLDialogElement>('[data-cli-dialogo]')!;
-      boton.addEventListener('click', () => dialogo.showModal());
-      dialogo.querySelector('[data-cli-cerrar]')!.addEventListener('click', () => dialogo.close());
-      // Clic fuera de la ventana (en el fondo oscuro): el objetivo es el propio dialog
-      dialogo.addEventListener('click', (e) => {
-        if (e.target === dialogo) dialogo.close();
-      });
-      // Al cerrarse (botón, Escape o clic fuera), el foco vuelve al botón que la abrió
-      dialogo.addEventListener('close', () => boton.focus());
-    }
-
-    revisar();
-    // El recorte depende del ancho: se vuelve a medir al cambiar el tamaño de la ventana
-    let espera: number | undefined;
-    const alCambiar = () => {
-      clearTimeout(espera);
-      espera = window.setTimeout(revisar, 150);
-    };
-    window.addEventListener('resize', alCambiar);
-    document.addEventListener('astro:before-swap', () => window.removeEventListener('resize', alCambiar), { once: true });
+    tabs.forEach((t, i) => t.addEventListener('click', () => activar(i)));
+    raiz.querySelector('[role="tablist"]')!.addEventListener('keydown', (e) => {
+      const ev = e as KeyboardEvent;
+      const actual = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true');
+      const destino: Record<string, number> = {
+        ArrowDown: actual + 1,
+        ArrowRight: actual + 1,
+        ArrowUp: actual - 1,
+        ArrowLeft: actual - 1,
+        Home: 0,
+        End: tabs.length - 1,
+      };
+      if (!(ev.key in destino)) return;
+      ev.preventDefault();
+      activar((destino[ev.key] + tabs.length) % tabs.length, true);
+    });
   }
 
-  document.addEventListener('astro:page-load', iniciarClientes);
+  document.addEventListener('astro:page-load', iniciarReferencias);
 </script>

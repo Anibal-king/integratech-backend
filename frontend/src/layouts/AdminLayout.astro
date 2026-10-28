@@ -26,60 +26,73 @@ const { title } = Astro.props;
     <meta name="referrer" content="no-referrer" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title} · Panel SIIE</title>
+    <!-- Misma tipografía que el sitio público -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap"
+    />
   </head>
   <body class="admin surface-muted">
     <slot />
 
     <style is:global>
-      /* Colores de estado del panel. Acentos de marca (tokens.css) para nuevo y
-         contactado; los demás son propios del panel y cumplen AA en las etiquetas. */
+      /* Colores de estado del panel. Cada estado tiene un tono distinto (no solo
+         variantes de azul) para distinguirlos en etiquetas y gráficas; el texto de
+         las etiquetas es siempre marino, así cumplen AA sobre su fondo tintado. */
       :root {
-        --estado-nuevo: var(--color-accent);
+        --estado-nuevo: #1a9ad6;          /* celeste: llama la atención sin alarmar */
         --estado-contactado: var(--color-brand-blue);
-        --estado-cotizado: #c98500;
+        --estado-cotizado: #d08a00;
         --estado-cerrado: #2f855a;
-        --estado-descartado: var(--color-brand-gray);
+        --estado-descartado: #8a96a3;
 
-        --cita-programada: var(--color-accent);
+        --cita-programada: #1a9ad6;
         --cita-completada: var(--estado-cerrado);
-        --cita-cancelada: var(--color-brand-gray);
+        --cita-cancelada: var(--estado-descartado);
 
         --serie-formulario: var(--color-brand-blue);
-        --serie-chatbot: var(--color-accent);
+        --serie-chatbot: #6cb6ec;
 
-        --admin-sidebar: 248px;
-        --admin-topbar: 64px;
+        --admin-sidebar: 260px;
+        --admin-topbar: 72px;
       }
 
       /* hidden siempre gana, aunque la clase defina display */
       .admin [hidden] { display: none !important; }
 
-      .admin { min-height: 100vh; }
+      .admin { min-height: 100vh; font-size: 1rem; }
 
       /* ---------- Tarjetas ---------- */
       .admin-card {
         background: var(--surface-card);
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-sm);
+        box-shadow: 0 1px 2px rgba(7, 27, 48, 0.04);
       }
       .admin-card__head {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        padding: 1.1rem 1.25rem 0;
+        padding: 1.2rem 1.4rem 0;
       }
-      .admin-card__head h2 { font-size: 1.05rem; margin: 0; }
-      .admin-card__body { padding: 1.1rem 1.25rem 1.25rem; }
+      .admin-card__head h2 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0;
+      }
+      .admin-card__body { padding: 1.1rem 1.4rem 1.4rem; }
 
       .admin-alert {
         margin: 0;
         padding: 0.75rem 1rem;
         border-radius: var(--radius);
         border: 1px solid var(--danger-text);
+        border-left-width: 3px;
         color: var(--danger-text);
-        background: var(--surface-card);
+        background: color-mix(in srgb, var(--danger-text) 6%, var(--surface-card));
         font-size: 0.92rem;
       }
 
@@ -113,7 +126,7 @@ const { title } = Astro.props;
         height: 22px;
         border-radius: 50%;
         border: 2px solid var(--border);
-        border-top-color: var(--color-accent);
+        border-top-color: var(--color-brand-blue);
         animation: girar 0.8s linear infinite;
       }
       @keyframes girar { to { transform: rotate(360deg); } }
@@ -124,10 +137,10 @@ const { title } = Astro.props;
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
-        padding: 0.15rem 0.6rem;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.78rem;
+        font-weight: 600;
         white-space: nowrap;
         color: var(--color-navy);
         background: color-mix(in srgb, var(--chip-color) 16%, var(--color-white));
@@ -151,9 +164,9 @@ const { title } = Astro.props;
 
       .chip-origen {
         display: inline-block;
-        padding: 0.1rem 0.5rem;
-        border-radius: 6px;
-        font-size: 0.74rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.76rem;
         font-weight: 600;
         white-space: nowrap;
         border: 1px solid var(--border-strong);
@@ -174,19 +187,28 @@ const { title } = Astro.props;
       .admin select,
       .admin textarea {
         font: inherit;
-        font-size: 0.92rem;
-        padding: 0.55rem 0.7rem;
+        font-size: 0.95rem;
+        min-height: 42px;
+        padding: 0.55rem 0.75rem;
         border: 1px solid var(--border-strong);
-        border-radius: 8px;
+        border-radius: var(--radius);
         background: var(--input-bg);
         color: var(--text);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .admin textarea { min-height: 0; }
+      .admin :is(input, select, textarea):hover { border-color: var(--heading); }
+      .admin :is(input, select, textarea):focus-visible {
+        outline: none;
+        border-color: var(--focus-ring);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 22%, transparent);
       }
       .admin select { padding-right: 1.8rem; }
-      .admin :is(input, select, textarea, button, a):focus-visible {
+      .admin :is(button, a):focus-visible {
         outline: 2px solid var(--focus-ring);
         outline-offset: 2px;
       }
-      .btn--sm { padding: 0.4rem 0.85rem; font-size: 0.85rem; }
+      .btn--sm { min-height: 36px; padding: 0.4rem 0.9rem; font-size: 0.88rem; }
 
       /* ---------- Lista de próximas citas (calendario y Resumen) ---------- */
       .lista-citas { list-style: none; margin: 0; padding: 0.25rem 0 0.5rem; }
@@ -214,13 +236,13 @@ const { title } = Astro.props;
         justify-content: center;
         width: 46px;
         height: 50px;
-        border-radius: 10px;
+        border-radius: var(--radius);
         background: var(--color-brand-blue-tint);
         color: var(--color-brand-blue);
         line-height: 1.05;
       }
       .cita-item__fecha small { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
-      .cita-item__fecha strong { font-size: 1.15rem; }
+      .cita-item__fecha strong { font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; }
       .cita-item__txt { min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
       .cita-item__txt strong { color: var(--heading); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .cita-item__txt span { font-size: 0.8rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

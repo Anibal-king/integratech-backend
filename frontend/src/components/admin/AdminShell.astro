@@ -10,7 +10,7 @@
 import { Image } from 'astro:assets';
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import Icono, { type NombreIcono } from './Icono.astro';
-import { logoHorizontal } from '../../lib/imagenes';
+import { logoBlanco } from '../../lib/imagenes';
 
 export type SeccionPanel = 'resumen' | 'mensajes' | 'calendario' | 'servicios';
 
@@ -38,13 +38,13 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
     <aside class="sidebar" id="admin-sidebar" data-sidebar aria-label="Navegación del panel">
       <div class="sidebar__brand">
         <a href="/admin/dashboard" class="sidebar__logo" aria-label="Panel SIIE - Resumen">
-          <Image src={logoHorizontal} alt="Servicios Integrales de Ingeniería" widths={[200, 400]} sizes="200px" loading="eager" />
+          <Image src={logoBlanco} alt="Servicios Integrales de Ingeniería" widths={[200, 400]} sizes="200px" loading="eager" />
         </a>
         <button type="button" class="sidebar__cerrar" data-sidebar-cerrar aria-label="Cerrar menú">
           <Icono nombre="cerrar" />
         </button>
       </div>
-      <p class="sidebar__titulo">Panel de administración</p>
+      <p class="sidebar__titulo">Menú</p>
       <nav>
         <ul class="sidebar__nav">
           {NAV.map((n) => (
@@ -57,6 +57,10 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
           ))}
         </ul>
       </nav>
+      <a href="/" class="sidebar__sitio" target="_blank" rel="noopener">
+        <Icono nombre="ver" tamano={18} />
+        <span>Ver sitio público</span>
+      </a>
     </aside>
     <div class="shell__fondo" data-sidebar-fondo hidden></div>
 
@@ -72,7 +76,10 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
         >
           <Icono nombre="menu" />
         </button>
-        <h1 class="topbar__titulo">{titulo}</h1>
+        <div class="topbar__encabezado">
+          <span class="topbar__eyebrow">Panel de administración</span>
+          <h1 class="topbar__titulo">{titulo}</h1>
+        </div>
         <div class="topbar__usuario">
           <span class="topbar__avatar" data-usuario-inicial aria-hidden="true"></span>
           <span class="topbar__correo" data-usuario-correo></span>
@@ -93,7 +100,7 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
 <style>
   .shell { min-height: 100vh; }
 
-  /* ---------- Barra lateral ---------- */
+  /* ---------- Barra lateral (mismo lenguaje que el hero y el footer del sitio) ---------- */
   .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
@@ -102,55 +109,77 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    padding: 1rem 0.85rem;
-    background: var(--color-navy);
+    padding: 1.25rem 1rem 1rem;
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 40px 40px,
+      radial-gradient(ellipse 120% 50% at 0% 0%, color-mix(in srgb, var(--color-brand-blue) 45%, transparent), transparent 70%),
+      var(--color-navy-deep);
     color: var(--color-text-on-dark);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
     overflow-y: auto;
   }
-  .sidebar__brand { display: flex; align-items: center; gap: 0.5rem; }
-  /* El logo es un JPG con fondo blanco: va sobre una placa blanca */
-  .sidebar__logo {
-    flex: 1;
-    display: block;
-    padding: 0.55rem 0.7rem;
-    border-radius: var(--radius);
-    background: var(--media-plate);
-  }
-  .sidebar__logo img { width: 100%; height: auto; }
+  .sidebar__brand { display: flex; align-items: center; gap: 0.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+  .sidebar__logo { flex: 1; display: block; padding: 0.25rem 0.35rem; border-radius: var(--radius); }
+  .sidebar__logo img { width: 100%; max-width: 200px; height: auto; }
   .sidebar__cerrar { display: none; }
   .sidebar__titulo {
-    margin: 0.9rem 0.6rem 0.35rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 1rem 0.6rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--color-text-on-dark);
-    opacity: 0.75;
+    color: var(--color-accent-light);
   }
+  .sidebar__titulo::before { content: ''; width: 18px; height: 2px; background: currentColor; }
   .sidebar__nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
   .sidebar__nav li { margin: 0; }
   .sidebar__link {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.65rem 0.75rem;
+    gap: 0.8rem;
+    padding: 0.7rem 0.8rem;
     border-radius: var(--radius);
     color: var(--color-text-on-dark);
     font-weight: 500;
-    font-size: 0.95rem;
-    border-left: 3px solid transparent;
+    font-size: 1rem;
     transition: background-color 0.15s ease, color 0.15s ease;
   }
-  .sidebar__link:hover { background: color-mix(in srgb, var(--color-white) 8%, transparent); color: var(--color-white); text-decoration: none; }
+  .sidebar__link:hover { background: rgba(255, 255, 255, 0.07); color: var(--color-white); text-decoration: none; }
   .sidebar__link.is-active {
-    background: color-mix(in srgb, var(--color-accent) 18%, transparent);
-    border-left-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-brand-blue) 75%, transparent);
     color: var(--color-white);
     font-weight: 600;
   }
-  .sidebar__link.is-active :global(.icono) { color: var(--color-accent); }
+  /* Barra de acento a la izquierda del enlace activo */
+  .sidebar__link.is-active::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--color-accent-light);
+  }
+  .sidebar__link.is-active :global(.icono) { color: var(--color-accent-light); }
+  .sidebar__sitio {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: auto;
+    padding: 0.75rem 0.8rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-text-on-dark);
+    font-size: 0.92rem;
+  }
+  .sidebar__sitio:hover { color: var(--color-white); text-decoration: none; }
 
-  /* ---------- Barra superior ---------- */
+  /* ---------- Barra superior (como el header público) ---------- */
   .shell__main { margin-left: var(--admin-sidebar); min-width: 0; }
   .topbar {
     position: sticky;
@@ -159,28 +188,40 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
     height: var(--admin-topbar);
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0 clamp(1rem, 3vw, 2rem);
+    gap: 0.9rem;
+    padding: 0 clamp(1rem, 3vw, 2.25rem);
     background: var(--surface-card);
     border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-header);
   }
   .topbar__menu { display: none; }
-  .topbar__titulo { flex: 1; min-width: 0; margin: 0; font-size: 1.2rem; }
-  .topbar__usuario { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
+  .topbar__encabezado { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar__eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--eyebrow);
+    line-height: 1.3;
+  }
+  .topbar__titulo { margin: 0; font-size: 1.55rem; line-height: 1.15; }
+  .topbar__usuario { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
   .topbar__avatar {
     flex-shrink: 0;
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: var(--color-brand-blue-tint);
-    color: var(--color-brand-blue);
-    font-weight: 700;
+    background: var(--color-brand-blue);
+    color: var(--color-white);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.05rem;
     text-transform: uppercase;
   }
   .topbar__correo {
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -189,12 +230,12 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
   }
   .topbar__salir { flex-shrink: 0; }
 
-  .contenido { padding: clamp(1rem, 3vw, 2rem); max-width: 1400px; }
+  .contenido { padding: clamp(1rem, 3vw, 2.25rem); max-width: 1440px; }
 
   .topbar__menu,
   .sidebar__cerrar {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     place-items: center;
     flex-shrink: 0;
     border-radius: var(--radius);
@@ -215,7 +256,7 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
       visibility: hidden;
     }
     .sidebar.is-open { transform: none; visibility: visible; }
-    .sidebar__cerrar { display: grid; border-color: color-mix(in srgb, var(--color-white) 25%, transparent); }
+    .sidebar__cerrar { display: grid; border-color: rgba(255, 255, 255, 0.25); }
     .shell__fondo {
       position: fixed;
       inset: 0;
@@ -225,8 +266,8 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
     }
   }
   @media (max-width: 600px) {
-    .topbar__correo { display: none; }
-    .topbar__titulo { font-size: 1.05rem; }
+    .topbar__correo, .topbar__eyebrow { display: none; }
+    .topbar__titulo { font-size: 1.25rem; }
     /* Solo el icono; el nombre accesible lo da aria-label */
     .topbar__salir span { display: none; }
     .topbar__salir { padding: 0.5rem; }

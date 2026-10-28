@@ -47,7 +47,7 @@ export default function ContactForm() {
       return;
     }
     if (!payload.correo && !payload.telefono) {
-      setEstado({ tipo: 'invalido', msg: 'Déjanos un correo o un teléfono para poder responderte.' });
+      setEstado({ tipo: 'invalido', msg: 'Déjenos un correo o un teléfono para poder responderle.' });
       return;
     }
     if (payload.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.correo)) {
@@ -91,51 +91,60 @@ export default function ContactForm() {
         <textarea name="mensaje" rows={5} required maxLength={5000} />
       </label>
 
-      <p className="cform__hint">* Obligatorio · ** Al menos uno de los dos, para poder responderte.</p>
+      <p className="cform__hint">* Obligatorio · ** Al menos uno de los dos, para poder responderle.</p>
 
       <button type="submit" className="btn btn--primary" disabled={estado.tipo === 'enviando'}>
         {estado.tipo === 'enviando' ? 'Enviando…' : 'Enviar mensaje'}
       </button>
 
       {estado.tipo === 'ok' && (
-        <StatusMessage tipo="success" mensaje="¡Gracias! Tu mensaje fue enviado. Te contactaremos pronto." />
+        <StatusMessage tipo="success" mensaje="¡Gracias! Su mensaje fue enviado. Le contactaremos pronto." />
       )}
       {estado.tipo === 'invalido' && <StatusMessage tipo="error" mensaje={estado.msg} />}
       {estado.tipo === 'error' && (
         <StatusMessage
           tipo="error"
-          mensaje="No pudimos enviar tu mensaje en este momento. Intenta de nuevo más tarde."
+          mensaje="No pudimos enviar su mensaje en este momento. Intente de nuevo más tarde."
           detalle={estado.detalle}
           onRetry={() => ultimoPayload.current && enviar(ultimoPayload.current)}
         />
       )}
 
       <style>{`
-        .cform { display: flex; flex-direction: column; gap: 1rem; max-width: 640px; }
-        .cform__row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .cform { display: flex; flex-direction: column; gap: 1.1rem; }
+        .cform__row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
         .cform label {
           display: flex;
           flex-direction: column;
-          gap: 0.35rem;
+          gap: 0.4rem;
           font-weight: 600;
-          font-size: 0.9rem;
+          font-size: 0.88rem;
           color: var(--text);
         }
         .cform input,
         .cform textarea {
           font: inherit;
+          font-size: 1rem;
           font-weight: 400;
-          padding: 0.65rem 0.75rem;
+          min-height: 48px;
+          padding: 0.7rem 0.85rem;
           border: 1px solid var(--border-strong);
-          border-radius: 8px;
+          border-radius: var(--radius);
           background: var(--input-bg);
           color: var(--text);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
+        .cform input:hover,
+        .cform textarea:hover { border-color: var(--heading); }
         .cform input:focus-visible,
-        .cform textarea:focus-visible { border-color: var(--focus-ring); }
+        .cform textarea:focus-visible {
+          outline: none;
+          border-color: var(--focus-ring);
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 25%, transparent);
+        }
         .cform textarea { resize: vertical; }
         .cform__hint { margin: -0.25rem 0 0; font-size: 0.82rem; color: var(--text-muted); }
-        .cform .btn { align-self: flex-start; }
+        .cform .btn { align-self: stretch; }
         @media (max-width: 620px) {
           .cform__row { grid-template-columns: 1fr; }
         }

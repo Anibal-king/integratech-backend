@@ -1,5 +1,6 @@
 ---
 import Section, { type SectionVariant } from '../Section.astro';
+import Icono from '../Icono.astro';
 import ContactForm from '../ContactForm.tsx';
 import { api, dataOr } from '../../lib/api';
 
@@ -9,50 +10,120 @@ interface Props {
 
 const { variant } = Astro.props;
 const empresa = dataOr(await api.empresa(), null);
+
+/** "503 2556-1756" → "tel:+50325561756" */
+const tel = (n: string) => `tel:+${n.replace(/\D/g, '').replace(/^(?!503)/, '503')}`;
+const telefono = empresa?.telefono ?? '503 2556-1756';
+const celular = empresa?.celular ?? '503 7986-2065';
+const direccion = empresa?.direccion ?? 'Antiguo Cuscatlán, La Libertad, El Salvador';
+const mapa = 'https://www.google.com/maps/search/?api=1&query=Urbanizaci%C3%B3n+La+Sultana+Antiguo+Cuscatl%C3%A1n+El+Salvador';
 ---
 
-<Section variant={variant} id="contacto" class="section reveal" aria-labelledby="contacto-title" tabindex="-1">
-  <div class="container contacto">
-    <div>
-      <div class="section__head">
-        <span class="eyebrow">Hablemos</span>
-        <h2 id="contacto-title">Contáctanos</h2>
-        <p>Cuéntanos sobre tu proyecto o necesidad de mantenimiento y te responderemos con una propuesta.</p>
-      </div>
-      <ContactForm client:visible />
+<Section variant={variant} id="contacto" class="section reveal contacto" aria-labelledby="contacto-title" tabindex="-1">
+  <div class="contacto__trama" aria-hidden="true"></div>
+  <div class="container contacto__grid">
+    <div class="contacto__info">
+      <span class="eyebrow">Contacto</span>
+      <h2 id="contacto-title">Hablemos de su próximo proyecto</h2>
+      <p class="lead">
+        Cuéntenos qué necesita, ya sea un proyecto nuevo, un contrato de mantenimiento o una visita técnica, y le
+        responderemos con una propuesta.
+      </p>
+
+      <ul class="datos">
+        <li>
+          <span class="datos__icono"><Icono nombre="telefono" tamano={20} /></span>
+          <div>
+            <span class="datos__etiqueta">Teléfono</span>
+            <a href={tel(telefono)}>{telefono}</a>
+          </div>
+        </li>
+        <li>
+          <span class="datos__icono"><Icono nombre="movil" tamano={20} /></span>
+          <div>
+            <span class="datos__etiqueta">Celular</span>
+            <a href={tel(celular)}>{celular}</a>
+          </div>
+        </li>
+        <li>
+          <span class="datos__icono"><Icono nombre="ubicacion" tamano={20} /></span>
+          <div>
+            <span class="datos__etiqueta">Oficinas</span>
+            <span>{direccion}</span>
+            <a href={mapa} target="_blank" rel="noopener noreferrer" class="datos__mapa">Cómo llegar ↗</a>
+          </div>
+        </li>
+      </ul>
     </div>
 
-    <aside class="contacto__info">
-      <h3>Datos de contacto</h3>
-      <ul>
-        <li><strong>Teléfono:</strong> {empresa?.telefono ?? '2556-1756'}</li>
-        <li><strong>Celular:</strong> {empresa?.celular ?? '7986-2065'}</li>
-        {empresa?.sitio_web && <li><strong>Sitio:</strong> {empresa.sitio_web}</li>}
-        <li><strong>Dirección:</strong> {empresa?.direccion ?? 'Antiguo Cuscatlán, La Libertad, El Salvador'}</li>
-      </ul>
-    </aside>
+    <div class="contacto__form surface-light">
+      <h3>Solicite una cotización</h3>
+      <p>Le contactaremos para conocer el alcance de su proyecto.</p>
+      <ContactForm client:visible />
+    </div>
   </div>
 </Section>
 
 <style>
   .contacto {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 60% 80% at 0% 100%, color-mix(in srgb, var(--color-brand-blue) 50%, transparent), transparent 70%),
+      var(--color-navy);
+  }
+  .contacto__trama {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: linear-gradient(90deg, #000, transparent 60%);
+  }
+  .contacto__grid {
+    position: relative;
     display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 3rem;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: clamp(2.5rem, 6vw, 5rem);
     align-items: start;
   }
-  .contacto__info {
-    background: var(--surface-card);
+  .contacto__info h2 { margin-bottom: 1.25rem; }
+  .contacto__info .lead { margin-bottom: 2.5rem; }
+
+  .datos { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.5rem; }
+  .datos li { display: grid; grid-template-columns: 48px 1fr; gap: 1rem; margin: 0; align-items: start; }
+  .datos__icono {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.6rem;
+    color: var(--accent);
   }
-  .contacto__info h3 { font-size: 1.1rem; }
-  .contacto__info li { color: var(--text-muted); }
-  .contacto__info strong { color: var(--text); }
-  .contacto__info ul { list-style: none; padding: 0; margin: 0; }
-  .contacto__info li { margin-bottom: 0.6rem; font-size: 0.92rem; }
-  @media (max-width: 860px) {
-    .contacto { grid-template-columns: 1fr; }
+  .datos div { display: flex; flex-direction: column; color: var(--text-muted); }
+  .datos__etiqueta {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.15rem;
+  }
+  .datos a { color: var(--color-white); font-size: 1.15rem; font-weight: 500; }
+  .datos .datos__mapa { margin-top: 0.4rem; font-size: 0.95rem; font-weight: 600; color: var(--accent); }
+
+  .contacto__form {
+    padding: clamp(1.75rem, 4vw, 2.75rem);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.55);
+    border-top: 4px solid var(--color-brand-blue);
+  }
+  .contacto__form h3 { font-size: 1.75rem; margin-bottom: 0.35rem; }
+  .contacto__form > p { color: var(--text-muted); margin-bottom: 1.75rem; font-size: 0.98rem; }
+
+  @media (max-width: 960px) {
+    .contacto__grid { grid-template-columns: 1fr; }
   }
 </style>

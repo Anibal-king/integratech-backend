@@ -1,59 +1,107 @@
 ---
 import Section, { type SectionVariant } from '../Section.astro';
+import Icono, { type NombreIcono } from '../Icono.astro';
 
 interface Props {
-  /** Servicios publicados; null si la API no respondió (la cifra no se muestra). */
-  servicios: number | null;
+  /** Clientes de referencia (principales + otros); null si la API no respondió (la cifra no se muestra). */
+  clientes: number | null;
   /** Proyectos destacados; null si la API no respondió. */
   proyectos: number | null;
+  /** Marcas representadas; null si la API no respondió. */
+  marcas: number | null;
   variant: SectionVariant;
 }
 
-const { servicios, proyectos, variant } = Astro.props;
+const { clientes, proyectos, marcas, variant } = Astro.props;
+
+// Años desde el inicio de operaciones (enero de 2003).
+const anios = new Date().getFullYear() - 2003;
 
 // Nada de cifras inventadas: lo que no se pudo leer de la API se omite.
-const stats = [
-  { valor: '20+', label: 'años de experiencia' },
-  servicios ? { valor: String(servicios), label: servicios === 1 ? 'línea de servicio' : 'líneas de servicio' } : null,
-  proyectos ? { valor: `${proyectos}+`, label: 'proyectos ejecutados' } : null,
+const stats: { valor: string; label: string; icono: NombreIcono }[] = [
+  { valor: String(anios), label: 'años de trayectoria', icono: 'calendario' },
+  clientes ? { valor: `${clientes}+`, label: 'clientes corporativos e institucionales', icono: 'edificio' } : null,
+  proyectos ? { valor: `${proyectos}+`, label: 'proyectos de referencia ejecutados', icono: 'herramienta' } : null,
+  marcas ? { valor: String(marcas), label: 'marcas internacionales representadas', icono: 'medalla' } : null,
 ].filter((s) => s !== null);
 ---
 
-<Section variant={variant} aria-label="La empresa en cifras">
-  <ul class="container stats__list">
-    {stats.map((s) => (
-      <li>
-        <strong>{s.valor}</strong>
-        <span>{s.label}</span>
-      </li>
-    ))}
-  </ul>
+<Section variant={variant} class="stats" aria-label="La empresa en cifras">
+  <div class="container">
+    <ul class="stats__card" style={`--n:${stats.length}`}>
+      {stats.map((s) => (
+        <li>
+          <span class="stats__icono"><Icono nombre={s.icono} tamano={26} /></span>
+          <div>
+            <strong>{s.valor}</strong>
+            <span>{s.label}</span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
 </Section>
 
 <style>
-  .stats__list {
+  /* La tarjeta sube sobre el final del hero */
+  .stats { position: relative; z-index: 2; }
+  .stats__card {
     list-style: none;
-    margin-block: 0;
-    padding-block: 1.75rem;
+    margin: -4.5rem 0 0;
+    padding: 0;
     display: grid;
-    /* 2 o 3 cifras según lo que haya: columnas iguales */
-    grid-auto-flow: column;
-    grid-auto-columns: 1fr;
-    gap: 1.5rem;
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
   }
-  .stats__list li {
+  .stats__card li {
     margin: 0;
     display: flex;
-    flex-direction: column;
-    text-align: center;
+    align-items: center;
+    gap: 1rem;
+    padding: clamp(1.4rem, 2.5vw, 2rem) clamp(1.2rem, 2.2vw, 1.9rem);
+    border-left: 1px solid var(--border);
   }
-  .stats__list strong {
-    font-size: clamp(1.5rem, 1rem + 2vw, 2rem);
+  .stats__card li:first-child { border-left: 0; }
+  .stats__icono {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--color-brand-blue-tint);
+    color: var(--color-brand-blue);
+  }
+  .stats__card strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 1.4rem + 1.4vw, 2.6rem);
+    font-weight: 600;
+    line-height: 1;
     color: var(--heading);
-    line-height: 1.2;
+    margin-bottom: 0.3rem;
   }
-  .stats__list span {
-    font-size: 0.85rem;
-    color: var(--text);
+  .stats__card div span {
+    display: block;
+    font-size: 0.9rem;
+    line-height: 1.35;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 1023px) {
+    .stats__card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stats__card li:nth-child(3) { border-left: 0; }
+    .stats__card li:nth-child(n + 3) { border-top: 1px solid var(--border); }
+  }
+  /* Móvil: 2×2 compacto, sin icono */
+  @media (max-width: 560px) {
+    .stats__card li { padding: 1.2rem 1rem; }
+    .stats__icono { display: none; }
+    .stats__card strong { font-size: 1.9rem; }
+    .stats__card div span { font-size: 0.82rem; }
   }
 </style>
