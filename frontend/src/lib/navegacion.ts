@@ -14,9 +14,9 @@ const link = (id: string, label: string): NavLink => ({ id, href: `/#${id}`, lab
 export const NAV_LINKS: NavLink[] = [
   link('inicio', 'Inicio'),
   link('servicios', 'Servicios'),
+  link('nosotros', 'Nosotros'),
   link('proyectos', 'Proyectos'),
   link('clientes', 'Clientes'),
-  link('nosotros', 'Nosotros'),
   link('contacto', 'Contacto'),
 ];
 

@@ -1,8 +1,8 @@
 ---
 import { Image } from 'astro:assets';
 import Section, { type SectionVariant } from '../Section.astro';
-import { api, dataOr } from '../../lib/api';
-import { bandaProyectos, todasLasFotos } from '../../lib/imagenes';
+import { api, dataOr, type Proyecto } from '../../lib/api';
+import { bandaProyectos } from '../../lib/imagenes';
 
 interface Props {
   variant: SectionVariant;
@@ -10,105 +10,134 @@ interface Props {
 
 const { variant } = Astro.props;
 const proyectos = dataOr(await api.proyectos(), []);
-const proyectosDestacados = proyectos.slice(0, 3);
+
+/** Último año que aparece en «ejecución» ("2023-2024" → 2024); sin año, al final. */
+const ultimoAnio = (p: Proyecto) => Math.max(0, ...(p.ejecucion?.match(/\d{4}/g) ?? []).map(Number));
+/** Primer año de «ejecución» ("2023-2024" → 2023). */
+const primerAnio = (p: Proyecto) => Number(p.ejecucion?.match(/\d{4}/)?.[0] ?? 0);
+// Los más recientes primero; a igual año final, los que empezaron después.
+const recientes = [...proyectos].sort((a, b) => ultimoAnio(b) - ultimoAnio(a) || primerAnio(b) - primerAnio(a)).slice(0, 4);
+const mosaico = bandaProyectos.slice(0, 4);
 ---
 
-<Section variant={variant} id="proyectos" class="section reveal" aria-labelledby="proyectos-title" tabindex="-1">
+<Section variant={variant} id="proyectos" class="section reveal proyectos" aria-labelledby="proyectos-title" tabindex="-1">
   <div class="container">
-    <div class="band__head">
+    <div class="section__head section__head--split">
       <div>
-        <span class="eyebrow">Nuestro trabajo</span>
-        <h2 id="proyectos-title">Proyectos en instalaciones reales</h2>
-        <p>Data centers, subestaciones, tableros de automatización, iluminación y energía renovable.</p>
+        <span class="eyebrow">Proyectos de referencia</span>
+        <h2 id="proyectos-title">Infraestructura crítica, ejecutada en campo</h2>
       </div>
-      <a href="/proyectos" class="btn btn--secondary">Ver las {todasLasFotos.length} fotos →</a>
-    </div>
-
-    {bandaProyectos.length > 0 && (
-      <div class="band__grid">
-        {bandaProyectos.map((f) => (
-          <a href="/proyectos" class="band__item" aria-label={f.descripcion}>
-            <Image src={f.img} alt={f.descripcion} widths={[320, 560]} sizes="(max-width: 700px) 45vw, 22vw" loading="lazy" />
-            <span>{f.descripcion}</span>
-          </a>
-        ))}
-      </div>
-    )}
-
-    {proyectosDestacados.length > 0 && (
-      <div class="destacados">
-        <h3>Proyectos destacados</h3>
-        <div class="grid grid--3">
-          {proyectosDestacados.map((p) => (
-            <article class="card">
-              {p.ejecucion && <span class="tag">{p.ejecucion}</span>}
-              <h4>{p.nombre_proyecto}</h4>
-              {p.descripcion && <p>{p.descripcion}</p>}
-            </article>
-          ))}
-        </div>
-        <p class="destacados__more">
-          <a href="/proyectos" class="btn btn--secondary">Ver todos los proyectos →</a>
+      <div>
+        <p>
+          Data centers, subestaciones, generación de respaldo, automatización e iluminación para la banca, la
+          industria y el sector público.
         </p>
       </div>
-    )}
+    </div>
+
+    <div class="proyectos__grid">
+      {recientes.length > 0 && (
+        <ol class="linea">
+          {recientes.map((p) => (
+            <li>
+              {p.ejecucion && <span class="linea__anio">{p.ejecucion.replace(/\s*al\s*/i, '–').replace('-', '–')}</span>}
+              <div>
+                <h3>{p.nombre_proyecto}</h3>
+                {p.descripcion && <p>{p.descripcion}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {mosaico.length > 0 && (
+        <div class="mosaico">
+          {mosaico.map((f, i) => (
+            <a href="/proyectos" class:list={['mosaico__item', `mosaico__item--${i + 1}`]} aria-label={`Ver la galería de proyectos (foto ${i + 1})`}>
+              <Image src={f.img} alt="" widths={[320, f.img.width]} sizes="(max-width: 900px) 45vw, 300px" loading="lazy" />
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+
+    <div class="proyectos__acciones">
+      <a href="/proyectos" class="btn btn--primary">Ver galería y todos los proyectos <span class="btn__arrow" aria-hidden="true">→</span></a>
+    </div>
   </div>
 </Section>
 
 <style>
-  .band__head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 2rem;
-  }
-  .band__head h2 { margin-bottom: 0.35rem; }
-  .band__head p { color: var(--text-muted); margin: 0; }
+  .proyectos { position: relative; overflow: hidden; }
 
-  .band__grid {
+  .proyectos__grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: clamp(2.5rem, 6vw, 5rem);
+    align-items: start;
+  }
+
+  /* ---------- Línea de proyectos ---------- */
+  .linea { list-style: none; margin: 0; padding: 0; }
+  .linea li {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: 1.5rem;
+    margin: 0;
+    padding: 1.6rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .linea li:last-child { border-bottom: 1px solid var(--border); }
+  .linea__anio {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+    line-height: 1.6;
+  }
+  .linea h3 {
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0 0 0.35rem;
+  }
+  .linea p { margin: 0; color: var(--text-muted); font-size: 0.98rem; }
+
+  /* ---------- Mosaico ---------- */
+  .mosaico {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 240px 190px 240px;
     gap: 0.9rem;
   }
-  .band__item {
-    position: relative;
+  .mosaico__item {
     display: block;
-    border-radius: var(--radius);
     overflow: hidden;
-    aspect-ratio: 3 / 4;
+    border-radius: var(--radius-lg);
     background: var(--surface-muted);
   }
-  .band__item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; opacity: 0.9; }
-  .band__item:hover img { transform: scale(1.06); opacity: 1; }
-  .band__item span {
-    position: absolute;
-    inset-inline: 0;
-    bottom: 0;
-    padding: 1.4rem 0.7rem 0.6rem;
-    font-size: 0.72rem;
-    line-height: 1.3;
-    color: var(--overlay-text);
-    background: linear-gradient(to top, var(--overlay-scrim), transparent);
-    opacity: 0;
-    transition: opacity 0.25s ease;
+  .mosaico__item--1 { grid-row: 1 / 3; }
+  .mosaico__item--2 { grid-row: 1 / 2; }
+  .mosaico__item--3 { grid-row: 2 / 4; grid-column: 2; }
+  .mosaico__item--4 { grid-row: 3 / 4; grid-column: 1; }
+  .mosaico__item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--ease);
   }
-  .band__item:hover span,
-  .band__item:focus-visible span { opacity: 1; }
+  .mosaico__item:hover img { transform: scale(1.06); }
 
-  .destacados { margin-top: clamp(2.5rem, 5vw, 3.5rem); }
-  .destacados h3 { font-size: 1.4rem; margin-bottom: 1.25rem; }
-  .destacados .card h4 { font-size: 1.1rem; margin: 0.6rem 0 0.4rem; }
-  .destacados__more { margin: 1.75rem 0 0; }
+  .proyectos__acciones { margin-top: clamp(2.5rem, 5vw, 3.5rem); }
 
   @media (max-width: 900px) {
-    .band__grid { grid-template-columns: repeat(3, 1fr); }
-    .band__item:nth-child(4), .band__item:nth-child(5) { display: none; }
+    .proyectos__grid { grid-template-columns: 1fr; }
+    .mosaico { grid-template-rows: 160px 120px 160px; }
   }
-  @media (max-width: 720px) {
-    .band__grid { grid-template-columns: repeat(2, 1fr); }
-    .band__item:nth-child(3) { display: none; }
-    .band__head .btn { width: 100%; justify-content: center; }
+  @media (max-width: 560px) {
+    .linea li { grid-template-columns: 1fr; gap: 0.35rem; }
+    .proyectos__acciones .btn { width: 100%; }
   }
 </style>

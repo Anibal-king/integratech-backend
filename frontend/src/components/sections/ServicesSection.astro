@@ -18,10 +18,15 @@ const servicios = Astro.props.servicios ?? (await api.servicios());
 
 <Section variant={variant} id="servicios" class="section reveal" aria-labelledby="servicios-title" tabindex="-1">
   <div class="container">
-    <div class="section__head">
-      <span class="eyebrow">Catálogo</span>
-      <h2 id="servicios-title">Productos y servicios</h2>
-      <p>Nuestras líneas de trabajo. Cada categoría agrupa capacidades específicas que ejecutamos con personal propio y marcas representadas.</p>
+    <div class="section__head section__head--split">
+      <div>
+        <span class="eyebrow">Qué hacemos</span>
+        <h2 id="servicios-title">Soluciones integrales de ingeniería</h2>
+      </div>
+      <p>
+        Del diseño a la puesta en marcha y el mantenimiento: ejecutamos cada proyecto con personal técnico propio y
+        equipos de las marcas que representamos.
+      </p>
     </div>
 
     {servicios.status !== 'ok' ? (

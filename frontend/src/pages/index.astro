@@ -2,10 +2,12 @@
 import Layout from '../layouts/Layout.astro';
 import Hero from '../components/sections/Hero.astro';
 import StatsBar from '../components/sections/StatsBar.astro';
+import TrustBar from '../components/sections/TrustBar.astro';
 import ServicesSection from '../components/sections/ServicesSection.astro';
+import AboutSection from '../components/sections/AboutSection.astro';
 import ProjectsSection from '../components/sections/ProjectsSection.astro';
 import ClientsSection from '../components/sections/ClientsSection.astro';
-import AboutSection from '../components/sections/AboutSection.astro';
+import BrandsSection from '../components/sections/BrandsSection.astro';
 import ContactSection from '../components/sections/ContactSection.astro';
 import { api, dataOr } from '../lib/api';
 
@@ -13,23 +15,30 @@ import { api, dataOr } from '../lib/api';
 export const prerender = false;
 
 // Landing única: cada sección se recorre con scroll y el menú apunta a "/#<id>".
-const [empresa, servicios, proyectos] = await Promise.all([
+const [empresa, servicios, proyectos, clientes, otros, marcas] = await Promise.all([
   api.empresa().then((r) => dataOr(r, null)),
   api.servicios(),
   api.proyectos(),
+  api.clientes(),
+  api.otrosClientes(),
+  api.marcas(),
 ]);
 // Cifras solo con datos reales: si la API falló, esa cifra no se muestra.
 const contar = (r: { status: string; data?: unknown[] }) =>
   r.status === 'ok' ? (r.data as unknown[]).length : r.status === 'empty' ? 0 : null;
+const totalClientes = contar(clientes) === null ? null : (contar(clientes) ?? 0) + (contar(otros) ?? 0);
+const nombresClientes = [...dataOr(clientes, []), ...dataOr(otros, [])].map((c) => c.nombre);
 ---
 
 <Layout>
   {/* Ritmo de color al hacer scroll: cambiar el fondo de una sección es cambiar su variant */}
   <Hero descripcion={empresa?.mision ?? undefined} />
-  <StatsBar variant="muted" servicios={contar(servicios)} proyectos={contar(proyectos)} />
-  <ServicesSection variant="dark" servicios={servicios} />
-  <ProjectsSection variant="light" />
-  <ClientsSection variant="dark" />
+  <StatsBar variant="light" clientes={totalClientes} proyectos={contar(proyectos)} marcas={contar(marcas)} />
+  <TrustBar variant="light" nombres={nombresClientes} />
+  <ServicesSection variant="muted" servicios={servicios} />
   <AboutSection variant="light" />
-  <ContactSection variant="muted" />
+  <ProjectsSection variant="dark" />
+  <ClientsSection variant="light" />
+  <BrandsSection variant="muted" />
+  <ContactSection variant="dark" />
 </Layout>

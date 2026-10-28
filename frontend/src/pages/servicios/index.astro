@@ -2,6 +2,7 @@
 /** Catálogo completo de servicios (destino de la tarjeta «Ver más» del inicio). */
 import Layout from '../../layouts/Layout.astro';
 import Section from '../../components/Section.astro';
+import PageHeader from '../../components/PageHeader.astro';
 import StatusMessage from '../../components/StatusMessage.astro';
 import ServiciosCatalogo from '../../components/ServiciosCatalogo.astro';
 import { api } from '../../lib/api';
@@ -13,18 +14,19 @@ const servicios = await api.servicios();
 ---
 
 <Layout
-  title="Servicios — IntegraTech"
+  title="Servicios — SIIE"
   description="Catálogo completo de servicios de ingeniería: automatización, soluciones comerciales e industriales, energía renovable, auditorías y mantenimiento de infraestructura."
 >
-  <Section variant="dark" class="section" aria-labelledby="catalogo-title">
-    <div class="container">
-      <p><a href="/#servicios" class="volver">← Volver al inicio</a></p>
-      <div class="section__head">
-        <span class="eyebrow">Catálogo</span>
-        <h1 id="catalogo-title">Todos nuestros servicios</h1>
-        <p>Busca una línea de servicio o recorre el catálogo completo. Cada una agrupa capacidades que ejecutamos con personal propio y marcas representadas.</p>
-      </div>
+  <PageHeader
+    tituloId="catalogo-title"
+    eyebrow="Catálogo"
+    titulo="Todos nuestros servicios"
+    descripcion="Busque una línea de servicio o recorra el catálogo completo. Cada una agrupa capacidades que ejecutamos con personal técnico propio y equipos de las marcas que representamos."
+    migas={[{ label: 'Servicios' }]}
+  />
 
+  <Section variant="muted" class="section" aria-labelledby="catalogo-title">
+    <div class="container">
       {servicios.status !== 'ok' ? (
         <StatusMessage resultado={servicios} vacio="Pronto publicaremos nuestros servicios aquí." />
       ) : (
@@ -33,7 +35,3 @@ const servicios = await api.servicios();
     </div>
   </Section>
 </Layout>
-
-<style>
-  .volver { font-weight: 600; }
-</style>

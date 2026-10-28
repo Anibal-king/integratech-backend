@@ -60,7 +60,7 @@ for (const sv of servicios) {
       <input
         id="svc-q"
         type="search"
-        placeholder="Buscar un servicio…"
+        placeholder="¿Qué necesita? Ej.: generador, UPS, subestación…"
         autocomplete="off"
         spellcheck="false"
         enterkeyhint="search"
@@ -77,19 +77,19 @@ for (const sv of servicios) {
       </button>
       <ul id="svc-sugerencias" class="svc-sugerencias" role="listbox" aria-label="Sugerencias" data-svc-lista hidden></ul>
     </div>
-    <p id="svc-ayuda" class="svc-sr">Escribe para ver sugerencias; usa las flechas para recorrerlas y Enter para elegir una.</p>
+    <p id="svc-ayuda" class="svc-sr">Escriba para ver sugerencias; use las flechas para recorrerlas y Enter para elegir una.</p>
     <script type="application/json" data-svc-sugerencias set:html={JSON.stringify(sugerencias).replace(/</g, '\\u003c')} />
     <p class="svc-sr" aria-live="polite" data-svc-estado></p>
   </div>
 
   <div class="svc-vacio" data-svc-vacio hidden>
-    <p class="svc-vacio__titulo">Tu proyecto merece una solución a la medida</p>
+    <p class="svc-vacio__titulo">Su proyecto merece una solución a la medida</p>
     <p>
       Aún no tenemos “<span data-svc-texto></span>” en nuestro catálogo, pero diseñamos soluciones a la medida
-      todos los días. Tu proyecto suena como un caso especial y nos encantaría conocerlo: cuéntanos qué
-      necesitas y te preparamos una cotización sin compromiso.
+      todos los días. Su proyecto suena como un caso especial y nos encantaría conocerlo: cuéntenos qué
+      necesita y le preparamos una cotización sin compromiso.
     </p>
-    <a href="/#contacto" class="btn btn--primary" data-svc-cotizar>Solicitar mi cotización</a>
+    <a href="/#contacto" class="btn btn--primary" data-svc-cotizar>Solicitar cotización</a>
   </div>
 
   <div class="svc-grid">
@@ -106,6 +106,7 @@ for (const sv of servicios) {
           data-buscar={textoBusqueda(s)}
           hidden={extra}
         >
+          <span class="svc-card__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
           {portada && (
             <div class="svc-card__media">
               <img
@@ -129,7 +130,7 @@ for (const sv of servicios) {
                 {s.items.length > 4 && <li class="muted">+ {s.items.length - 4} más…</li>}
               </ul>
             )}
-            <span class="svc-card__cta">Ver detalle →</span>
+            <span class="svc-card__cta">Ver detalle <span aria-hidden="true">→</span></span>
           </div>
         </a>
       );
@@ -277,23 +278,51 @@ for (const sv of servicios) {
     .svc-grid { grid-template-columns: minmax(0, 1fr); }
   }
   .svc-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--surface-card);
-    box-shadow: var(--shadow-sm);
     color: var(--text);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s ease;
+  }
+  /* Línea de acento que crece en la parte superior al pasar el mouse */
+  .svc-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    z-index: 2;
+    height: 3px;
+    background: var(--color-brand-blue);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s var(--ease);
   }
   .svc-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-md);
     text-decoration: none;
   }
+  .svc-card:hover::before { transform: scaleX(1); }
+  .svc-card__num {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--color-navy-deep) 70%, transparent);
+    backdrop-filter: blur(4px);
+    color: var(--color-white);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
   .svc-card__media {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 16 / 10;
     overflow: hidden;
     background: var(--surface-muted);
   }
@@ -301,49 +330,77 @@ for (const sv of servicios) {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.4s ease;
+    transition: transform 0.6s var(--ease);
   }
-  .svc-card:hover .svc-card__media img { transform: scale(1.06); }
-  .svc-card__body { padding: 1.4rem 1.5rem 1.6rem; display: flex; flex-direction: column; flex: 1; }
-  .svc-card__titulo { font-size: 1.2rem; margin-bottom: 0.4rem; }
+  .svc-card:hover .svc-card__media img { transform: scale(1.05); }
+  .svc-card__body { padding: 1.6rem 1.6rem 1.75rem; display: flex; flex-direction: column; flex: 1; }
+  .svc-card__titulo { font-size: 1.45rem; margin-bottom: 0.5rem; }
   /* Descripción: máximo 3 líneas */
   .svc-card__body p {
     color: var(--text-muted);
+    font-size: 1rem;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
     line-clamp: 3;
     overflow: hidden;
   }
-  .svc-items { margin: 0.5rem 0 1rem; }
-  .svc-items .muted { color: var(--text-muted); list-style: none; margin-left: -1.2rem; }
+  .svc-items {
+    list-style: none;
+    margin: 0.25rem 0 1.5rem;
+    padding: 1rem 0 0;
+    border-top: 1px solid var(--border);
+    font-size: 0.95rem;
+  }
+  .svc-items li { position: relative; padding-left: 1.5rem; margin-bottom: 0.45rem; line-height: 1.45; }
+  /* Marca de verificación dibujada con bordes */
+  .svc-items li::before {
+    content: '';
+    position: absolute;
+    left: 0.15rem;
+    top: 0.3em;
+    width: 0.4rem;
+    height: 0.7rem;
+    border: solid var(--accent);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .svc-items .muted { color: var(--text-muted); padding-left: 0; }
+  .svc-items .muted::before { display: none; }
   /* «Ver detalle» siempre al fondo, aunque el servicio tenga poco texto */
-  .svc-card__cta { margin-top: auto; font-weight: 700; color: var(--link); }
+  .svc-card__cta { margin-top: auto; font-weight: 600; color: var(--link); }
+  .svc-card__cta span { display: inline-block; transition: transform 0.2s var(--ease); }
+  .svc-card:hover .svc-card__cta span { transform: translateX(4px); }
 
-  /* Tarjeta «Ver más»: mismo tamaño y estilo de tarjeta, contenido centrado */
+  /* Tarjeta «Ver más»: mismo tamaño, en azul marino */
   .svc-card--mas {
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-end;
     gap: 0.6rem;
-    padding: 2rem 1.5rem;
-    text-align: center;
+    padding: 2rem;
     min-height: 260px;
+    border-color: transparent;
+    background:
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--color-brand-blue) 70%, transparent), transparent 60%),
+      var(--color-navy);
+    color: var(--color-white);
   }
   .svc-card--mas[hidden] { display: none; }
-  .svc-mas__titulo { margin: 0; font-size: 1.45rem; color: var(--heading); }
-  .svc-mas__frase { margin: 0; max-width: 24ch; color: var(--text-muted); }
+  .svc-mas__titulo { margin: 0; font-size: 2rem; color: var(--color-white); }
+  .svc-mas__frase { margin: 0; max-width: 26ch; color: var(--color-text-on-dark); }
   .svc-mas__flecha {
+    order: -1;
+    margin-bottom: auto;
     display: grid;
     place-items: center;
     width: 64px;
     height: 64px;
-    margin-top: 0.75rem;
     border-radius: 50%;
-    border: 2px solid var(--link);
-    color: var(--link);
-    transition: transform 0.2s ease;
+    border: 1.5px solid rgba(255, 255, 255, 0.5);
+    color: var(--color-white);
+    transition: transform 0.25s var(--ease), background-color 0.25s ease;
   }
-  .svc-card--mas:hover .svc-mas__flecha { transform: translateX(6px); }
+  .svc-card--mas:hover .svc-mas__flecha { transform: translateX(6px); background: rgba(255, 255, 255, 0.1); }
   @media (prefers-reduced-motion: reduce) {
     .svc-card--mas:hover .svc-mas__flecha { transform: none; }
   }
@@ -616,7 +673,7 @@ for (const sv of servicios) {
       input.focus();
     });
 
-    // «Solicitar mi cotización»: deja escrito el término en el mensaje del formulario
+    // «Solicitar cotización»: deja escrito el término en el mensaje del formulario
     raiz.querySelector('[data-svc-cotizar]')!.addEventListener('click', () => {
       try {
         sessionStorage.setItem(CLAVE_PRELLENAR, `Estoy buscando: ${input.value.trim()}`);

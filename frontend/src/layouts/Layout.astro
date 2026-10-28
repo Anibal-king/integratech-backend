@@ -2,10 +2,13 @@
 import '../styles/tokens.css';
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
-import Section from '../components/Section.astro';
+import { Image } from 'astro:assets';
 import Header from '../components/Header.astro';
+import Icono from '../components/Icono.astro';
 import Lightbox from '../components/Lightbox.astro';
 import ChatWidget from '../components/ChatWidget.tsx';
+import { logoBlanco } from '../lib/imagenes';
+import { NAV_LINKS } from '../lib/navegacion';
 
 interface Props {
   title?: string;
@@ -13,11 +16,19 @@ interface Props {
 }
 
 const {
-  title = 'IntegraTech — Servicios Integrales de Ingeniería',
-  description = 'Servicios profesionales y especializados de ingeniería para el sector corporativo e industrial de El Salvador: automatización, energía, mantenimiento de infraestructura y más.',
+  title = 'SIIE — Servicios Integrales de Ingeniería El Salvador',
+  description = 'Ingeniería eléctrica, electromecánica y de automatización para el sector corporativo, industrial e institucional de El Salvador desde 2003: generadores, subestaciones, data centers, UPS, iluminación y energía solar.',
 } = Astro.props;
 
 const year = new Date().getFullYear();
+
+// Datos de contacto fijos (el layout también lo usan páginas prerenderizadas, sin API).
+const CONTACTO = {
+  telefono: { texto: '2556-1756', href: 'tel:+50325561756' },
+  celular: { texto: '7986-2065', href: 'tel:+50379862065' },
+  direccion: 'Av. Las Palmeras y Calle Las Azucenas, Políg. «F», Urb. La Sultana #21, Antiguo Cuscatlán, La Libertad.',
+  mapa: 'https://www.google.com/maps/search/?api=1&query=Urbanizaci%C3%B3n+La+Sultana+Antiguo+Cuscatl%C3%A1n+El+Salvador',
+};
 ---
 
 <!doctype html>
@@ -27,11 +38,18 @@ const year = new Date().getFullYear();
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#0b2a4a" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap"
+    />
     <!-- Oculta las secciones .reveal solo si hay JS (sin JS todo queda visible) -->
     <script is:inline>
       document.documentElement.classList.add('js');
@@ -40,29 +58,88 @@ const year = new Date().getFullYear();
     <ClientRouter />
   </head>
   <body>
+    <a href="#contenido" class="saltar">Saltar al contenido</a>
+
+    <!-- Franja de contacto (solo escritorio; se desplaza con la página) -->
+    <div class="topbar" transition:name="site-topbar" transition:animate="none">
+      <div class="container topbar__inner">
+        <ul class="topbar__datos">
+          <li><Icono nombre="telefono" tamano={15} /> <a href={CONTACTO.telefono.href}>PBX {CONTACTO.telefono.texto}</a></li>
+          <li><Icono nombre="movil" tamano={15} /> <a href={CONTACTO.celular.href}>Cel. {CONTACTO.celular.texto}</a></li>
+          <li><Icono nombre="ubicacion" tamano={15} /> Antiguo Cuscatlán, El Salvador</li>
+        </ul>
+        <p class="topbar__desde">Ingeniería al servicio de El Salvador desde 2003</p>
+      </div>
+    </div>
+
     <Header />
 
     <div class="shell">
-      <main class="main">
+      <main class="main" id="contenido">
         <slot />
       </main>
 
-      <Section as="footer" variant="dark" class="footer">
-        <div class="container footer__inner">
-          <p><strong>Servicios Integrales de Ingeniería El Salvador, S.A. de C.V.</strong></p>
-          <p>
-            Av. Las Palmeras y Calle Las Azucenas, Políg. «F», Urb. La Sultana #21, Antiguo Cuscatlán.
-            &nbsp;·&nbsp; Tel. 2556-1756 &nbsp;·&nbsp; Cel. 7986-2065
-          </p>
-          <p class="footer__legal">© {year} IntegraTech / SIIE. Todos los derechos reservados.</p>
+      <footer class="footer surface-dark">
+        <div class="container footer__grid">
+          <div class="footer__marca">
+            <Image src={logoBlanco} alt="Servicios Integrales de Ingeniería" widths={[240, 480]} sizes="240px" class="footer__logo" />
+            <p>
+              Servicios profesionales y especializados de ingeniería para el mercado corporativo, industrial e
+              institucional de El Salvador.
+            </p>
+          </div>
+
+          <nav class="footer__col" aria-label="Secciones del sitio">
+            <h2 class="footer__titulo">Navegación</h2>
+            <ul>
+              {NAV_LINKS.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+              <li><a href="/servicios">Catálogo de servicios</a></li>
+              <li><a href="/proyectos">Galería de proyectos</a></li>
+            </ul>
+          </nav>
+
+          <div class="footer__col">
+            <h2 class="footer__titulo">Contacto</h2>
+            <ul class="footer__contacto">
+              <li><Icono nombre="telefono" tamano={18} /> <a href={CONTACTO.telefono.href}>(503) {CONTACTO.telefono.texto}</a></li>
+              <li><Icono nombre="movil" tamano={18} /> <a href={CONTACTO.celular.href}>(503) {CONTACTO.celular.texto}</a></li>
+              <li><Icono nombre="ubicacion" tamano={18} /> <span>{CONTACTO.direccion} <a href={CONTACTO.mapa} target="_blank" rel="noopener noreferrer">Ver mapa</a></span></li>
+            </ul>
+          </div>
+
+          <div class="footer__col footer__cta">
+            <h2 class="footer__titulo">¿Tiene un proyecto?</h2>
+            <p>Agende una visita técnica o solicite una cotización sin compromiso.</p>
+            <a href="/#contacto" class="btn btn--primary">Solicitar cotización <span class="btn__arrow" aria-hidden="true">→</span></a>
+          </div>
         </div>
-      </Section>
+
+        <div class="footer__base">
+          <div class="container footer__base-inner">
+            <p>© {year} Servicios Integrales de Ingeniería El Salvador, S.A. de C.V.</p>
+            <p>NIT 0614-120722-106-0 · NRC 317094-1</p>
+          </div>
+        </div>
+      </footer>
     </div>
 
     <Lightbox />
     <ChatWidget client:idle transition:persist="chat" />
 
     <style>
+      .saltar {
+        position: absolute;
+        left: 1rem;
+        top: -100px;
+        z-index: 100;
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius);
+        background: var(--color-brand-blue);
+        color: var(--color-white);
+        font-weight: 600;
+      }
+      .saltar:focus { top: 1rem; }
+
       .shell {
         min-height: calc(100vh - var(--header-height));
         display: flex;
@@ -70,14 +147,87 @@ const year = new Date().getFullYear();
       }
       .main { flex: 1; }
 
-      .footer {
-        color: var(--text-muted);
-        padding-block: 2.25rem;
-        font-size: 0.9rem;
+      /* ---------- Franja superior ---------- */
+      .topbar {
+        background: var(--color-navy-deep);
+        color: var(--color-text-on-dark);
+        font-size: 0.85rem;
       }
-      .footer__inner p { margin: 0 0 0.35rem; }
-      .footer strong { color: var(--heading); }
-      .footer__legal { margin-top: 0.75rem; color: var(--text-muted); font-size: 0.82rem; }
+      .topbar__inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        min-height: 40px;
+      }
+      .topbar__datos {
+        display: flex;
+        gap: 1.75rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .topbar__datos li { display: inline-flex; align-items: center; gap: 0.45rem; margin: 0; }
+      .topbar__datos svg { color: var(--color-accent-light); }
+      .topbar a { color: var(--color-white); }
+      .topbar__desde { margin: 0; letter-spacing: 0.02em; }
+      @media (max-width: 1023px) {
+        .topbar { display: none; }
+      }
+
+      /* ---------- Footer ---------- */
+      .footer {
+        position: relative;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        background: var(--color-navy-deep);
+        border-top: 3px solid var(--color-brand-blue);
+      }
+      .footer__grid {
+        display: grid;
+        grid-template-columns: 1.4fr 0.8fr 1.2fr 1fr;
+        gap: clamp(2rem, 4vw, 3.5rem);
+        padding-block: clamp(3.5rem, 7vw, 5rem);
+      }
+      .footer__logo { width: 220px; height: auto; margin-bottom: 1.25rem; }
+      .footer__marca p { max-width: 34ch; margin: 0; }
+      .footer__titulo {
+        font-family: var(--font-sans);
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--color-white);
+        margin-bottom: 1.25rem;
+      }
+      .footer ul { list-style: none; padding: 0; margin: 0; }
+      .footer li { margin-bottom: 0.6rem; }
+      .footer a:not(.btn) { color: var(--color-text-on-dark); }
+      .footer a:not(.btn):hover { color: var(--color-white); }
+      .footer__contacto li { display: grid; grid-template-columns: 18px 1fr; gap: 0.75rem; align-items: start; }
+      .footer__contacto svg { margin-top: 0.2rem; color: var(--color-accent-light); }
+      .footer__contacto span a { display: inline-block; margin-top: 0.25rem; color: var(--color-accent-light); font-weight: 600; }
+      .footer__cta p { margin-bottom: 1.25rem; }
+
+      .footer__base { border-top: 1px solid var(--border); }
+      .footer__base-inner {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5rem 2rem;
+        padding-block: 1.25rem;
+        font-size: 0.85rem;
+      }
+      .footer__base p { margin: 0; }
+
+      @media (max-width: 1023px) {
+        .footer__grid { grid-template-columns: 1fr 1fr; }
+      }
+      @media (max-width: 600px) {
+        .footer__grid { grid-template-columns: 1fr; }
+        /* Espacio para el botón flotante del chat */
+        .footer__base-inner { padding-bottom: 5.5rem; }
+      }
     </style>
   </body>
 </html>

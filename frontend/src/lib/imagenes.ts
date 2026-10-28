@@ -45,6 +45,8 @@ const LEGALES = aMapa(legalesGlob);
 
 export const logoHorizontal = LOGOS.get('logo_horizontal')!;
 export const logoVariante = LOGOS.get('logo_variante')!;
+/** Logo en blanco con fondo transparente (para superficies oscuras: footer). */
+export { default as logoBlanco } from '../assets/img/logo/logo_blanco.png';
 
 export interface DocLegalImg {
   img: ImageMetadata;
@@ -193,31 +195,45 @@ const fotoHero = (id: string) => {
 
 export const DIAPOSITIVAS_HERO: DiapositivaHero[] = [
   {
-    titulo: 'Ingeniería especializada para la industria y el sector corporativo',
-    frase: null,
+    titulo: 'Ingeniería eléctrica y electromecánica que mantiene su operación en marcha',
+    frase: 'Diseñamos, suministramos, instalamos y mantenemos generadores, subestaciones, data centers, UPS y sistemas de automatización para empresas e instituciones de El Salvador.',
     foto: fotoHero('proyecto_001'),
     alt: 'Pasillo de un data center con racks de servidores y bandejas de cableado en el techo',
   },
   {
-    titulo: 'Automatiza tus procesos sin detener tu operación',
-    frase: 'Diseñamos, construimos y programamos tableros de automatización para tu planta, tus oficinas o tu edificio.',
+    titulo: 'Automatización de procesos, edificios y climatización',
+    frase: 'Diseñamos, construimos y programamos tableros de automatización para plantas, oficinas y edificios, incluidos sistemas Loxone.',
     foto: fotoHero('proyecto_027'),
     alt: 'Tablero de automatización con controladores Loxone y contactores numerados',
   },
   {
-    titulo: 'Energía limpia y confiable para tu empresa',
-    frase: 'Instalamos sistemas solares, UPS y filtros de armónicos para que reduzcas costos y nunca te quedes sin respaldo.',
+    titulo: 'Iluminación de escenarios deportivos y áreas exteriores',
+    frase: 'Torres de iluminación, redes subterráneas y control automatizado, como en el complejo deportivo del BCR y el estadio de Ilobasco.',
+    foto: fotoHero('proyecto_050'),
+    alt: 'Vista aérea nocturna de una cancha de fútbol iluminada rodeada de árboles',
+  },
+  {
+    titulo: 'Energía solar, UPS y calidad de energía',
+    frase: 'Sistemas solares con inyección cero, a red o aislados; UPS para operaciones críticas y filtros de armónicos.',
     foto: fotoHero('proyecto_058'),
     alt: 'Paneles solares instalados sobre el techo de una nave industrial',
   },
 ];
 
-/** Miniaturas de la franja "nuestro trabajo" del inicio (enlazan a /proyectos). */
-export const bandaProyectos: FotoProyecto[] = ['proyecto_009', 'proyecto_043', 'proyecto_030', 'proyecto_036', 'proyecto_017']
+/**
+ * Mosaico de la sección «Proyectos» del inicio (enlazan a /proyectos), en orden:
+ * vertical, horizontal, vertical, horizontal.
+ */
+export const bandaProyectos: FotoProyecto[] = ['proyecto_006', 'proyecto_022', 'proyecto_016', 'proyecto_051']
   .map(foto)
   .filter((f): f is FotoProyecto => f !== null);
 
 /** Galería de 6 fotos (se usa donde haga falta un grid con lightbox). */
 export const galeriaHome: FotoProyecto[] = ['proyecto_017', 'proyecto_043', 'proyecto_030', 'proyecto_009', 'proyecto_036', 'proyecto_028']
+  .map(foto)
+  .filter((f): f is FotoProyecto => f !== null);
+
+/** Collage de la sección «Quiénes somos» (principal vertical + secundaria horizontal). */
+export const fotosNosotros: FotoProyecto[] = ['proyecto_014', 'proyecto_037']
   .map(foto)
   .filter((f): f is FotoProyecto => f !== null);

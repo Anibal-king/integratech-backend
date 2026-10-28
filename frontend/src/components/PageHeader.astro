@@ -1,0 +1,119 @@
+---
+/**
+ * Encabezado de las subpáginas (/servicios, /servicios/[id], /proyectos): banda
+ * azul marino con migas de pan, antetítulo, título (h1) y descripción. Con
+ * `fondo`, la foto va detrás con una capa oscura para que el texto se lea.
+ */
+import Section from './Section.astro';
+
+interface Miga {
+  label: string;
+  href?: string;
+}
+
+interface Props {
+  titulo: string;
+  eyebrow?: string;
+  descripcion?: string | null;
+  migas?: Miga[];
+  /** Foto de fondo servida por el backend (ya con URL absoluta). */
+  fondo?: { src: string; srcset?: string; ancho?: number; alto?: number };
+  /** id del h1 (para aria-labelledby). */
+  tituloId?: string;
+}
+
+const { titulo, eyebrow, descripcion, migas = [], fondo, tituloId } = Astro.props;
+---
+
+<Section variant="dark" class:list={['ph', { 'ph--foto': fondo }]}>
+  {fondo && (
+    <img
+      class="ph__fondo"
+      src={fondo.src}
+      srcset={fondo.srcset}
+      sizes="100vw"
+      width={fondo.ancho}
+      height={fondo.alto}
+      alt=""
+      fetchpriority="high"
+    />
+  )}
+  <div class="ph__capa" aria-hidden="true"></div>
+  <div class="container ph__inner">
+    {migas.length > 0 && (
+      <nav aria-label="Ruta de navegación">
+        <ol class="ph__migas">
+          <li><a href="/">Inicio</a></li>
+          {migas.map((m) => (
+            <li>{m.href ? <a href={m.href}>{m.label}</a> : <span aria-current="page">{m.label}</span>}</li>
+          ))}
+        </ol>
+      </nav>
+    )}
+    {eyebrow && <span class="eyebrow">{eyebrow}</span>}
+    <h1 id={tituloId}>{titulo}</h1>
+    {descripcion && <p class="ph__desc">{descripcion}</p>}
+    <slot />
+  </div>
+</Section>
+
+<style>
+  .ph {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 60% 120% at 100% 0%, color-mix(in srgb, var(--color-brand-blue) 55%, transparent), transparent 70%),
+      linear-gradient(160deg, var(--color-navy) 0%, var(--color-navy-deep) 100%);
+  }
+  /* Cuadrícula técnica, como en el inicio */
+  .ph__capa {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: linear-gradient(90deg, transparent 10%, #000 70%);
+  }
+  .ph__fondo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(2px) saturate(0.9);
+    transform: scale(1.03);
+  }
+  /* Con foto: capa marina más densa a la izquierda, donde va el texto */
+  .ph--foto .ph__capa {
+    background:
+      linear-gradient(90deg, var(--overlay-scrim) 0%, color-mix(in srgb, var(--color-navy-deep) 70%, transparent) 55%, color-mix(in srgb, var(--color-navy-deep) 45%, transparent) 100%);
+    mask-image: none;
+  }
+  .ph__inner {
+    position: relative;
+    padding-block: clamp(3rem, 7vw, 5rem) clamp(3.25rem, 7vw, 5.25rem);
+  }
+  .ph__migas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0 0 1.75rem;
+    padding: 0;
+    font-size: 0.9rem;
+    color: var(--color-text-on-dark);
+  }
+  .ph__migas li { margin: 0; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .ph__migas li + li::before { content: '/'; opacity: 0.5; }
+  .ph__migas a { color: var(--color-text-on-dark); }
+  .ph__migas a:hover { color: var(--color-white); }
+  .ph__migas [aria-current] { color: var(--color-white); }
+  .ph h1 { max-width: 20ch; margin-bottom: 1rem; color: var(--color-white); }
+  .ph__desc {
+    max-width: 62ch;
+    margin: 0;
+    font-size: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
+    color: var(--color-text-on-dark);
+  }
+</style>
