@@ -49,7 +49,7 @@ y conteos mayores que cero en `db.conteos`.
 | `npm run dev` | Backend (con `--watch`) + frontend a la vez |
 | `npm run backend` / `npm run frontend` | Cada uno por separado |
 | `npm run db:migrate` | Crea las tablas que falten; no toca los datos |
-| `npm run db:seed` | Vacía y recarga las tablas de contenido con los datos de la empresa. Idempotente y en una transacción. No toca `mensajes_contacto`, `leads_chatbot` ni los usuarios del panel |
+| `npm run db:seed` | Vacía y recarga las tablas de contenido con los datos de la empresa. Idempotente y en una transacción. No toca `mensajes_contacto`, `leads_chatbot` (cotizaciones), sus conversaciones ni los usuarios del panel |
 | `npm run crear-admin` | Crea un usuario del panel de administración (pide correo y contraseña) |
 | `npm run cambiar-password` | Asigna una contraseña nueva a un usuario del panel (también si la olvidaste) y cierra sus sesiones |
 | `npm run migrar-fotos-servicios` | Pasa las fotos iniciales de cada servicio al sistema de fotos del panel. Idempotente: se salta los servicios que ya tienen fotos |
@@ -57,6 +57,7 @@ y conteos mayores que cero en `db.conteos`.
 | `npm run start:backend` / `npm run start:frontend` | Producción: API y sitio ya compilado |
 | `npm run check:api` | Comprueba `/api/health` en `PUBLIC_API_URL` y avisa de tablas vacías |
 | `npm run typecheck` | `tsc` del backend (JSDoc + `checkJs` contra `shared/api-types.ts`) |
+| `npm test` | Tests del backend (API, lector de chats, zip) y del frontend (enlaces de WhatsApp) con `node --test`, sin dependencias. Usan una base temporal |
 
 Si la base no existe o no tiene contenido, el backend ejecuta el seed al arrancar.
 
@@ -72,7 +73,9 @@ Si la base no existe o no tiene contenido, el backend ejecuta el seed al arranca
 | `UPLOADS_DIR` | `storage/uploads` | Fotos subidas desde el panel (WebP). Relativa a `backend/`. Fuera de git: **respaldar junto con la base** |
 | `CORS_ORIGIN` | `http://localhost:4321,http://127.0.0.1:4321` en desarrollo | Orígenes del navegador permitidos, separados por comas. Obligatorio en producción. También es la lista de orígenes aceptados por el panel de administración |
 | `TRUST_PROXY` | `0` | Proxies delante del servidor en producción, para que el límite de envíos use la IP real |
-| `SMTP_*`, `MAIL_FROM`, `MAIL_TO_LEADS` | — | Correo de los leads del chatbot y del formulario de contacto (opcional) |
+| `CONVERSACIONES_DIR` | `storage/conversaciones` | Chats de WhatsApp exportados que se suben a las cotizaciones (privada). Fuera de git: **respaldar junto con la base** |
+| `SMTP_*`, `MAIL_FROM`, `MAIL_TO_LEADS` | — | Correo del formulario de contacto (opcional) |
+| `MAIL_TO_COTIZACIONES` | `MAIL_TO_LEADS` | Correo del encargado: aviso de cada cotización nueva por WhatsApp |
 
 **`frontend/.env`** (ver `frontend/.env.example`):
 
@@ -80,7 +83,7 @@ Si la base no existe o no tiene contenido, el backend ejecuta el seed al arranca
 |---|---|
 | `PUBLIC_API_URL` | URL del backend (por defecto `http://localhost:3000`) |
 | `AUTO_BACKEND` | `false` desactiva el arranque automático de la API local en `astro dev` |
-| `PUBLIC_WHATSAPP_NUMBER`, `PUBLIC_WHATSAPP_MESSAGE` | Derivación a WhatsApp del chatbot |
+| `PUBLIC_WHATSAPP_NUMBER` | WhatsApp de IntegraTech para el botón de cotizar: solo dígitos con código de país (`503XXXXXXXX`). Vacío = sin botón |
 
 ## Cómo se obtienen los datos
 
@@ -93,13 +96,55 @@ Si la base no existe o no tiene contenido, el backend ejecuta el seed al arranca
   local y no responde, Astro arranca el backend automáticamente.
 - Las fotos de los servicios las sirve el backend en `/media/...` (WebP en 400, 800 y
   1600 px, sin agrandar la original); el HTML usa `srcset`.
-- Desde el navegador solo llaman a la API el formulario de contacto, el chatbot (POST)
-  y el panel de administración; por eso CORS solo afecta a esos tres.
+- Desde el navegador solo llaman a la API el formulario de contacto, el formulario de
+  cotización por WhatsApp (POST) y el panel de administración; por eso CORS solo afecta a esos tres.
 - Formato de respuesta: listas como arreglo directo (`[]` con 200 si no hay datos),
   recursos individuales como objeto (404 si no existen), `/api/empresa` como objeto o
   `null`, y errores como `{ "error": "..." }` con mensaje genérico (el detalle va al log).
 - El frontend distingue: error de red, error HTTP, formato inválido y vacío. El vacío
   muestra un mensaje amable, no un error. El detalle técnico solo aparece con `astro dev`.
+
+## WhatsApp (sin API)
+
+Las cotizaciones se atienden en la app **WhatsApp Business** del encargado. No se usa la
+API de Meta ni webhooks: el sitio solo abre enlaces `https://wa.me/...` que la persona toca.
+
+1. En el sitio, el botón flotante de WhatsApp abre un formulario corto (nombre, WhatsApp con
+   código de país —503 por defecto—, tipo de proyecto, descripción, presupuesto y fecha
+   opcionales). `POST /api/cotizaciones` crea un ticket (`leads_chatbot`, origen `whatsapp`,
+   estado `nuevo`) y devuelve solo su número.
+2. La confirmación muestra el número y el botón **«Continuar en WhatsApp»**, que abre el chat
+   de IntegraTech con el mensaje listo: *«Hola IntegraTech 👋 Vengo por la cotización #N. Soy
+   …, proyecto: ….»*. El enlace «Prefiero escribir directo por WhatsApp» abre el chat sin
+   crear ticket.
+3. El encargado recibe un correo (si SMTP está configurado) y ve el ticket en el panel con la
+   marca «Nueva». Desde el detalle: «Abrir chat con el cliente», estados
+   (Nuevo → En proceso → Cotizado → Cerrado, o Descartado), notas internas y la conversación.
+
+**Configuración:** `PUBLIC_WHATSAPP_NUMBER` en `frontend/.env`, solo dígitos con código de
+país (ej. `50378654321`). Opcional: `MAIL_TO_COTIZACIONES` en `backend/.env`.
+
+**Antispam:** campo trampa oculto (`sitio_web`) y 5 envíos por IP cada 10 minutos (con un
+proxy delante, configura `TRUST_PROXY` para que se use la IP real).
+
+### Guardar la conversación en el ticket
+
+Al terminar la atención, exporta el chat **sin archivos** desde el teléfono:
+
+- **Android:** abre el chat → ⋮ → Más → Exportar chat → Sin archivos.
+- **iPhone:** abre el chat → toca el nombre del contacto → Exportar chat → Sin archivos.
+
+Luego, en el panel, abre el ticket → sección **Conversación** → sube el `.txt` o el `.zip`
+(máx. 10 MB) y elige cuál autor del chat es IntegraTech. Los mensajes se muestran en
+burbujas (cliente a la izquierda, IntegraTech a la derecha) y se descargan en `.txt` con los
+datos del ticket arriba.
+
+- Se aceptan exportaciones de Android y de iPhone en español, en 12 h o 24 h. Las líneas que
+  no se entienden no detienen la lectura: se pegan al mensaje anterior y se avisa cuántas fueron.
+- Si se sube otra exportación del mismo chat, solo se agregan los mensajes nuevos.
+- Del `.zip` solo se lee el texto (`_chat.txt`); si traía fotos u otros archivos, se indica.
+- El archivo original se guarda en `CONVERSACIONES_DIR` (privada, fuera de git: respáldala).
+- La hora de los mensajes es la del teléfono que exportó el chat.
 
 ## Panel de administración
 
@@ -107,9 +152,12 @@ Si la base no existe o no tiene contenido, el backend ejecuta el seed al arranca
 
 - **Resumen** (`/admin/dashboard`): cifras clave (incluidas las citas de los próximos 7 días),
   solicitudes por mes, recientes y, en la columna derecha, conteo por estado y próximas citas.
-- **Mensajes** (`/admin/mensajes`): todas las solicitudes del formulario y del chatbot con
-  búsqueda, filtros y paginación; en el detalle se cambia el estado, se escriben notas
-  internas y se responde por correo, teléfono o WhatsApp.
+- **Mensajes** (`/admin/mensajes`): todas las solicitudes del formulario y las cotizaciones
+  (WhatsApp y el chatbot anterior) con búsqueda, filtros y paginación. Las cotizaciones de
+  WhatsApp sin atender llevan la marca «Nueva» y un contador en el menú lateral. En el detalle
+  se cambia el estado (con historial de quién y cuándo), se escriben notas internas, se
+  responde por correo, teléfono o WhatsApp y, en las cotizaciones, se sube y se lee la
+  conversación de WhatsApp (ver «WhatsApp (sin API)»).
 - **Servicios** (`/admin/servicios`): crear, editar, ocultar, ordenar y eliminar los
   servicios del sitio; galería por servicio con subida de fotos, portada, orden y texto
   alternativo.

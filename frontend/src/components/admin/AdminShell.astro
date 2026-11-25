@@ -52,6 +52,7 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
               <a href={n.href} class:list={['sidebar__link', { 'is-active': n.id === activo }]} aria-current={n.id === activo ? 'page' : undefined}>
                 <Icono nombre={n.icono} />
                 <span>{n.label}</span>
+                {n.id === 'mensajes' && <span class="sidebar__aviso" data-aviso-cotizaciones hidden></span>}
               </a>
             </li>
           ))}
@@ -75,6 +76,7 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
           aria-expanded="false"
         >
           <Icono nombre="menu" />
+          <span class="topbar__punto" data-aviso-punto hidden></span>
         </button>
         <div class="topbar__encabezado">
           <span class="topbar__eyebrow">Panel de administración</span>
@@ -149,6 +151,27 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
     font-size: 1rem;
     transition: background-color 0.15s ease, color 0.15s ease;
   }
+  /* Cotizaciones de WhatsApp nuevas */
+  .sidebar__aviso {
+    margin-left: auto;
+    min-width: 1.5rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: #25d366;
+    color: #06311a;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+  }
+  .topbar__punto {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #25d366;
+  }
   .sidebar__link:hover { background: rgba(255, 255, 255, 0.07); color: var(--color-white); text-decoration: none; }
   .sidebar__link.is-active {
     background: color-mix(in srgb, var(--color-brand-blue) 75%, transparent);
@@ -194,7 +217,7 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
     border-bottom: 1px solid var(--border);
     box-shadow: var(--shadow-header);
   }
-  .topbar__menu { display: none; }
+  .topbar__menu { display: none; position: relative; }
   .topbar__encabezado { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .topbar__eyebrow {
     font-size: 0.7rem;
@@ -299,6 +322,29 @@ const NAV: { id: SeccionPanel; href: string; label: string; icono: NombreIcono }
       $('[data-shell-cargando-texto]').textContent =
         'No se pudo conectar con el servidor. Recarga la página para reintentar.';
     });
+
+  // ---------- Aviso de cotizaciones de WhatsApp nuevas ----------
+  const aviso = $('[data-aviso-cotizaciones]');
+  const punto = $('[data-aviso-punto]');
+  async function actualizarAvisos() {
+    if (document.hidden) return;
+    try {
+      const { cotizaciones_nuevas: n } = await admin.avisos();
+      aviso.hidden = punto.hidden = n === 0;
+      aviso.textContent = n > 99 ? '99+' : String(n);
+      aviso.title = `${n} cotización${n === 1 ? '' : 'es'} nueva${n === 1 ? '' : 's'} por WhatsApp`;
+      aviso.setAttribute('aria-label', aviso.title);
+    } catch {
+      // Sin conexión: se reintenta en la próxima vuelta.
+    }
+  }
+  panelListo().then(() => {
+    actualizarAvisos();
+    setInterval(actualizarAvisos, 60_000);
+    document.addEventListener('visibilitychange', actualizarAvisos);
+    // Las páginas lo piden tras cambiar un estado.
+    document.addEventListener('avisos:actualizar', actualizarAvisos);
+  });
 
   // ---------- Menú móvil ----------
   const movil = window.matchMedia('(max-width: 960px)');

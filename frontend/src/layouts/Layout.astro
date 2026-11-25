@@ -6,7 +6,7 @@ import { Image } from 'astro:assets';
 import Header from '../components/Header.astro';
 import Icono from '../components/Icono.astro';
 import Lightbox from '../components/Lightbox.astro';
-import ChatWidget from '../components/ChatWidget.tsx';
+import WhatsAppCotizar from '../components/WhatsAppCotizar.tsx';
 import { logoBlanco } from '../lib/imagenes';
 import { NAV_LINKS } from '../lib/navegacion';
 
@@ -124,7 +124,7 @@ const CONTACTO = {
     </div>
 
     <Lightbox />
-    <ChatWidget client:idle transition:persist="chat" />
+    <WhatsAppCotizar client:idle transition:persist="whatsapp" />
 
     <style>
       .saltar {
@@ -225,7 +225,7 @@ const CONTACTO = {
       }
       @media (max-width: 600px) {
         .footer__grid { grid-template-columns: 1fr; }
-        /* Espacio para el botón flotante del chat */
+        /* Espacio para el botón flotante de WhatsApp */
         .footer__base-inner { padding-bottom: 5.5rem; }
       }
     </style>

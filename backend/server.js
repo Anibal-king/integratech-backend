@@ -16,6 +16,7 @@ const marcasRoutes = require('./routes/marcas');
 const legalRoutes = require('./routes/legal');
 const contactoRoutes = require('./routes/contacto');
 const leadChatbotRoutes = require('./routes/lead-chatbot');
+const cotizacionesRoutes = require('./routes/cotizaciones');
 const adminRoutes = require('./routes/admin');
 
 // db/index.js ya abrió (y por tanto creó) el archivo: se decide por el contenido.
@@ -34,7 +35,7 @@ app.disable('x-powered-by');
 if (config.TRUST_PROXY) app.set('trust proxy', config.TRUST_PROXY);
 app.use(securityHeaders);
 
-// CORS: lo usan los POST del navegador (formulario y chatbot) y el panel de administración,
+// CORS: lo usan los POST del navegador (formulario de contacto y de cotización) y el panel de administración,
 // que envía la cookie de sesión (credentials). Los GET públicos los hace Astro en el servidor.
 // Con credentials solo se reflejan los orígenes de la lista, nunca "*".
 if (config.CORS_ORIGINS.length === 0) {
@@ -85,6 +86,7 @@ app.use('/api/marcas', marcasRoutes);
 app.use('/api/legal', legalRoutes);
 app.use('/api/contacto', contactoRoutes);
 app.use('/api/lead-chatbot', leadChatbotRoutes);
+app.use('/api/cotizaciones', cotizacionesRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
@@ -102,10 +104,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-app.listen(config.PORT, () => {
-  console.log(`🚀 API de SIIE corriendo en http://localhost:${config.PORT}`);
-  console.log(`   Base de datos: ${DB_PATH}`);
-  console.log(`   Fotos subidas: ${config.UPLOADS_DIR}`);
-  console.log(`   CORS: ${config.CORS_ORIGINS.join(', ') || '(ninguno)'}`);
-  console.log(`   Prueba: http://localhost:${config.PORT}/api/health`);
-});
+module.exports = app;
+
+// Los tests importan la app sin abrir el puerto.
+if (require.main === module) {
+  app.listen(config.PORT, () => {
+    console.log(`🚀 API de SIIE corriendo en http://localhost:${config.PORT}`);
+    console.log(`   Base de datos: ${DB_PATH}`);
+    console.log(`   Fotos subidas: ${config.UPLOADS_DIR}`);
+    console.log(`   CORS: ${config.CORS_ORIGINS.join(', ') || '(ninguno)'}`);
+    console.log(`   Prueba: http://localhost:${config.PORT}/api/health`);
+  });
+}

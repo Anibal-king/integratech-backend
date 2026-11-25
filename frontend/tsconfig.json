@@ -5,7 +5,9 @@
     "**/*"
   ],
   "exclude": [
-    "dist"
+    "dist",
+    // Los tests corren con node --test (tipos de Node, que el frontend no instala)
+    "src/**/*.test.ts"
   ],
   "compilerOptions": {
     "jsx": "react-jsx",

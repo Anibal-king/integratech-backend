@@ -8,6 +8,11 @@
  */
 import type {
   AdminUsuario,
+  AvisosAdmin,
+  CambioEstado,
+  CanalSolicitud,
+  ConversacionCotizacion,
+  SubidaConversacion,
   EstadisticasAdmin,
   EstadoSolicitud,
   OrigenSolicitud,
@@ -24,6 +29,11 @@ import type {
 } from '../../../shared/api-types';
 
 export type {
+  AvisosAdmin,
+  CambioEstado,
+  CanalSolicitud,
+  ConversacionCotizacion,
+  SubidaConversacion,
   Cita,
   CitaDatos,
   CitasProximas,
@@ -153,6 +163,28 @@ export const admin = {
 
   actualizarSolicitud: (origen: OrigenSolicitud, id: number, cambios: SolicitudCambios) =>
     protegido<SolicitudAdmin>(`/api/admin/solicitudes/${origen}/${id}`, json('PATCH', cambios)),
+
+  /** Contador de cotizaciones de WhatsApp nuevas (barra lateral). */
+  avisos: () => protegido<AvisosAdmin>('/api/admin/avisos'),
+
+  // ---------- Cotizaciones: conversación de WhatsApp e historial ----------
+  conversacion: (ticket: number) => protegido<ConversacionCotizacion>(`/api/admin/cotizaciones/${ticket}/conversacion`),
+  /** Sube un chat exportado (.txt o .zip). Solo se agregan los mensajes que no estaban. */
+  subirConversacion(ticket: number, archivo: File) {
+    const fd = new FormData();
+    fd.append('archivo', archivo);
+    return protegido<SubidaConversacion>(`/api/admin/cotizaciones/${ticket}/conversacion`, { method: 'POST', body: fd });
+  },
+  elegirAutorIntegraTech: (ticket: number, autor: string) =>
+    protegido<ConversacionCotizacion>(`/api/admin/cotizaciones/${ticket}/autor`, json('PUT', { autor })),
+  historial: (ticket: number) => protegido<CambioEstado[]>(`/api/admin/cotizaciones/${ticket}/historial`),
+  /** Descarga la conversación en .txt (con la sesión: no sirve un enlace directo). */
+  async descargarConversacion(ticket: number): Promise<Blob> {
+    const res = await pedir(`/api/admin/cotizaciones/${ticket}/conversacion/descarga`);
+    if (res.status === 401) irAlLogin();
+    if (!res.ok) throw new AdminError(res.status, await mensajeDe(res, `Error ${res.status}`));
+    return res.blob();
+  },
 
   // ---------- Servicios ----------
   servicios: () => protegido<ServicioAdmin[]>('/api/admin/servicios'),

@@ -66,6 +66,7 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     <Vista id="detalle" cargando="Cargando solicitud…" vacio="Esta solicitud ya no existe.">
       <div class="detalle__body">
         <p class="detalle__meta">
+          <strong class="detalle__ticket" data-d="ticket" hidden></strong>
           <span data-d="origen"></span>
           <span data-d="estado"></span>
           <span class="detalle__fecha" data-d="fecha"></span>
@@ -74,7 +75,7 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
         <div class="responder" data-responder>
           <a class="btn btn--primary btn--sm" data-r="correo" hidden><Icono nombre="correo" tamano={16} />Correo</a>
           <a class="btn btn--secondary btn--sm" data-r="telefono" hidden><Icono nombre="telefono" tamano={16} />Llamar</a>
-          <a class="btn btn--secondary btn--sm" data-r="whatsapp" target="_blank" rel="noopener noreferrer" hidden><Icono nombre="whatsapp" tamano={16} />WhatsApp</a>
+          <a class="btn btn--secondary btn--sm" data-r="whatsapp" target="_blank" rel="noopener noreferrer" hidden><Icono nombre="whatsapp" tamano={16} /><span data-r-texto>WhatsApp</span></a>
           <p class="responder__nada" data-r="nada" hidden>No dejó correo ni teléfono.</p>
           <a class="btn btn--secondary btn--sm responder__agendar" data-agendar><Icono nombre="calendario" tamano={16} />Agendar cita</a>
         </div>
@@ -89,10 +90,11 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
           <h3>Mensaje</h3>
           <p class="detalle__mensaje" data-d="mensaje"></p>
           <dl class="datos datos--chatbot" data-d="chatbot" hidden>
-            <div><dt>Servicio</dt><dd data-d="tipo_servicio"></dd></div>
-            <div><dt>Alcance</dt><dd data-d="alcance"></dd></div>
-            <div><dt>Ubicación</dt><dd data-d="ubicacion"></dd></div>
-            <div><dt>Plazo</dt><dd data-d="plazo"></dd></div>
+            <div><dt data-l="tipo_servicio">Servicio</dt><dd data-d="tipo_servicio"></dd></div>
+            <div><dt data-l="alcance">Alcance</dt><dd class="datos__largo" data-d="alcance"></dd></div>
+            <div data-fila="ubicacion"><dt>Ubicación</dt><dd data-d="ubicacion"></dd></div>
+            <div><dt data-l="plazo">Plazo</dt><dd data-d="plazo"></dd></div>
+            <div data-fila="presupuesto"><dt>Presupuesto</dt><dd data-d="presupuesto"></dd></div>
           </dl>
         </section>
 
@@ -113,7 +115,42 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
             <p class="seguimiento__estado" data-guardado role="status"></p>
           </div>
           <p class="detalle__actualizado" data-d="actualizado"></p>
+          <details class="historial" data-historial hidden>
+            <summary>Historial de estados</summary>
+            <ol data-historial-lista></ol>
+          </details>
         </form>
+
+        <!-- Conversación de WhatsApp exportada (solo cotizaciones) -->
+        <section class="detalle__seccion conv" data-conversacion aria-labelledby="conv-titulo" hidden>
+          <div class="conv__cabecera">
+            <h3 id="conv-titulo">Conversación</h3>
+            <button type="button" class="btn btn--secondary btn--sm" data-conv-descargar hidden>
+              <Icono nombre="descargar" tamano={16} />Descargar conversación
+            </button>
+          </div>
+          <p class="conv__ayuda">
+            Al terminar, exporta el chat desde WhatsApp Business («Exportar chat» → «Sin archivos») y súbelo aquí:
+            .txt o .zip, máx. 10 MB. Si subes otra exportación del mismo chat, solo se agregan los mensajes nuevos.
+          </p>
+          <form class="conv__subir" data-conv-subir>
+            <label>
+              <span class="sr-only">Archivo del chat</span>
+              <input type="file" name="archivo" accept=".txt,.zip,text/plain,application/zip" required />
+            </label>
+            <button type="submit" class="btn btn--primary btn--sm">Subir chat</button>
+          </form>
+          <p class="conv__estado" data-conv-estado role="status"></p>
+          <form class="conv__autor" data-conv-autor hidden>
+            <label>
+              ¿Cuál autor del chat es IntegraTech?
+              <select name="autor" required></select>
+            </label>
+            <button type="submit" class="btn btn--primary btn--sm">Guardar</button>
+          </form>
+          <ol class="conv__mensajes" data-conv-mensajes aria-label="Mensajes de la conversación"></ol>
+          <p class="conv__archivos" data-conv-archivos></p>
+        </section>
       </div>
     </Vista>
   </dialog>
@@ -177,7 +214,7 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
   /* ---------- Detalle (panel lateral) ---------- */
   .detalle {
     margin: 0 0 0 auto;
-    width: min(520px, 100vw);
+    width: min(600px, 100vw);
     max-width: 100vw;
     height: 100vh;
     max-height: 100vh;
@@ -248,6 +285,84 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
   .seguimiento__estado.is-error { color: var(--danger-text); }
   .detalle__actualizado { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
 
+  .tabla :global(.c-nombre .ticket) { color: var(--text-muted); font-weight: 600; margin-right: 0.3rem; }
+  .detalle__ticket { font-size: 0.95rem; color: var(--heading); }
+  .datos__largo { white-space: pre-wrap; }
+
+  .conv__archivos :global(.conv__cambiar-autor) {
+    background: none; border: 0; padding: 0; font: inherit; color: var(--link, var(--color-brand-blue));
+    text-decoration: underline; cursor: pointer; margin-left: 0.35rem;
+  }
+  .historial summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+  .historial ol { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.85rem; display: grid; gap: 0.3rem; }
+
+  /* ---------- Conversación ---------- */
+  .conv { display: flex; flex-direction: column; gap: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .conv__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+  .conv__cabecera h3 { margin: 0; }
+  .conv__ayuda, .conv__archivos { margin: 0; font-size: 0.82rem; color: var(--text-muted); }
+  .conv__subir, .conv__autor { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem; }
+  .conv__subir label { flex: 1 1 220px; }
+  .conv__subir input[type='file'] { width: 100%; font-size: 0.85rem; }
+  .conv__autor label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; font-weight: 600; flex: 1 1 220px; }
+  .conv__autor { padding: 0.75rem; border-radius: var(--radius); background: color-mix(in srgb, #25d366 12%, var(--surface-card)); }
+  .conv__estado { margin: 0; font-size: 0.85rem; white-space: pre-line; }
+  .conv__estado:empty { display: none; }
+  .conv__estado.is-error { color: var(--danger-text); }
+  .conv__mensajes {
+    list-style: none;
+    margin: 0;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 60vh;
+    overflow-y: auto;
+    border-radius: var(--radius);
+    background: var(--surface-muted);
+  }
+  .conv__mensajes:empty { display: none; }
+  .conv__mensajes :global(.burbuja) {
+    max-width: 85%;
+    padding: 0.45rem 0.7rem 0.3rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    align-self: flex-start;
+    border-bottom-left-radius: 3px;
+  }
+  .conv__mensajes :global(.burbuja--integratech) {
+    align-self: flex-end;
+    background: color-mix(in srgb, #25d366 18%, var(--surface-card));
+    border-color: color-mix(in srgb, #25d366 40%, var(--border));
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 3px;
+  }
+  .conv__mensajes :global(.burbuja--sistema) {
+    align-self: center;
+    max-width: 92%;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    background: transparent;
+    border: 0;
+  }
+  .conv__mensajes :global(.burbuja__autor) { display: block; font-size: 0.75rem; font-weight: 700; color: var(--heading); }
+  .conv__mensajes :global(.burbuja__texto) { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .conv__mensajes :global(.burbuja__hora) { display: block; text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; }
+  .conv__mensajes :global(.conv__dia) {
+    align-self: center;
+    margin: 0.4rem 0 0.1rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--surface-card);
+  }
+
   /* ---------- Móvil ---------- */
   @media (max-width: 760px) {
     .filtros select { flex: 1 1 140px; min-width: 0; }
@@ -269,11 +384,20 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     .tabla :global(.c-fecha) { order: 4; flex-basis: 100%; font-size: 0.8rem; }
     .tabla :global(.c-chips) { order: 5; }
     .datos div { grid-template-columns: 90px 1fr; }
+    .conv__mensajes { max-height: none; }
+    .conv__mensajes :global(.burbuja) { max-width: 92%; }
   }
 </style>
 
 <script>
-  import { admin, type EstadoSolicitud, type OrigenSolicitud, type SolicitudAdmin } from '../../lib/admin';
+  import {
+    admin,
+    AdminError,
+    type ConversacionCotizacion,
+    type EstadoSolicitud,
+    type OrigenSolicitud,
+    type SolicitudAdmin,
+  } from '../../lib/admin';
   import {
     panelListo,
     vista,
@@ -288,7 +412,9 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     enlaceCorreo,
     enlaceTelefono,
     enlaceWhatsApp,
+    etiquetaEstado,
   } from '../../lib/admin-ui';
+  import { enlaceWa } from '../../lib/whatsapp';
 
   const POR_PAGINA = 20;
   const $ = <T extends HTMLElement>(sel: string, raiz: ParentNode = document) => raiz.querySelector<T>(sel)!;
@@ -346,6 +472,18 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
   function fila(s: SolicitudAdmin) {
     const tr = document.createElement('tr');
     if (s.estado === 'nuevo') tr.className = 'is-nuevo';
+    const nombre = texto('strong', s.nombre);
+    if (s.origen === 'chatbot') {
+      const n = texto('span', `#${s.id}`);
+      n.className = 'ticket';
+      nombre.prepend(n);
+    }
+    // Marca visible: cotización de WhatsApp que nadie ha atendido.
+    if (s.canal === 'whatsapp' && s.estado === 'nuevo') {
+      const marca = texto('span', 'Nueva');
+      marca.className = 'marca-nueva';
+      nombre.append(marca);
+    }
     const contacto = [s.correo && texto('span', s.correo), s.telefono && texto('small', s.telefono)].filter(Boolean) as Node[];
     const ver = document.createElement('button');
     ver.type = 'button';
@@ -355,9 +493,9 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     ver.addEventListener('click', () => abrirDetalle(s.origen, s.id, ver));
     tr.append(
       td('c-fecha', fechaCorta(s.fecha_creacion)),
-      td('c-nombre', texto('strong', s.nombre), ...(s.empresa ? [texto('small', s.empresa)] : [])),
+      td('c-nombre', nombre, ...(s.empresa ? [texto('small', s.empresa)] : [])),
       td('c-contacto', ...(contacto.length ? contacto : ['—'])),
-      td('c-chips c-origen', chipOrigen(s.origen)),
+      td('c-chips c-origen', chipOrigen(s.canal)),
       td('c-chips c-estado', chipEstado(s.estado)),
       td('c-accion', ver)
     );
@@ -378,7 +516,7 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
         return cargarLista({ silencioso });
       }
       if (r.total === 0) {
-        vista(vistaLista, 'vacio', hayFiltros() ? 'No hay solicitudes que coincidan con la búsqueda o los filtros.' : 'Aún no hay solicitudes. Las del formulario de contacto y el chatbot aparecerán aquí.');
+        vista(vistaLista, 'vacio', hayFiltros() ? 'No hay solicitudes que coincidan con la búsqueda o los filtros.' : 'Aún no hay solicitudes. Las del formulario de contacto y las cotizaciones por WhatsApp aparecerán aquí.');
         return;
       }
       filas.replaceChildren(...r.items.map(fila));
@@ -445,7 +583,10 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
   function pintarDetalle(s: SolicitudAdmin) {
     actual = s;
     poner('nombre', s.nombre);
-    $('[data-d="origen"]', dialogo).replaceChildren(chipOrigen(s.origen));
+    const ticket = $('[data-d="ticket"]', dialogo);
+    ticket.hidden = s.origen !== 'chatbot';
+    ticket.textContent = `Cotización #${s.id}`;
+    $('[data-d="origen"]', dialogo).replaceChildren(chipOrigen(s.canal));
     $('[data-d="estado"]', dialogo).replaceChildren(chipEstado(s.estado));
     poner('fecha', `Recibida el ${fechaHora(s.fecha_creacion)}`);
     poner('empresa', s.empresa);
@@ -454,7 +595,12 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
 
     enlace('correo', s.correo ? enlaceCorreo(s.correo, s.nombre) : null);
     enlace('telefono', s.telefono ? enlaceTelefono(s.telefono) : null);
-    enlace('whatsapp', s.telefono ? enlaceWhatsApp(s.telefono, s.nombre) : null);
+    // Cotización de WhatsApp: abre el chat con el cliente (sin mensaje; la conversación ya existe).
+    const esWa = s.canal === 'whatsapp';
+    enlace('whatsapp', s.telefono ? (esWa ? enlaceWa(s.telefono) : enlaceWhatsApp(s.telefono, s.nombre)) : null);
+    $('[data-r-texto]', dialogo).textContent = esWa ? 'Abrir chat con el cliente' : 'WhatsApp';
+    $('[data-r="whatsapp"]', dialogo).classList.toggle('btn--primary', esWa);
+    $('[data-r="whatsapp"]', dialogo).classList.toggle('btn--secondary', !esWa);
     $('[data-r="nada"]', dialogo).hidden = Boolean(s.correo || s.telefono);
     // Abre el calendario con el formulario de cita ya lleno con los datos del cliente.
     $<HTMLAnchorElement>('[data-agendar]', dialogo).href = `/admin/calendario?solicitud=${claveSolicitud(s.origen, s.id)}`;
@@ -463,10 +609,17 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     $('[data-d="mensaje"]', dialogo).hidden = esChatbot;
     $('[data-d="chatbot"]', dialogo).hidden = !esChatbot;
     if (esChatbot) {
-      poner('tipo_servicio', s.chatbot!.tipo_servicio);
-      poner('alcance', s.chatbot!.alcance);
-      poner('ubicacion', s.chatbot!.ubicacion);
-      poner('plazo', s.chatbot!.plazo);
+      const c = s.chatbot!;
+      $('[data-l="tipo_servicio"]', dialogo).textContent = esWa ? 'Proyecto' : 'Servicio';
+      $('[data-l="alcance"]', dialogo).textContent = esWa ? 'Descripción' : 'Alcance';
+      $('[data-l="plazo"]', dialogo).textContent = esWa ? 'Fecha deseada' : 'Plazo';
+      $('[data-fila="ubicacion"]', dialogo).hidden = esWa && !c.ubicacion;
+      $('[data-fila="presupuesto"]', dialogo).hidden = !esWa && !c.presupuesto;
+      poner('tipo_servicio', c.tipo_servicio);
+      poner('alcance', c.alcance);
+      poner('ubicacion', c.ubicacion);
+      poner('plazo', c.plazo);
+      poner('presupuesto', c.presupuesto);
     } else {
       poner('mensaje', s.mensaje);
     }
@@ -478,6 +631,197 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     guardado.classList.remove('is-error');
   }
 
+  // ---------- Historial y conversación (solo cotizaciones) ----------
+
+  const secHistorial = $<HTMLDetailsElement>('[data-historial]');
+  const secConv = $('[data-conversacion]');
+  const convEstado = $('[data-conv-estado]');
+  const convLista = $('[data-conv-mensajes]');
+  const formSubir = $<HTMLFormElement>('[data-conv-subir]');
+  const formAutor = $<HTMLFormElement>('[data-conv-autor]');
+  const btnDescargar = $<HTMLButtonElement>('[data-conv-descargar]');
+
+  /** fecha_hora del chat ('YYYY-MM-DD HH:MM:SS', hora del teléfono): se formatea sin zona. */
+  const comoUTC = (s: string) => new Date(`${s.replace(' ', 'T')}Z`);
+  const fmtDia = new Intl.DateTimeFormat('es-SV', { dateStyle: 'full', timeZone: 'UTC' });
+  const fmtHoraChat = new Intl.DateTimeFormat('es-SV', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
+
+  function mostrarEstadoConv(msg: string, error = false) {
+    convEstado.textContent = msg;
+    convEstado.classList.toggle('is-error', error);
+  }
+
+  /** Burbujas: cliente a la izquierda, IntegraTech a la derecha, sistema al centro. Todo con textContent. */
+  function pintarConversacion(c: ConversacionCotizacion) {
+    const items: HTMLElement[] = [];
+    let diaAnterior = '';
+    for (const m of c.mensajes) {
+      const dia = m.fecha_hora.slice(0, 10);
+      if (dia !== diaAnterior) {
+        diaAnterior = dia;
+        const sep = document.createElement('li');
+        sep.className = 'conv__dia';
+        sep.textContent = fmtDia.format(comoUTC(m.fecha_hora));
+        items.push(sep);
+      }
+      const li = document.createElement('li');
+      const tipo = m.autor === null ? 'sistema' : m.autor === c.autor_integratech ? 'integratech' : 'cliente';
+      li.className = `burbuja burbuja--${tipo}`;
+      if (m.autor) {
+        const a = document.createElement('span');
+        a.className = 'burbuja__autor';
+        a.textContent = m.autor;
+        li.append(a);
+      }
+      const p = document.createElement('p');
+      p.className = 'burbuja__texto';
+      p.textContent = m.texto;
+      const t = document.createElement('time');
+      t.className = 'burbuja__hora';
+      t.dateTime = m.fecha_hora.replace(' ', 'T');
+      t.textContent = `${m.fecha_hora.slice(8, 10)}/${m.fecha_hora.slice(5, 7)}/${m.fecha_hora.slice(0, 4)} · ${fmtHoraChat.format(comoUTC(m.fecha_hora))}`;
+      li.append(p, t);
+      items.push(li);
+    }
+    convLista.replaceChildren(...items);
+    btnDescargar.hidden = c.mensajes.length === 0;
+
+    // Selector de autor: obligatorio mientras no se haya elegido uno válido.
+    const select = formAutor.elements.namedItem('autor') as HTMLSelectElement;
+    const opciones = c.autores.map((a) => {
+      const o = document.createElement('option');
+      o.value = o.textContent = a;
+      return o;
+    });
+    const vacia = document.createElement('option');
+    vacia.value = '';
+    vacia.textContent = 'Elige un autor…';
+    select.replaceChildren(vacia, ...opciones);
+    const valido = c.autor_integratech !== null && c.autores.includes(c.autor_integratech);
+    select.value = valido ? c.autor_integratech! : '';
+    formAutor.hidden = c.autores.length === 0 || valido;
+    // Cambiar el autor después: el mismo formulario, desde el pie.
+    const a = c.archivos[0];
+    $('[data-conv-archivos]').textContent = a
+      ? `${c.archivos.length} ${c.archivos.length === 1 ? 'exportación subida' : 'exportaciones subidas'}; la última: «${a.nombre_original}» el ${fechaHora(a.fecha)}${a.tenia_multimedia ? ' (traía multimedia: solo se guardó el texto)' : ''}.`
+      : 'Aún no se ha subido la conversación.';
+    if (valido) {
+      const cambiar = document.createElement('button');
+      cambiar.type = 'button';
+      cambiar.className = 'conv__cambiar-autor';
+      cambiar.textContent = `IntegraTech = ${c.autor_integratech} (cambiar)`;
+      cambiar.addEventListener('click', () => {
+        formAutor.hidden = false;
+        select.focus();
+      });
+      $('[data-conv-archivos]').append(cambiar);
+    }
+  }
+
+  function pintarHistorial(h: import('../../lib/admin').CambioEstado[]) {
+    secHistorial.hidden = h.length === 0;
+    $('[data-historial-lista]').replaceChildren(
+      ...h.map((c) => {
+        const li = document.createElement('li');
+        li.textContent = `${fechaHora(c.fecha)} · ${c.admin_correo ?? 'usuario eliminado'}: ${c.estado_anterior ? etiquetaEstado(c.estado_anterior) : '—'} → ${etiquetaEstado(c.estado_nuevo)}`;
+        return li;
+      })
+    );
+  }
+
+  async function cargarExtrasCotizacion(id: number) {
+    try {
+      const [conv, hist] = await Promise.all([admin.conversacion(id), admin.historial(id)]);
+      if (actual?.origen !== 'chatbot' || actual.id !== id) return; // se abrió otra mientras tanto
+      pintarConversacion(conv);
+      pintarHistorial(hist);
+    } catch (err) {
+      if (!esSesionExpirada(err)) mostrarEstadoConv(mensajeError(err, 'No se pudo cargar la conversación.'), true);
+    }
+  }
+
+  function prepararExtras(s: SolicitudAdmin) {
+    const esCotizacion = s.origen === 'chatbot';
+    secConv.hidden = !esCotizacion;
+    secHistorial.hidden = true;
+    secHistorial.open = false;
+    convLista.replaceChildren();
+    mostrarEstadoConv('');
+    formSubir.reset();
+    formAutor.hidden = true;
+    btnDescargar.hidden = true;
+    $('[data-conv-archivos]').textContent = '';
+    if (esCotizacion) cargarExtrasCotizacion(s.id);
+  }
+
+  formSubir.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!actual) return;
+    const input = formSubir.elements.namedItem('archivo') as HTMLInputElement;
+    const archivo = input.files?.[0];
+    if (!archivo) return mostrarEstadoConv('Elige el archivo .txt o .zip exportado de WhatsApp.', true);
+    if (!/\.(txt|zip)$/i.test(archivo.name)) return mostrarEstadoConv('Solo se aceptan archivos .txt o .zip.', true);
+    if (archivo.size > 10 * 1024 * 1024) return mostrarEstadoConv('El archivo supera los 10 MB.', true);
+    const boton = formSubir.querySelector<HTMLButtonElement>('button')!;
+    boton.disabled = true;
+    mostrarEstadoConv('Subiendo y leyendo el chat…');
+    try {
+      const r = await admin.subirConversacion(actual.id, archivo);
+      const lineas = [
+        r.mensajes_nuevos === 0
+          ? `Se leyeron ${r.mensajes_leidos} mensajes; ninguno es nuevo (ya estaban guardados).`
+          : `Se leyeron ${r.mensajes_leidos} mensajes; ${r.mensajes_nuevos} nuevo${r.mensajes_nuevos === 1 ? '' : 's'} guardado${r.mensajes_nuevos === 1 ? '' : 's'}.`,
+      ];
+      if (r.lineas_no_reconocidas > 0) {
+        lineas.push(`${r.lineas_no_reconocidas} línea${r.lineas_no_reconocidas === 1 ? '' : 's'} no se reconoci${r.lineas_no_reconocidas === 1 ? 'ó' : 'eron'}: se pegaron al mensaje anterior.`);
+      }
+      if (r.tenia_multimedia) lineas.push('El chat traía multimedia: por ahora solo se guarda el texto.');
+      if (r.necesita_autor) lineas.push('Ahora elige cuál autor es IntegraTech.');
+      mostrarEstadoConv(lineas.join('\n'));
+      formSubir.reset();
+      pintarConversacion(r.conversacion);
+      if (r.necesita_autor) (formAutor.elements.namedItem('autor') as HTMLSelectElement).focus();
+    } catch (err) {
+      if (esSesionExpirada(err)) return;
+      mostrarEstadoConv(err instanceof AdminError && err.status >= 400 && err.status < 500 ? err.message : mensajeError(err, 'No se pudo subir el chat.'), true);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  formAutor.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!actual) return;
+    const autor = (formAutor.elements.namedItem('autor') as HTMLSelectElement).value;
+    if (!autor) return;
+    try {
+      pintarConversacion(await admin.elegirAutorIntegraTech(actual.id, autor));
+      mostrarEstadoConv(`Listo: «${autor}» es IntegraTech.`);
+    } catch (err) {
+      if (!esSesionExpirada(err)) mostrarEstadoConv(mensajeError(err, 'No se pudo guardar el autor.'), true);
+    }
+  });
+
+  btnDescargar.addEventListener('click', async () => {
+    if (!actual) return;
+    btnDescargar.disabled = true;
+    try {
+      const blob = await admin.descargarConversacion(actual.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cotizacion-${actual.id}.txt`;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      if (!esSesionExpirada(err)) mostrarEstadoConv(mensajeError(err, 'No se pudo descargar la conversación.'), true);
+    } finally {
+      btnDescargar.disabled = false;
+    }
+  });
+
   async function abrirDetalle(origen: OrigenSolicitud, id: number, desde?: HTMLElement) {
     origenFoco = desde ?? null;
     abierta = { origen, id };
@@ -486,7 +830,9 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     if (!dialogo.open) dialogo.showModal();
     vista(vistaDetalle, 'cargando');
     try {
-      pintarDetalle(await admin.solicitud(origen, id));
+      const s = await admin.solicitud(origen, id);
+      pintarDetalle(s);
+      prepararExtras(s);
       vista(vistaDetalle, 'listo');
     } catch (err) {
       if (esSesionExpirada(err)) return;
@@ -543,6 +889,8 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
       pintarDetalle(nuevo);
       guardado.textContent = 'Cambios guardados.';
       cargarLista({ silencioso: true });
+      document.dispatchEvent(new Event('avisos:actualizar'));
+      if (nuevo.origen === 'chatbot') admin.historial(nuevo.id).then(pintarHistorial).catch(() => {});
     } catch (err) {
       if (esSesionExpirada(err)) return;
       guardado.classList.add('is-error');

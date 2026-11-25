@@ -28,6 +28,9 @@ const COLUMNAS_NUEVAS = {
     estado: `TEXT NOT NULL DEFAULT 'nuevo' CHECK (estado IN (${ESTADOS_SOLICITUD.map((e) => `'${e}'`).join(', ')}))`,
     notas: 'TEXT',
     fecha_actualizacion: 'TEXT',
+    // Cotizaciones por WhatsApp (sin API)
+    presupuesto: 'TEXT',
+    autor_integratech: 'TEXT',
   },
   categorias_servicios: {
     descripcion_larga: 'TEXT',

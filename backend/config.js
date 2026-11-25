@@ -27,6 +27,14 @@ const UPLOADS_DIR = process.env.UPLOADS_DIR
   ? path.resolve(__dirname, process.env.UPLOADS_DIR)
   : path.join(__dirname, 'storage', 'uploads');
 
+/**
+ * Chats de WhatsApp exportados que se suben a las cotizaciones (originales).
+ * Privados: fuera de UPLOADS_DIR, que se sirve en /media. Respaldar con la base.
+ */
+const CONVERSACIONES_DIR = process.env.CONVERSACIONES_DIR
+  ? path.resolve(__dirname, process.env.CONVERSACIONES_DIR)
+  : path.join(__dirname, 'storage', 'conversaciones');
+
 /** Orígenes permitidos por CORS (lista separada por comas). */
 const DEV_ORIGINS = ['http://localhost:4321', 'http://127.0.0.1:4321'];
 const CORS_ORIGINS = (process.env.CORS_ORIGIN ?? '')
@@ -41,5 +49,8 @@ module.exports = {
   PORT: Number(process.env.PORT) || 3000,
   DATABASE_PATH,
   UPLOADS_DIR,
+  CONVERSACIONES_DIR,
+  /** Correo del encargado de cotizaciones (si está vacío se usa MAIL_TO_LEADS). */
+  MAIL_TO_COTIZACIONES: (process.env.MAIL_TO_COTIZACIONES ?? '').trim(),
   CORS_ORIGINS: CORS_ORIGINS.length > 0 ? CORS_ORIGINS : isProduction ? [] : DEV_ORIGINS,
 };

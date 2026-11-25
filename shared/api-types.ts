@@ -139,14 +139,18 @@ export interface AdminUsuario {
 /** Estados de seguimiento de una solicitud, en orden. */
 export type EstadoSolicitud = 'nuevo' | 'contactado' | 'cotizado' | 'cerrado' | 'descartado';
 
-/** De dónde llegó la solicitud. */
+/** Tabla de la solicitud: formulario de contacto o cotización (chatbot anterior / WhatsApp). */
 export type OrigenSolicitud = 'formulario' | 'chatbot';
+
+/** Por dónde llegó: formulario, chatbot web anterior o botón de WhatsApp. */
+export type CanalSolicitud = 'formulario' | 'chatbot' | 'whatsapp';
 
 /** Solicitud unificada (formulario o chatbot) de /api/admin/solicitudes. */
 export interface SolicitudAdmin {
   origen: OrigenSolicitud;
-  /** id dentro de su origen: la clave única es origen + id. */
+  /** id dentro de su origen: la clave única es origen + id. En cotizaciones es el número de ticket. */
   id: number;
+  canal: CanalSolicitud;
   nombre: string;
   empresa: string | null;
   correo: string | null;
@@ -158,7 +162,9 @@ export interface SolicitudAdmin {
     tipo_servicio: string | null;
     alcance: string | null;
     ubicacion: string | null;
+    /** En WhatsApp: fecha deseada 'YYYY-MM-DD'. */
     plazo: string | null;
+    presupuesto: string | null;
   } | null;
   estado: EstadoSolicitud;
   notas: string | null;
@@ -181,6 +187,12 @@ export interface SolicitudesPagina {
 export interface SolicitudCambios {
   estado?: EstadoSolicitud;
   notas?: string | null;
+}
+
+/** GET /api/admin/avisos */
+export interface AvisosAdmin {
+  /** Cotizaciones de WhatsApp en estado 'nuevo'. */
+  cotizaciones_nuevas: number;
 }
 
 /** GET /api/admin/estadisticas (meses en hora de El Salvador). */
@@ -278,12 +290,89 @@ export interface LeadChatbot {
   correo: string | null;
   telefono: string | null;
   origen: 'chatbot' | 'whatsapp';
+  presupuesto: string | null;
+  autor_integratech: string | null;
   correo_enviado: 0 | 1;
   /** UTC, formato 'YYYY-MM-DD HH:MM:SS'. */
   fecha_creacion: string;
   estado: EstadoSolicitud;
   notas: string | null;
   fecha_actualizacion: string | null;
+}
+
+// ---------- Cotizaciones por WhatsApp (sin API) ----------
+
+/** POST /api/cotizaciones (formulario público del botón de WhatsApp). */
+export interface CotizacionPayload {
+  nombre: string;
+  /** Con código de país; se aceptan +, espacios y guiones. 8 dígitos = El Salvador (503). */
+  whatsapp: string;
+  tipo_proyecto?: string;
+  descripcion: string;
+  presupuesto?: string;
+  /** 'YYYY-MM-DD' */
+  fecha_deseada?: string;
+  /** Campo trampa: siempre vacío. */
+  sitio_web?: string;
+}
+
+/** 201 de POST /api/cotizaciones: solo el número de ticket. */
+export interface CotizacionRespuesta {
+  ticket: number;
+}
+
+/** Mensaje de un chat exportado. fecha_hora = hora del teléfono que exportó. */
+export interface MensajeCotizacion {
+  id: number;
+  /** 'YYYY-MM-DD HH:MM:SS' */
+  fecha_hora: string;
+  /** null = mensaje del sistema. */
+  autor: string | null;
+  texto: string;
+}
+
+/** Archivo de chat subido a una cotización. */
+export interface ArchivoConversacion {
+  id: number;
+  nombre_original: string;
+  bytes: number;
+  tenia_multimedia: boolean;
+  lineas_no_reconocidas: number;
+  mensajes_leidos: number;
+  mensajes_nuevos: number;
+  /** UTC */
+  fecha: string;
+}
+
+/** GET /api/admin/cotizaciones/:id/conversacion */
+export interface ConversacionCotizacion {
+  /** Autor del chat que es IntegraTech (null = aún no se eligió). */
+  autor_integratech: string | null;
+  autores: string[];
+  mensajes: MensajeCotizacion[];
+  /** Más reciente primero. */
+  archivos: ArchivoConversacion[];
+}
+
+/** 201 de POST /api/admin/cotizaciones/:id/conversacion */
+export interface SubidaConversacion {
+  mensajes_leidos: number;
+  /** Los que no estaban (una exportación repetida da 0). */
+  mensajes_nuevos: number;
+  lineas_no_reconocidas: number;
+  tenia_multimedia: boolean;
+  /** true si hay que elegir cuál autor es IntegraTech. */
+  necesita_autor: boolean;
+  conversacion: ConversacionCotizacion;
+}
+
+/** GET /api/admin/cotizaciones/:id/historial (más reciente primero). */
+export interface CambioEstado {
+  estado_anterior: EstadoSolicitud | null;
+  estado_nuevo: EstadoSolicitud;
+  admin_correo: string | null;
+  /** UTC */
+  fecha: string;
 }
 
 export interface ApiError {

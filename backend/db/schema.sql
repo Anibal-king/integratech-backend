@@ -143,7 +143,8 @@ CREATE TABLE IF NOT EXISTS mensajes_contacto (
   fecha_actualizacion TEXT              -- último cambio de estado o notas
 );
 
--- Leads capturados por el chatbot de cotización del sitio web
+-- Cotizaciones (tickets). El número de ticket que ve el cliente es el id.
+-- origen = canal: 'chatbot' (chatbot web anterior) o 'whatsapp' (botón de WhatsApp).
 CREATE TABLE IF NOT EXISTS leads_chatbot (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   tipo_servicio TEXT,
@@ -160,7 +161,9 @@ CREATE TABLE IF NOT EXISTS leads_chatbot (
   estado TEXT NOT NULL DEFAULT 'nuevo'
     CHECK (estado IN ('nuevo', 'contactado', 'cotizado', 'cerrado', 'descartado')),
   notas TEXT,
-  fecha_actualizacion TEXT
+  fecha_actualizacion TEXT,
+  presupuesto TEXT,                     -- presupuesto aproximado (texto libre, opcional)
+  autor_integratech TEXT                -- autor del chat exportado que es IntegraTech
 );
 
 -- Usuarios del panel de administración. Se crean solo con `npm run crear-admin`
@@ -207,3 +210,54 @@ CREATE TABLE IF NOT EXISTS citas (
 );
 CREATE INDEX IF NOT EXISTS idx_citas_inicio ON citas(inicio);
 CREATE INDEX IF NOT EXISTS idx_citas_solicitud ON citas(solicitud_origen, solicitud_id);
+
+-- =========================================================
+-- Cotizaciones por WhatsApp (sin API): el chat ocurre en WhatsApp Business y
+-- el encargado sube la exportación al ticket. ticket_id = leads_chatbot.id.
+-- =========================================================
+
+-- Cambios de estado de cada cotización (quién y cuándo).
+CREATE TABLE IF NOT EXISTS historial_cotizacion (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER NOT NULL REFERENCES leads_chatbot(id) ON DELETE CASCADE,
+  estado_anterior TEXT,
+  estado_nuevo TEXT NOT NULL,
+  admin_id INTEGER REFERENCES admin_usuarios(id) ON DELETE SET NULL,
+  admin_correo TEXT,                    -- se conserva aunque se borre el usuario
+  fecha TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_historial_cotizacion_ticket ON historial_cotizacion(ticket_id, id);
+
+-- Archivos de chat exportados que se subieron a cada ticket (el original queda en
+-- CONVERSACIONES_DIR con un nombre aleatorio; es privado, no se sirve en /media).
+CREATE TABLE IF NOT EXISTS conversaciones_cotizacion (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER NOT NULL REFERENCES leads_chatbot(id) ON DELETE CASCADE,
+  archivo TEXT NOT NULL,                -- nombre en disco (aleatorio)
+  nombre_original TEXT NOT NULL,
+  bytes INTEGER NOT NULL,
+  tenia_multimedia INTEGER NOT NULL DEFAULT 0,
+  lineas_no_reconocidas INTEGER NOT NULL DEFAULT 0,
+  mensajes_leidos INTEGER NOT NULL DEFAULT 0,
+  mensajes_nuevos INTEGER NOT NULL DEFAULT 0,
+  admin_id INTEGER REFERENCES admin_usuarios(id) ON DELETE SET NULL,
+  fecha TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_conversaciones_cotizacion_ticket ON conversaciones_cotizacion(ticket_id, id);
+
+-- Mensajes del chat, separados. fecha_hora es la hora del teléfono que exportó
+-- ('YYYY-MM-DD HH:MM:SS'); autor NULL = mensaje del sistema. ocurrencia distingue
+-- mensajes idénticos legítimos (dos "ok" en el mismo minuto): subir otra
+-- exportación del mismo chat solo agrega los mensajes que no estaban.
+CREATE TABLE IF NOT EXISTS mensajes_cotizacion (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER NOT NULL REFERENCES leads_chatbot(id) ON DELETE CASCADE,
+  fecha_hora TEXT NOT NULL,
+  autor TEXT,
+  texto TEXT NOT NULL,
+  orden INTEGER NOT NULL,
+  ocurrencia INTEGER NOT NULL DEFAULT 1
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mensajes_cotizacion_unico
+  ON mensajes_cotizacion(ticket_id, fecha_hora, IFNULL(autor, ''), texto, ocurrencia);
+CREATE INDEX IF NOT EXISTS idx_mensajes_cotizacion_orden ON mensajes_cotizacion(ticket_id, fecha_hora, orden);

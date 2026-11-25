@@ -6,7 +6,7 @@
  * Todo el texto que viene de la API se inserta con textContent, nunca con
  * innerHTML: los datos los escribieron visitantes del sitio.
  */
-import { admin, AdminError, LOGIN_PATH, type AdminUsuario, type EstadoSolicitud, type OrigenSolicitud } from './admin';
+import { admin, AdminError, LOGIN_PATH, type AdminUsuario, type CanalSolicitud, type EstadoSolicitud, type OrigenSolicitud } from './admin';
 
 // ---------- Sesión ----------
 
@@ -31,7 +31,8 @@ export function panelListo(): Promise<AdminUsuario> {
 
 export const ESTADOS: { valor: EstadoSolicitud; etiqueta: string }[] = [
   { valor: 'nuevo', etiqueta: 'Nuevo' },
-  { valor: 'contactado', etiqueta: 'Contactado' },
+  // En las cotizaciones de WhatsApp: nueva → en proceso → cotizada → cerrada.
+  { valor: 'contactado', etiqueta: 'En proceso' },
   { valor: 'cotizado', etiqueta: 'Cotizado' },
   { valor: 'cerrado', etiqueta: 'Cerrado' },
   { valor: 'descartado', etiqueta: 'Descartado' },
@@ -41,10 +42,11 @@ export const etiquetaEstado = (e: EstadoSolicitud) => ESTADOS.find((x) => x.valo
 
 export const ORIGENES: { valor: OrigenSolicitud; etiqueta: string }[] = [
   { valor: 'formulario', etiqueta: 'Formulario' },
-  { valor: 'chatbot', etiqueta: 'Chatbot' },
+  { valor: 'chatbot', etiqueta: 'Cotización' },
 ];
 
-export const etiquetaOrigen = (o: OrigenSolicitud) => (o === 'chatbot' ? 'Chatbot' : 'Formulario');
+const ETIQUETA_CANAL: Record<CanalSolicitud, string> = { formulario: 'Formulario', chatbot: 'Chatbot', whatsapp: 'WhatsApp' };
+export const etiquetaOrigen = (o: OrigenSolicitud | CanalSolicitud) => ETIQUETA_CANAL[o] ?? o;
 
 /** Color sólido de cada estado (gráficas). Las etiquetas usan las variables --estado-* del layout. */
 export function colorEstado(e: EstadoSolicitud): string {
@@ -59,7 +61,8 @@ export function chipEstado(e: EstadoSolicitud): HTMLSpanElement {
   return s;
 }
 
-export function chipOrigen(o: OrigenSolicitud): HTMLSpanElement {
+/** Etiqueta del canal (formulario, chatbot o WhatsApp). */
+export function chipOrigen(o: OrigenSolicitud | CanalSolicitud): HTMLSpanElement {
   const s = document.createElement('span');
   s.className = `chip-origen chip-origen--${o}`;
   s.textContent = etiquetaOrigen(o);

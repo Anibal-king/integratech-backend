@@ -20,6 +20,8 @@ import type {
   ContactoPayload,
   ContactoRespuesta,
   ContratoMantenimiento,
+  CotizacionPayload,
+  CotizacionRespuesta,
   DocumentoLegal,
   Empresa,
   Marca,
@@ -33,6 +35,7 @@ export type {
   Cliente,
   ContactoPayload,
   ContratoMantenimiento,
+  CotizacionPayload,
   DocumentoLegal,
   Empresa,
   Marca,
@@ -237,5 +240,22 @@ export const api = {
       throw new ContactoError(res.status, data?.error ?? 'Error al enviar el mensaje');
     }
     return data as ContactoRespuesta;
+  },
+
+  /**
+   * Crea un ticket de cotización (botón de WhatsApp). Devuelve solo el número de ticket.
+   * Lanza ContactoError con el mensaje del servidor para 400/429.
+   */
+  async enviarCotizacion(payload: CotizacionPayload): Promise<CotizacionRespuesta> {
+    const res = await fetch(`${BASE_URL}/api/cotizaciones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(TIMEOUT_MS * 2),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ContactoError(res.status, data?.error ?? 'Error al enviar la solicitud');
+    if (!Number.isInteger(data?.ticket)) throw new Error('Respuesta sin número de ticket');
+    return data as CotizacionRespuesta;
   },
 };

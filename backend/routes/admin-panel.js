@@ -12,6 +12,8 @@ const { requireAdmin } = require('../lib/auth');
 /** @typedef {import('../../shared/api-types').EstadisticasAdmin} EstadisticasAdmin */
 /** @typedef {import('../../shared/api-types').EstadoSolicitud} EstadoSolicitud */
 /** @typedef {import('../../shared/api-types').OrigenSolicitud} OrigenSolicitud */
+/** @typedef {import('../../shared/api-types').CanalSolicitud} CanalSolicitud */
+/** @typedef {import('../../shared/api-types').AvisosAdmin} AvisosAdmin */
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -28,21 +30,22 @@ const LOCAL = "'-6 hours'";
 
 // Vista unificada: mismas columnas para ambos orígenes.
 const UNIFICADA = `
-  SELECT 'formulario' AS origen, id, nombre, empresa, correo, telefono, mensaje,
-         NULL AS tipo_servicio, NULL AS alcance, NULL AS ubicacion, NULL AS plazo,
+  SELECT 'formulario' AS origen, 'formulario' AS canal, id, nombre, empresa, correo, telefono, mensaje,
+         NULL AS tipo_servicio, NULL AS alcance, NULL AS ubicacion, NULL AS plazo, NULL AS presupuesto,
          estado, notas, fecha_creacion, fecha_actualizacion
     FROM mensajes_contacto
   UNION ALL
-  SELECT 'chatbot', id, nombre, empresa, correo, telefono, NULL,
-         tipo_servicio, alcance, ubicacion, plazo,
+  SELECT 'chatbot', CASE WHEN origen = 'whatsapp' THEN 'whatsapp' ELSE 'chatbot' END,
+         id, nombre, empresa, correo, telefono, NULL,
+         tipo_servicio, alcance, ubicacion, plazo, presupuesto,
          estado, notas, fecha_creacion, fecha_actualizacion
     FROM leads_chatbot`;
 
 /**
- * @typedef {{ origen: OrigenSolicitud, id: number, nombre: string, empresa: string | null,
+ * @typedef {{ origen: OrigenSolicitud, canal: CanalSolicitud, id: number, nombre: string, empresa: string | null,
  *   correo: string | null, telefono: string | null, mensaje: string | null,
  *   tipo_servicio: string | null, alcance: string | null, ubicacion: string | null,
- *   plazo: string | null, estado: EstadoSolicitud, notas: string | null,
+ *   plazo: string | null, presupuesto: string | null, estado: EstadoSolicitud, notas: string | null,
  *   fecha_creacion: string, fecha_actualizacion: string | null }} FilaUnificada
  */
 
@@ -54,24 +57,26 @@ function aSolicitud(f) {
   const chatbot = f.origen === 'chatbot';
   return {
     origen: f.origen,
+    canal: f.canal,
     id: f.id,
     nombre: f.nombre,
     empresa: f.empresa,
     correo: f.correo,
     telefono: f.telefono,
-    // El chatbot no tiene mensaje libre: se arma con sus respuestas.
+    // Las cotizaciones no tienen mensaje libre: se arma con sus respuestas.
     mensaje: chatbot
       ? [
           f.tipo_servicio && `Servicio: ${f.tipo_servicio}`,
-          f.alcance && `Alcance: ${f.alcance}`,
+          f.alcance && `${f.canal === 'whatsapp' ? 'Descripción' : 'Alcance'}: ${f.alcance}`,
           f.ubicacion && `Ubicación: ${f.ubicacion}`,
-          f.plazo && `Plazo: ${f.plazo}`,
+          f.plazo && `${f.canal === 'whatsapp' ? 'Fecha deseada' : 'Plazo'}: ${f.plazo}`,
+          f.presupuesto && `Presupuesto: ${f.presupuesto}`,
         ]
           .filter(Boolean)
           .join('\n')
       : (f.mensaje ?? ''),
     chatbot: chatbot
-      ? { tipo_servicio: f.tipo_servicio, alcance: f.alcance, ubicacion: f.ubicacion, plazo: f.plazo }
+      ? { tipo_servicio: f.tipo_servicio, alcance: f.alcance, ubicacion: f.ubicacion, plazo: f.plazo, presupuesto: f.presupuesto }
       : null,
     estado: f.estado,
     notas: f.notas,
@@ -192,10 +197,23 @@ router.patch('/solicitudes/:origen/:id', (req, res) => {
   }
   if (sets.length === 0) return res.status(400).json({ error: 'No hay cambios que guardar.' });
 
-  const r = db
-    .prepare(`UPDATE ${d.tabla} SET ${sets.join(', ')}, fecha_actualizacion = datetime('now') WHERE id = ?`)
-    .run(...params, d.id);
-  if (r.changes === 0) return res.status(404).json({ error: 'Solicitud no encontrada' });
+  /** @type {{ estado: string } | undefined} */
+  const antes = get(`SELECT estado FROM ${d.tabla} WHERE id = ?`, d.id);
+  if (!antes) return res.status(404).json({ error: 'Solicitud no encontrada' });
+  db.exec('BEGIN');
+  try {
+    db.prepare(`UPDATE ${d.tabla} SET ${sets.join(', ')}, fecha_actualizacion = datetime('now') WHERE id = ?`).run(...params, d.id);
+    // Historial de estados de las cotizaciones: quién y cuándo.
+    if (d.origen === 'chatbot' && body.estado !== undefined && body.estado !== antes.estado) {
+      db.prepare(
+        'INSERT INTO historial_cotizacion (ticket_id, estado_anterior, estado_nuevo, admin_id, admin_correo) VALUES (?, ?, ?, ?, ?)'
+      ).run(d.id, antes.estado, body.estado, req.admin.id, req.admin.correo);
+    }
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
   res.json(buscar(d.origen, d.id));
 });
 
@@ -209,6 +227,15 @@ function ultimosMeses(n) {
   }
   return meses;
 }
+
+// GET /api/admin/avisos  Contador liviano para la barra lateral (se consulta seguido).
+router.get('/avisos', (req, res) => {
+  /** @type {{ n: number } | undefined} */
+  const f = get("SELECT COUNT(*) AS n FROM leads_chatbot WHERE estado = 'nuevo' AND origen = 'whatsapp'");
+  /** @type {AvisosAdmin} */
+  const respuesta = { cotizaciones_nuevas: f?.n ?? 0 };
+  res.json(respuesta);
+});
 
 // GET /api/admin/estadisticas
 router.get('/estadisticas', (req, res) => {

@@ -13,6 +13,7 @@ const {
 const panelRoutes = require('./admin-panel');
 const serviciosRoutes = require('./admin-servicios');
 const citasRoutes = require('./admin-citas');
+const cotizacionesRoutes = require('./admin-cotizaciones');
 
 /** @typedef {import('../../shared/api-types').AdminUsuario} AdminUsuario */
 
@@ -60,9 +61,10 @@ router.get('/me', requireAdmin, (req, res) => {
   res.json(respuesta);
 });
 
-// Servicios y fotos, citas; solicitudes y estadísticas (todas con requireAdmin).
+// Servicios y fotos, citas, conversaciones de cotizaciones; solicitudes y estadísticas (todas con requireAdmin).
 router.use('/servicios', serviciosRoutes);
 router.use('/citas', citasRoutes);
+router.use('/cotizaciones', cotizacionesRoutes);
 router.use(panelRoutes);
 
 module.exports = router;

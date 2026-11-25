@@ -46,7 +46,7 @@ backend/
 ├── lib/
 │   ├── auth.js         # Panel: Argon2id, sesiones en SQLite, cookie, requireAdmin, origen
 │   ├── fotos.js        # Fotos: validación del contenido, versiones WebP, archivos en UPLOADS_DIR
-│   ├── mailer.js       # Correo SMTP (chatbot y formulario de contacto)
+│   ├── mailer.js       # Correo SMTP (cotizaciones y formulario de contacto)
 │   ├── security.js     # Límite de envíos, cabeceras, validación de campos
 │   ├── servicios.js    # Lectura de servicios con ítems y fotos (API pública y panel)
 │   └── zona.js         # Hora de El Salvador (UTC-6) ↔ UTC de la base
@@ -82,7 +82,10 @@ el mismo archivo que usa el frontend.
 | `marcas`                  | Marcas representadas (AKSA, Tripp-Lite, Loxone, ABB, etc.)            |
 | `documentacion_legal`     | NIT, NRC y otros datos legales                                        |
 | `mensajes_contacto`       | Mensajes enviados desde el formulario de contacto del sitio           |
-| `leads_chatbot`           | Solicitudes de cotización capturadas por el chatbot                  |
+| `leads_chatbot`           | Cotizaciones (tickets): botón de WhatsApp (`origen = 'whatsapp'`) y el chatbot anterior. El número de ticket es el `id` |
+| `historial_cotizacion`    | Cambios de estado de cada cotización: estado anterior/nuevo, usuario del panel y fecha |
+| `conversaciones_cotizacion` | Chats de WhatsApp exportados subidos a un ticket: archivo en `CONVERSACIONES_DIR`, multimedia, líneas no reconocidas, mensajes nuevos |
+| `mensajes_cotizacion`     | Mensajes de esos chats: ticket, `fecha_hora`, autor (NULL = sistema), texto, orden. Único por ticket + fecha_hora + autor + texto (+ ocurrencia) para no duplicar |
 
 ## Endpoints de la API
 
@@ -139,10 +142,14 @@ GET /api/legal
 ### Formularios públicos (desde el navegador)
 ```
 POST /api/contacto       Body: { nombre, correo?, telefono?, empresa?, mensaje }  (correo o teléfono obligatorio)
-POST /api/lead-chatbot   Body: ver docs/chatbot-flujo.md
+POST /api/cotizaciones   Body: { nombre, whatsapp, descripcion, tipo_proyecto?, presupuesto?, fecha_deseada? (YYYY-MM-DD) }
+                         → 201 { ticket }  (solo el número)
 ```
-- Ambos guardan en la base y notifican por correo a `MAIL_TO_LEADS` si SMTP está configurado
-  (`emailSent` en la respuesta). Sin SMTP el envío igual se guarda.
+- Contacto: guarda y notifica a `MAIL_TO_LEADS` si SMTP está configurado (`emailSent`).
+- Cotizaciones: crea el ticket (origen `whatsapp`, estado `nuevo`) y avisa por correo a
+  `MAIL_TO_COTIZACIONES` (o `MAIL_TO_LEADS`) después de responder. Campo trampa `sitio_web`:
+  si viene lleno, 400 y no se guarda nada. WhatsApp: 8 dígitos = El Salvador (se antepone 503),
+  si no, 10 a 15 dígitos con código de país.
 - Límite: 5 envíos por IP cada 10 minutos (429 al superarlo).
 - Longitud máxima por campo; 400 si se excede. Cuerpo máximo: 16 KB.
 - CORS: solo los orígenes de `CORS_ORIGIN`.
@@ -153,7 +160,7 @@ POST /api/admin/login    Body: { correo, password }  → { correo } + cookie sii
 POST /api/admin/logout   → 204, borra la sesión de la base y la cookie
 GET  /api/admin/me       → { correo } o 401
 GET  /api/contacto       → mensajes del formulario (requiere sesión)
-GET  /api/lead-chatbot   → leads del chatbot (requiere sesión)
+GET  /api/lead-chatbot   → cotizaciones, filas crudas (requiere sesión)
 
 GET   /api/admin/solicitudes?estado=&origen=&q=&pagina=1&por_pagina=20
       → { items, total, pagina, por_pagina }  formulario + chatbot, más recientes primero
@@ -161,7 +168,25 @@ GET   /api/admin/solicitudes/:origen/:id      → una solicitud (origen: formula
 PATCH /api/admin/solicitudes/:origen/:id      Body: { estado?, notas? } → solicitud actualizada
 GET   /api/admin/estadisticas
       → { total, sin_atender, mes_actual, por_mes (6 meses × origen), por_estado }
+GET   /api/admin/avisos                       → { cotizaciones_nuevas }  (contador del menú)
 ```
+- `PATCH` de una cotización con cambio de estado guarda una fila en `historial_cotizacion`.
+
+#### Conversaciones de WhatsApp (cotizaciones)
+```
+GET  /api/admin/cotizaciones/:id/conversacion           → { autor_integratech, autores, mensajes, archivos }
+POST /api/admin/cotizaciones/:id/conversacion           multipart, campo "archivo": .txt o .zip, máx. 10 MB
+     → 201 { mensajes_leidos, mensajes_nuevos, lineas_no_reconocidas, tenia_multimedia, necesita_autor, conversacion }
+PUT  /api/admin/cotizaciones/:id/autor                  Body: { autor } (uno de los autores del chat)
+GET  /api/admin/cotizaciones/:id/conversacion/descarga  → text/plain con los datos del ticket arriba
+GET  /api/admin/cotizaciones/:id/historial              → [{ estado_anterior, estado_nuevo, admin_correo, fecha }]
+```
+- Lector: `lib/chat-export.js` (Android/iPhone en español, 12/24 h, varias líneas, sistema,
+  caracteres invisibles; las líneas raras se pegan al mensaje anterior y se cuentan).
+- Zip: `lib/zip.js`, sin dependencias. Lee solo `_chat.txt` (o el único `.txt`) en memoria,
+  con tope de 20 MB descomprimido y 5000 entradas; nunca escribe al disco las rutas del zip.
+  El original se guarda en `CONVERSACIONES_DIR` con nombre aleatorio (no se sirve en `/media`).
+- Validación: extensión + contenido (firma del zip, UTF-8 válido); 400/413/422 con mensaje.
 #### Servicios y fotos
 ```
 GET    /api/admin/servicios                       → todos (incluidos los ocultos)
