@@ -173,14 +173,14 @@ export const todasLasFotos: FotoProyecto[] = Array.from(PROYECTOS.keys())
 // ---------- Selección para la portada ----------
 
 /**
- * Diapositivas del carrusel del inicio (hero). Para cambiar textos o fotos,
- * edita solo esta lista: el componente Hero.astro las recorre en orden.
- *  - titulo: la primera es el <h1> de la página.
- *  - frase:  null en la primera = misión de la empresa desde la API (con respaldo).
+ * Inicio de la página (hero): un solo titular y una foto. Para cambiarlos, edita
+ * solo este objeto (Hero.astro lo usa tal cual).
+ *  - titulo: el <h1> de la página. Nombra el rubro y el lugar; máximo tres líneas.
+ *  - frase:  null = misión de la empresa desde la API (con respaldo).
  *  - foto:   cualquier archivo de src/assets/img/proyectos (sin extensión).
  *  - alt:    describe lo que se ve en la foto.
  */
-export interface DiapositivaHero {
+export interface HeroInicio {
   titulo: string;
   frase: string | null;
   foto: ImageMetadata;
@@ -189,36 +189,16 @@ export interface DiapositivaHero {
 
 const fotoHero = (id: string) => {
   const img = PROYECTOS.get(id);
-  if (!img) throw new Error(`Diapositiva del hero: no existe la foto "${id}" en assets/img/proyectos`);
+  if (!img) throw new Error(`Hero: no existe la foto "${id}" en assets/img/proyectos`);
   return img;
 };
 
-export const DIAPOSITIVAS_HERO: DiapositivaHero[] = [
-  {
-    titulo: 'Ingeniería eléctrica y electromecánica que mantiene su operación en marcha',
-    frase: 'Diseñamos, suministramos, instalamos y mantenemos generadores, subestaciones, data centers, UPS y sistemas de automatización para empresas e instituciones de El Salvador.',
-    foto: fotoHero('proyecto_001'),
-    alt: 'Pasillo de un data center con racks de servidores y bandejas de cableado en el techo',
-  },
-  {
-    titulo: 'Automatización de procesos, edificios y climatización',
-    frase: 'Diseñamos, construimos y programamos tableros de automatización para plantas, oficinas y edificios, incluidos sistemas Loxone.',
-    foto: fotoHero('proyecto_027'),
-    alt: 'Tablero de automatización con controladores Loxone y contactores numerados',
-  },
-  {
-    titulo: 'Iluminación de escenarios deportivos y áreas exteriores',
-    frase: 'Torres de iluminación, redes subterráneas y control automatizado, como en el complejo deportivo del BCR y el estadio de Ilobasco.',
-    foto: fotoHero('proyecto_050'),
-    alt: 'Vista aérea nocturna de una cancha de fútbol iluminada rodeada de árboles',
-  },
-  {
-    titulo: 'Energía solar, UPS y calidad de energía',
-    frase: 'Sistemas solares con inyección cero, a red o aislados; UPS para operaciones críticas y filtros de armónicos.',
-    foto: fotoHero('proyecto_058'),
-    alt: 'Paneles solares instalados sobre el techo de una nave industrial',
-  },
-];
+export const HERO: HeroInicio = {
+  titulo: 'Ingeniería eléctrica y electromecánica en El Salvador',
+  frase: 'Diseñamos, suministramos, instalamos y mantenemos generadores, subestaciones, data centers, UPS y sistemas de automatización para empresas e instituciones.',
+  foto: fotoHero('proyecto_001'),
+  alt: 'Pasillo de un data center con racks de servidores y bandejas de cableado en el techo',
+};
 
 /**
  * Mosaico de la sección «Proyectos» del inicio (enlazan a /proyectos), en orden:
