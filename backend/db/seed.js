@@ -273,7 +273,13 @@ function poblarServicios() {
     {
       nombre: 'Auditorías Energéticas',
       descripcion: 'Elaboración de plan de acción para el análisis de infraestructura conforme a la norma IEC 61000-4-30 Clase A, incluyendo mediciones, identificación de oportunidades de ahorro (iluminación, motores eléctricos, aire comprimido), corrección de factor de potencia, control de demanda y calidad de energía eléctrica, y elaboración del informe técnico final del estudio.',
-      items: [],
+      // Tomados de la descripción de arriba (no es contenido nuevo).
+      items: [
+        'Mediciones de calidad de energía según IEC 61000-4-30 Clase A',
+        'Oportunidades de ahorro en iluminación, motores eléctricos y aire comprimido',
+        'Corrección de factor de potencia y control de demanda',
+        'Informe técnico final del estudio',
+      ],
     },
     {
       nombre: 'Mantenimiento de Infraestructura',

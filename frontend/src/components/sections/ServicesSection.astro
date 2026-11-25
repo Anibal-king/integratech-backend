@@ -32,8 +32,8 @@ const servicios = Astro.props.servicios ?? (await api.servicios());
     {servicios.status !== 'ok' ? (
       <StatusMessage resultado={servicios} vacio="Pronto publicaremos nuestros servicios aquí." />
     ) : (
-      // 5 servicios + «Ver más» (si hay más de 6); el buscador busca en todos
-      <ServiciosCatalogo servicios={servicios.data} limite={5} />
+      // 6 servicios, contador y «Ver todos los servicios»; el buscador busca en todos
+      <ServiciosCatalogo servicios={servicios.data} limite={6} />
     )}
   </div>
 </Section>

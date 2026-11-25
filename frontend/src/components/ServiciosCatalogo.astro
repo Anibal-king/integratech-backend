@@ -1,27 +1,32 @@
 ---
 /**
  * Tarjetas de servicios con buscador. Lo usan la sección Servicios del inicio
- * (5 tarjetas + «Ver más», que lleva a /proyectos, cuando hay más de 6 servicios)
- * y el catálogo /servicios (todas).
+ * (las primeras `limite` tarjetas, un contador y «Ver todos los servicios») y el
+ * catálogo /servicios (todas).
  *
  * Todas las tarjetas van en el HTML (visibles para buscadores). Las que pasan del
  * límite llevan `hidden` y solo aparecen al buscar; sin JavaScript se ven las
- * primeras y «Ver más» lleva al catálogo completo.
+ * primeras y el botón lleva al catálogo completo.
+ *
+ * Cada tarjeta es un <article>: el enlace del título la cubre entera (toda la
+ * tarjeta es clicable) y «+N servicios más» es un enlace propio encima de él.
  */
 import { mediaUrl, mediaSrcset, type CategoriaServicio } from '../lib/api';
 
 interface Props {
   servicios: CategoriaServicio[];
-  /** Tarjetas visibles sin buscar; si hay más, la última celda es «Ver más». Sin límite: todas. */
+  /** Tarjetas visibles sin buscar, con contador y «Ver todos los servicios» debajo. Sin límite: todas. */
   limite?: number;
   /** Nivel del título de cada tarjeta (3 bajo el h2 de la sección; 2 bajo el h1 del catálogo). */
   nivelTitulo?: 2 | 3;
 }
 
 const { servicios, limite, nivelTitulo = 3 } = Astro.props;
-// «Ver más» solo si sobran servicios: con 6 o menos se muestran todos.
-const conMas = limite !== undefined && servicios.length > limite + 1;
-const visibles = conMas ? limite : servicios.length;
+const total = servicios.length;
+const visibles = limite === undefined ? total : Math.min(limite, total);
+const conPie = limite !== undefined;
+/** Ítems que se ven en cada tarjeta; el resto se resume en «+N servicios más». */
+const ITEMS_VISIBLES = 4;
 const Titulo = `h${nivelTitulo}` as 'h2' | 'h3';
 
 /**
@@ -98,8 +103,7 @@ for (const sv of servicios) {
       const portada = s.portada;
       const extra = i >= visibles;
       return (
-        <a
-          href={`/servicios/${s.id}`}
+        <article
           class="svc-card"
           data-svc-card
           data-svc-extra={extra ? '' : undefined}
@@ -122,30 +126,40 @@ for (const sv of servicios) {
             </div>
           )}
           <div class="svc-card__body">
-            <Titulo class="svc-card__titulo">{s.nombre}</Titulo>
+            <Titulo class="svc-card__titulo">
+              <a href={`/servicios/${s.id}`} class="svc-card__enlace">{s.nombre}</a>
+            </Titulo>
             <p>{s.descripcion}</p>
             {s.items.length > 0 && (
               <ul class="svc-items">
-                {s.items.slice(0, 4).map((it) => <li>{it}</li>)}
-                {s.items.length > 4 && <li class="muted">+ {s.items.length - 4} más…</li>}
+                {s.items.slice(0, ITEMS_VISIBLES).map((it) => <li>{it}</li>)}
+                {s.items.length > ITEMS_VISIBLES && (
+                  <li class="svc-items__mas">
+                    <a href={`/servicios/${s.id}`} class="svc-mas">
+                      +{s.items.length - ITEMS_VISIBLES} {s.items.length - ITEMS_VISIBLES === 1 ? 'servicio' : 'servicios'} más<span class="svc-sr"> de {s.nombre}</span>
+                      <span aria-hidden="true">→</span>
+                    </a>
+                  </li>
+                )}
               </ul>
             )}
-            <span class="svc-card__cta">Ver detalle <span aria-hidden="true">→</span></span>
+            <span class="svc-card__cta" aria-hidden="true">Ver detalle <span>→</span></span>
           </div>
-        </a>
+        </article>
       );
     })}
-
-    {conMas && (
-      <a href="/proyectos" class="svc-card svc-card--mas" data-svc-mas>
-        <Titulo class="svc-mas__titulo">Ver más</Titulo>
-        <p class="svc-mas__frase">Explora el resto de nuestras líneas de servicio</p>
-        <span class="svc-mas__flecha" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-        </span>
-      </a>
-    )}
   </div>
+
+  {conPie && (
+    <div class="svc-pie">
+      <p class="svc-pie__texto" data-svc-contador data-inicial={`Mostrando ${visibles} de ${total} líneas de servicio`}>
+        Mostrando {visibles} de {total} líneas de servicio
+      </p>
+      <a href="/servicios" class="btn btn--primary svc-pie__boton" data-svc-todos>
+        Ver todos los servicios <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  )}
 </div>
 
 <style>
@@ -303,14 +317,25 @@ for (const sv of servicios) {
   .svc-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-md);
-    text-decoration: none;
   }
+  /* El enlace del título cubre toda la tarjeta */
+  .svc-card__enlace { color: inherit; text-decoration: none; }
+  .svc-card__enlace::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+  }
+  .svc-card__enlace:hover { text-decoration: none; }
+  .svc-card__enlace:focus-visible { outline: none; }
+  .svc-card__enlace:focus-visible::after { outline: 3px solid var(--focus-ring); outline-offset: -3px; }
   .svc-card:hover::before { transform: scaleX(1); }
   .svc-card__num {
     position: absolute;
     top: 1rem;
     left: 1rem;
-    z-index: 1;
+    z-index: 2;
     padding: 0.2rem 0.55rem;
     border-radius: 4px;
     background: color-mix(in srgb, var(--color-navy-deep) 70%, transparent);
@@ -365,44 +390,53 @@ for (const sv of servicios) {
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
   }
-  .svc-items .muted { color: var(--text-muted); padding-left: 0; }
-  .svc-items .muted::before { display: none; }
+  /* «+N servicios más»: enlace propio, encima del enlace que cubre la tarjeta */
+  .svc-items .svc-items__mas { padding-left: 0; }
+  .svc-items .svc-items__mas::before { display: none; }
+  .svc-mas {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 32px;
+    font-weight: 600;
+    color: var(--link);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 3px;
+    transition: text-decoration-color 0.2s ease;
+  }
+  .svc-mas:hover { text-decoration-color: currentColor; }
+  .svc-mas:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
   /* «Ver detalle» siempre al fondo, aunque el servicio tenga poco texto */
   .svc-card__cta { margin-top: auto; font-weight: 600; color: var(--link); }
   .svc-card__cta span { display: inline-block; transition: transform 0.2s var(--ease); }
   .svc-card:hover .svc-card__cta span { transform: translateX(4px); }
-
-  /* Tarjeta «Ver más»: mismo tamaño, en azul marino */
-  .svc-card--mas {
-    align-items: flex-start;
-    justify-content: flex-end;
-    gap: 0.6rem;
-    padding: 2rem;
-    min-height: 260px;
-    border-color: transparent;
-    background:
-      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--color-brand-blue) 70%, transparent), transparent 60%),
-      var(--color-navy);
-    color: var(--color-white);
-  }
-  .svc-card--mas[hidden] { display: none; }
-  .svc-mas__titulo { margin: 0; font-size: 2rem; color: var(--color-white); }
-  .svc-mas__frase { margin: 0; max-width: 26ch; color: var(--color-text-on-dark); }
-  .svc-mas__flecha {
-    order: -1;
-    margin-bottom: auto;
-    display: grid;
-    place-items: center;
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    border: 1.5px solid rgba(255, 255, 255, 0.5);
-    color: var(--color-white);
-    transition: transform 0.25s var(--ease), background-color 0.25s ease;
-  }
-  .svc-card--mas:hover .svc-mas__flecha { transform: translateX(6px); background: rgba(255, 255, 255, 0.1); }
   @media (prefers-reduced-motion: reduce) {
-    .svc-card--mas:hover .svc-mas__flecha { transform: none; }
+    .svc-card, .svc-card::before, .svc-card__media img, .svc-card__cta span { transition: none; }
+    .svc-card:hover, .svc-card:hover .svc-card__media img, .svc-card:hover .svc-card__cta span { transform: none; }
+  }
+
+  /* ---------- Debajo de la grilla (solo en el inicio) ---------- */
+  .svc-pie {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    text-align: center;
+  }
+  .svc-pie__texto { margin: 0; font-size: 15px; color: var(--text-muted); }
+  .svc-pie__boton {
+    min-height: 52px;
+    padding-inline: 32px;
+    gap: 0.5rem;
+  }
+  .svc-pie__boton:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+  .svc-pie__boton[hidden] { display: none; }
+  @media (max-width: 639px) {
+    .svc-pie__boton { width: 100%; }
   }
 </style>
 
@@ -411,8 +445,8 @@ for (const sv of servicios) {
    * Filtro de servicios y sugerencias. Oculta o muestra las tarjetas que ya están
    * en el HTML (no llama al backend ni las vuelve a generar). Ignora mayúsculas,
    * tildes, símbolos y espacios repetidos; con varias palabras deben aparecer todas,
-   * en cualquier orden. Busca en todos los servicios, también en los que quedan
-   * detrás de «Ver más». Se reinicia en cada astro:page-load.
+   * en cualquier orden. Busca en todos los servicios, también en los que no se ven
+   * sin buscar. Se reinicia en cada astro:page-load.
    */
   const normalizar = (t: string) =>
     t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9ñ]+/g, ' ').trim();
@@ -495,7 +529,8 @@ for (const sv of servicios) {
     const lista = raiz.querySelector<HTMLUListElement>('[data-svc-lista]')!;
     const estado = raiz.querySelector<HTMLElement>('[data-svc-estado]')!;
     const vacio = raiz.querySelector<HTMLElement>('[data-svc-vacio]')!;
-    const mas = raiz.querySelector<HTMLElement>('[data-svc-mas]');
+    const contador = raiz.querySelector<HTMLElement>('[data-svc-contador]');
+    const todos = raiz.querySelector<HTMLElement>('[data-svc-todos]');
     const tarjetas = [...raiz.querySelectorAll<HTMLElement>('[data-svc-card]')];
     const datos: Sugerencia[] = JSON.parse(raiz.querySelector('[data-svc-sugerencias]')!.textContent || '[]').map(
       (x: { t: string; s: string | null }) => ({ ...x, palabras: normalizar(x.t).split(' ') })
@@ -512,12 +547,17 @@ for (const sv of servicios) {
       const buscando = palabras.length > 0;
       let visibles = 0;
       for (const t of tarjetas) {
-        // Sin texto: la vista inicial (las primeras + «Ver más»). Con texto: todas las coincidencias.
+        // Sin texto: la vista inicial (las primeras). Con texto: todas las coincidencias.
         const ver = buscando ? palabras.every((p) => t.dataset.buscar!.includes(p)) : !('svcExtra' in t.dataset);
         t.hidden = !ver;
         if (ver) visibles++;
       }
-      if (mas) mas.hidden = buscando;
+      if (todos) todos.hidden = buscando;
+      if (contador) {
+        contador.textContent = buscando
+          ? `${visibles} ${visibles === 1 ? 'resultado' : 'resultados'} para «${texto}»`
+          : contador.dataset.inicial!;
+      }
       limpiar.hidden = input.value === '';
       vacio.hidden = visibles > 0;
       vacio.querySelector('[data-svc-texto]')!.textContent = texto;
