@@ -17,6 +17,19 @@ export default function ContactForm() {
   const ultimoPayload = useRef<ContactoPayload | null>(null);
   // Solicitud marcada como servicio personalizado (llega desde la sección Servicios)
   const [personalizado, setPersonalizado] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Envío pulsado antes de que el formulario se activara: el script de ContactSection
+  // lo detuvo (sin recargar ni perder lo escrito) y lo marcó; aquí se completa.
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+    form.dataset.listo = '';
+    if (form.hasAttribute('data-pendiente')) {
+      form.removeAttribute('data-pendiente');
+      form.requestSubmit();
+    }
+  }, []);
 
   useEffect(() => {
     // Si el botón se pulsó antes de que el formulario se activara, la marca espera en sessionStorage.
@@ -91,7 +104,7 @@ export default function ContactForm() {
   };
 
   return (
-    <form className="cform" onSubmit={onSubmit} noValidate>
+    <form ref={formRef} className="cform" onSubmit={onSubmit} noValidate>
       <div className="cform__row">
         <label>
           Nombre *

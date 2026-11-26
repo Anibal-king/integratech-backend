@@ -60,6 +60,23 @@ const mapa = 'https://www.google.com/maps/search/?api=1&query=Urbanizaci%C3%B3n+
       <h3>Solicite una cotización</h3>
       <p>Le contactaremos para conocer el alcance de su proyecto.</p>
       <ContactForm client:visible />
+      <!--
+        Si se pulsa «Enviar» antes de que el formulario termine de cargar, el navegador
+        recargaría la página y se perdería lo escrito. Se detiene ese envío y se marca:
+        ContactForm lo completa en cuanto está listo.
+      -->
+      <script is:inline>
+        if (!window.__envioPendiente) {
+          window.__envioPendiente = true;
+          document.addEventListener('submit', (e) => {
+            const form = e.target;
+            if (form instanceof HTMLFormElement && form.matches('.cform') && !form.hasAttribute('data-listo')) {
+              e.preventDefault();
+              form.setAttribute('data-pendiente', '');
+            }
+          }, true);
+        }
+      </script>
     </div>
   </div>
 </Section>
