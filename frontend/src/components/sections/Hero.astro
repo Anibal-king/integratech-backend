@@ -1,199 +1,529 @@
 ---
 /**
- * Inicio de la página: titular a la izquierda y una foto enmarcada a la derecha.
- * Ocupa exactamente la primera pantalla (bajo el encabezado); la franja de cifras
- * (StatsBar) sube 4.5rem sobre su borde inferior, por eso ese espacio queda
- * debajo del pliegue y no se ve al cargar.
+ * Inicio de la página: lámina técnica con una maqueta 3D interactiva.
  *
- * La foto de origen es pequeña (623 × 467), por eso va en un marco de su misma
- * proporción y no a pantalla completa (se vería borrosa).
- * El texto y la foto se editan en HERO (lib/imagenes.ts).
+ *  - Todo se apoya en la cuadrícula del fondo (celda mayor 80px, menor 16px): el
+ *    borde del texto, la división entre columnas y los bordes del marco caen en
+ *    líneas mayores; los espacios verticales son múltiplos de 16px.
+ *  - Izquierda: titular, frase y botones. El borde superior del titular coincide con
+ *    el del marco.
+ *  - Derecha: el marco con la maqueta (hero-maqueta.js), que ocupa ~75 % de su ancho.
+ *  - Rótulo: pasar el mouse (o Tab) por un ícono de la maqueta cambia el titular por
+ *    el servicio: nombre, descripción, «Qué incluye» (ítems del panel) y hasta 3
+ *    fotos; clic/Enter lo fija y muestra «Ver detalles del servicio». Las capas de
+ *    servicio se superponen al titular (absolutas) dentro de una altura reservada,
+ *    así los botones nunca se mueven. En celular, si el titular está fuera de
+ *    pantalla al tocar un ícono, lo mismo aparece en una franja bajo la maqueta
+ *    (hero-maqueta.js la llena con copias de estas capas).
+ *
+ * Cabe en la primera pantalla de una laptop; la franja de cifras (StatsBar) sube
+ * 4.5rem sobre su borde inferior.
+ * El titular y la frase se editan en HERO (lib/imagenes.ts).
  */
-import { Image } from 'astro:assets';
 import Section from '../Section.astro';
+import Icono, { type NombreIcono } from '../Icono.astro';
 import { HERO } from '../../lib/imagenes';
+import { dataOr, mediaUrl, mediaSrcset, type ApiResult, type CategoriaServicio } from '../../lib/api';
 
 interface Props {
   /** Misión de la empresa (API); se usa si HERO.frase es null. */
   descripcion?: string | null;
+  /** Servicios ya pedidos por la página: marcadores y rótulo del titular. */
+  servicios: ApiResult<CategoriaServicio[]>;
 }
 
 const RESPALDO =
   'Diseñamos, suministramos, instalamos y mantenemos infraestructura eléctrica, electromecánica y de automatización para empresas e instituciones de El Salvador.';
 const frase = HERO.frase ?? (Astro.props.descripcion || RESPALDO);
 
-// Tamaños adaptados al marco, sin pasar del ancho original de la foto.
-const anchos = [...[400, 560].filter((w) => w < HERO.foto.width), HERO.foto.width];
+// Servicios con equipos en la maqueta (ver hero-maqueta.js) y su ícono. Los demás
+// se ven en la sección «Servicios».
+const ICONOS: Record<number, NombreIcono> = {
+  1: 'engranaje', // Automatización
+  2: 'edificio', // Comercial
+  3: 'fabrica', // Industrial
+  4: 'solar', // Energía renovable y calidad
+  5: 'medidor', // Auditorías energéticas
+  6: 'herramienta', // Mantenimiento
+};
+const datos = dataOr(Astro.props.servicios, [])
+  .filter((s) => s.id in ICONOS)
+  .map((s) => ({
+    id: s.id,
+    nombre: s.nombre,
+    descripcion: s.descripcion,
+    href: `/servicios/${s.id}`,
+    // «Qué incluye»: los primeros ítems del panel, en su orden
+    items: s.items.slice(0, 4),
+    // Fila de fotos: las primeras de la galería del servicio (hasta 3)
+    fotos: s.fotos.slice(0, 3).map((f) => ({ src: mediaUrl(f.src), srcset: mediaSrcset(f.srcset) })),
+  }));
 ---
 
-<Section variant="dark" id="inicio" class="hero" aria-labelledby="inicio-title" tabindex="-1">
-  <div class="container hero__grid">
+<Section variant="dark" id="inicio" class="hero" aria-labelledby="inicio-title" tabindex="-1" data-maqueta={JSON.stringify(datos.map(({ id, nombre, descripcion }) => ({ id, nombre, descripcion })))}>
+  {/* Lienzo 3D (cubre el hero, sin eventos) y marcadores numerados encima */}
+  <div class="hero__escena">
+    <div class="hero__marcadores"></div>
+  </div>
+  {/* Íconos que hero-maqueta.js copia en los marcadores */}
+  {datos.map((s) => <template data-icono-de={s.id}><Icono nombre={ICONOS[s.id]} tamano={16} trazo={2} /></template>)}
+
+  <div class="hero__lamina">
     <div class="hero__texto">
-      <h1 id="inicio-title" class="hero__titulo hero__entra">{HERO.titulo}</h1>
-      <p class="hero__frase hero__entra">{frase}</p>
-      <div class="hero__acciones hero__entra">
-        <a href="/#contacto" class="btn btn--primary btn--lg">Solicitar cotización <span class="btn__arrow" aria-hidden="true">→</span></a>
-        <a href="/#servicios" class="btn btn--secondary btn--lg">Ver servicios</a>
+      {/* Rótulo: el titular original y, superpuestas en el mismo espacio, una capa por
+          servicio. Los textos de servicio van aria-hidden: el cambio se anuncia en
+          .hero__anuncio (aria-live). El h1 nunca sale del documento. */}
+      <div class="hero__rotulo hero__entra" style="--i:1">
+        <div class="hero__capa" data-capa="inicio" data-fase="dentro">
+          <h1 id="inicio-title" class="hero__titulo">{HERO.titulo}</h1>
+          <p class="hero__frase">{frase}</p>
+        </div>
+        {datos.map((s) => (
+          <div class="hero__capa hero__capa--servicio" data-capa={s.id}>
+            <p class="hero__titulo" aria-hidden="true">{s.nombre}</p>
+            <p class="hero__frase" aria-hidden="true">{s.descripcion}</p>
+            <div class="hero__incluye" aria-hidden="true">
+              <p class="hero__etiqueta">Expertos en:</p>
+              <ul>{s.items.length > 0 ? s.items.map((i) => <li>{i}</li>) : <li>[PENDIENTE]</li>}</ul>
+            </div>
+            {/* Fotos sin src: hero-maqueta.js las precarga después de cargar la página */}
+            {s.fotos.length > 0 && (
+              <div class="hero__fotos" aria-hidden="true" style={`--n:${s.fotos.length}`}>
+                {s.fotos.map((f) => <img alt="" width="4" height="3" sizes="120px" data-src={f.src} data-srcset={f.srcset} decoding="async" />)}
+              </div>
+            )}
+            <a class="hero__detalle" href={s.href}>Ver detalles del servicio <span aria-hidden="true">→</span></a>
+          </div>
+        ))}
+      </div>
+      <p class="hero__anuncio visually-hidden" aria-live="polite"></p>
+
+      <div class="hero__acciones hero__entra" style="--i:3">
+        <a href="/#contacto" class="btn btn--primary">Solicitar cotización <span class="btn__arrow" aria-hidden="true">→</span></a>
+        <a href="/#servicios" class="btn btn--secondary">Ver servicios</a>
       </div>
     </div>
 
-    <div class="hero__visual hero__entra">
-      <div class="hero__marco">
-        <Image
-          class="hero__foto"
-          src={HERO.foto}
-          alt={HERO.alt}
-          widths={anchos}
-          sizes="(max-width: 1023px) 92vw, 600px"
-          loading="eager"
-          fetchpriority="high"
-          decoding="sync"
-        />
+    <figure class="hero__marco hero__entra" style="--i:2">
+      <div class="hero__zona">
+        <p class="hero__cargando" aria-hidden="true">Trazando maqueta…</p>
       </div>
-      <p class="hero__sello">
-        <span>En servicio<br />desde</span>
-        <strong>2003</strong>
-      </p>
-    </div>
+    </figure>
+
+    {/* Celular: el servicio fijado, bajo la maqueta, si el titular quedó fuera de pantalla */}
+    <div class="hero__franja" hidden></div>
   </div>
 </Section>
 
+<script>
+  import { iniciarMaquetas } from './hero-maqueta.js';
+  // Después de pintar: three.js no compite con el titular ni con los botones.
+  // astro:page-load corre en la carga inicial y tras cada navegación (ClientRouter).
+  document.addEventListener('astro:page-load', () => {
+    const arrancar = () => ('requestIdleCallback' in window ? requestIdleCallback(iniciarMaquetas, { timeout: 600 }) : setTimeout(iniciarMaquetas, 200));
+    if (document.readyState === 'complete') arrancar();
+    else addEventListener('load', arrancar, { once: true });
+  });
+</script>
+
 <style>
   .hero {
-    /* Alto visible = pantalla menos el encabezado (y la barra superior en escritorio) */
     --hero-arriba: var(--header-height);
-    /* Lo que la franja de cifras sube sobre el hero (StatsBar: margin-top -4.5rem) */
-    --hero-solape: 4.5rem;
+    --hero-solape: 4.5rem; /* lo que StatsBar sube sobre el hero */
+    /* Margen superior: múltiplo de la celda chica; más aire en pantallas altas */
+    --hero-pad: round(down, clamp(32px, 10svh - 32px, 96px), 16px);
+    --linea: rgba(108, 182, 236, 0.4);
+    --trazo: rgba(255, 255, 255, 0.14);
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
     position: relative;
+    isolation: isolate;
     overflow: hidden;
-    background: var(--color-navy-deep);
+    background-color: var(--color-navy-deep);
+    /* Cuadrícula de plano: mayor cada 80px, menor cada 16px.
+       Centrada en x (una línea mayor pasa por el centro) y con una fila en el
+       borde superior de la lámina: así el contenido cae sobre las líneas. */
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+      linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+    background-position: calc(50% - 40px) var(--hero-pad);
   }
   @media (min-width: 1024px) {
     .hero { --hero-arriba: calc(var(--header-height) + 40px); }
   }
 
-  .hero__grid {
+  /* ---------- Lámina: rejilla alineada al fondo ---------- */
+  .hero__lamina {
     position: relative;
+    container-type: inline-size;
+    /* Ancho en múltiplos de 160px (dos celdas mayores), centrado: márgenes iguales
+       y bordes sobre líneas mayores. */
+    width: round(down, min(100% - 160px, 1280px), 160px);
+    margin-inline: auto;
+    padding: var(--hero-pad) 0 calc(var(--hero-solape) + 16px);
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: center;
-    gap: clamp(2.5rem, 6vw, 5.5rem);
-    min-height: calc(100svh - var(--hero-arriba) + var(--hero-solape));
-    padding-block: clamp(2.5rem, 6vh, 4rem) calc(var(--hero-solape) + clamp(2.5rem, 6vh, 4rem));
+    grid-template-columns: minmax(0, 1fr) round(nearest, 56%, 80px);
+    /* Lo que antes ocupaba la línea de «Lámina 01» (fila de 32px + separación).
+       El rótulo lo conserva como altura reservada: los botones no cambian de lugar. */
+    --libre: 64px;
+    pointer-events: none; /* los huecos no bloquean nada */
   }
+  .hero__lamina > * { pointer-events: auto; }
 
   /* ---------- Texto ---------- */
+  .hero__texto {
+    grid-area: 1 / 1;
+    container-type: inline-size;
+    padding-right: 48px;
+    min-width: 0;
+  }
+  /* Tamaños del titular y la frase: una sola fuente para el texto y para la
+     altura reservada del rótulo (ver .hero__rotulo). En la lámina, para que
+     también lleguen a la franja de móvil; cqi se resuelve donde se usan. */
+  .hero__lamina {
+    --titulo-fs: min(9.6cqi, 3.5rem);
+    --frase-fs: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  }
   .hero__titulo {
-    margin: 0 0 1.25rem;
-    max-width: 16ch;
+    margin: 0 0 16px;
     color: var(--overlay-text);
-    font-size: clamp(2.3rem, 1.2rem + 3.4vw, 4rem);
+    font-family: var(--font-display);
+    /* Atado al ancho de la columna */
+    font-size: var(--titulo-fs);
     font-weight: 600;
-    line-height: 1.05;
-    letter-spacing: -0.015em;
+    line-height: 0.98;
+    letter-spacing: -0.025em;
     text-wrap: balance;
-    overflow-wrap: break-word;
   }
   .hero__frase {
     margin: 0;
     max-width: 52ch;
     color: var(--color-text-on-dark);
-    font-size: clamp(1.05rem, 0.95rem + 0.4vw, 1.25rem);
+    font-size: var(--frase-fs);
     line-height: 1.6;
+    text-wrap: pretty;
   }
   .hero__acciones {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.9rem;
-    margin-top: 2.25rem;
+    gap: 16px;
+    margin-top: 32px;
   }
-  .hero__acciones .btn:focus-visible {
-    outline: 3px solid var(--overlay-text);
-    outline-offset: 3px;
+  .hero__acciones .btn { min-height: 48px; }
+  .hero__acciones .btn:focus-visible { outline: 2px solid var(--overlay-text); outline-offset: 3px; }
+
+  /* ---------- Rótulo: titular ↔ servicio ---------- */
+  .hero__rotulo {
+    --desliz: 18px; /* recorrido corto: entra desde la izquierda, sale hacia la derecha */
+    position: relative;
+    /* Altura reservada fija: la que ocupaba el titular original (--lt líneas de
+       título y --lf de frase, según el ancho), + la línea de «Ver detalles del
+       servicio» + el espacio que liberó el encabezado. No depende del texto
+       actual: cambiar el titular no mueve los botones, y las capas de servicio
+       conservan el mismo espacio. */
+    --lt: 3;
+    --lf: 3;
+    min-height: calc(
+      var(--lt) * 0.98 * var(--titulo-fs) + 16px +
+      var(--lf) * 1.6 * var(--frase-fs) + 40px + var(--libre)
+    );
+  }
+  @media (min-width: 1120px) and (max-width: 1279px) { .hero__rotulo { --lf: 4; } }
+  @media (min-width: 1024px) and (max-width: 1119px) { .hero__rotulo { --lf: 5; } }
+  @media (min-width: 992px) and (max-width: 1023px) { .hero__rotulo { --lt: 1; } }
+  @media (min-width: 608px) and (max-width: 991px) { .hero__rotulo { --lt: 2; } }
+  @media (min-width: 384px) and (max-width: 447px) { .hero__rotulo { --lf: 4; } }
+  @media (max-width: 383px) { .hero__rotulo { --lf: 5; } }
+  .hero__capa--servicio {
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+    pointer-events: none;
+    /* Título, descripción y «Qué incluye» a todo el ancho; fotos y enlace comparten
+       fila si caben (columna ancha) y si no, el enlace baja */
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    align-items: center;
+    column-gap: 24px;
+  }
+  .hero__capa--servicio > :is(.hero__titulo, .hero__frase, .hero__incluye) { flex: 0 0 100%; }
+  .hero__capa:not([data-fase='dentro']) { pointer-events: none; }
+  /* Reposo (fuera): a la izquierda y transparente, sin transición */
+  .hero__capa > * {
+    --d: 0ms;
+    opacity: 0;
+    transform: translateX(calc(-1 * var(--desliz)));
+  }
+  /* Un solo movimiento: título, descripción, puntos, fotos y enlace, en cascada corta */
+  .hero__capa > .hero__frase { --d: 40ms; }
+  .hero__capa > .hero__incluye { --d: 85ms; }
+  .hero__capa > .hero__fotos { --d: 125ms; }
+  .hero__capa > .hero__detalle { --d: 165ms; }
+  .hero__capa[data-fase='dentro'] { visibility: visible; pointer-events: auto; }
+  .hero__capa[data-fase='dentro'] > * {
+    opacity: 1;
+    transform: none;
+    /* +60ms: deja que lo que sale despeje antes de entrar */
+    transition:
+      opacity 220ms ease-out calc(var(--d) + 60ms),
+      transform 300ms var(--ease-out) calc(var(--d) + 60ms);
+  }
+  .hero__capa[data-fase='sale'] > * {
+    opacity: 0;
+    transform: translateX(var(--desliz));
+    transition: opacity 160ms ease-in var(--d), transform 200ms ease-in var(--d);
+  }
+  /* Se oculta cuando termina de salir lo último (enlace: 165 + 200ms) */
+  .hero__capa--servicio[data-fase='sale'] { transition: visibility 0s linear 380ms; }
+  /* Servicio largo que no cabe en la altura reservada: un paso menos, no más */
+  .hero__capa[data-menor] .hero__titulo { font-size: min(8cqi, 2.9rem); }
+  /* Y si aún no cabe: tres puntos en lugar de cuatro */
+  .hero__capa[data-compacto] .hero__incluye li:nth-child(n + 4) { display: none; }
+  .hero__capa--servicio .hero__frase {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  /* ---------- Foto ---------- */
-  .hero__visual {
-    position: relative;
-    justify-self: end;
-    width: min(100%, 600px);
+  /* Enlace al servicio: solo con un servicio fijado (su línea ya está reservada) */
+  .hero__detalle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 24px;
+    margin-top: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-accent-light);
   }
-  .hero__marco {
+  .hero__rotulo:not([data-fijo]) .hero__detalle {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 160ms ease-in, transform 200ms ease-in, visibility 0s linear 200ms;
+  }
+  .hero__detalle:focus-visible { outline: 2px solid var(--overlay-text); outline-offset: 3px; }
+
+  /* Qué incluye: lista corta con viñeta cuadrada de línea fina */
+  .hero__incluye { margin-top: 12px; }
+  .hero__etiqueta {
+    margin: 0 0 4px;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-accent-light);
+  }
+  .hero__incluye ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  /* Un punto = una línea (alturas parejas); lo que no cabe termina en «…» */
+  .hero__incluye li {
     position: relative;
-    aspect-ratio: 4 / 3; /* la proporción de la foto: no se recorta ni se agranda de más */
-    border-radius: var(--radius-lg);
+    padding-left: 16px;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    color: var(--color-text-on-dark);
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hero__incluye li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5em;
+    width: 5px;
+    height: 5px;
+    border: 1px solid var(--color-accent-light);
+  }
+
+  /* Fotos: mismo tamaño y proporción, esquinas rectas, borde fino */
+  .hero__fotos { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; }
+  /* Fotos (--n): todas iguales y sin desbordar la fila.
+     Ancho explícito: así el enlace «Ver detalles» puede ir al lado si cabe. */
+  .hero__fotos { --casilla: 88px; width: min(var(--n) * var(--casilla) + (var(--n) - 1) * 8px, 100%); }
+  .hero__fotos img { flex: none; width: calc((100% - (var(--n) - 1) * 8px) / var(--n)); }
+  /* Columna ancha: fotos de 72px, con «Ver detalles del servicio» en la misma fila */
+  @container (min-width: 480px) {
+    .hero__fotos { --casilla: 72px; }
+  }
+  .hero__fotos img {
+    display: block;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border: 1px solid var(--linea);
+    border-radius: 0;
     background: var(--color-navy);
   }
-  .hero__foto {
-    display: block;
+
+  /* Franja (solo celular): servicio fijado bajo la maqueta */
+  .hero__franja {
+    --desliz: 18px;
+    display: grid;
+    margin-top: -32px; /* anula el row-gap: queda pegada al borde inferior del marco */
+    padding: 16px;
+    border: 1px solid var(--linea);
+    border-top: 0;
+    background: rgba(7, 27, 48, 0.92);
+  }
+  .hero__franja[hidden] { display: none; }
+  .hero__franja .hero__capa--servicio { position: static; grid-area: 1 / 1; }
+  .hero__franja .hero__titulo { font-size: 1.5rem; line-height: 1.1; margin-bottom: 8px; }
+  .hero__franja .hero__frase { font-size: 0.95rem; }
+  .hero__franja .hero__frase { -webkit-line-clamp: 3; line-clamp: 3; }
+  @media (min-width: 1024px) {
+    .hero__franja { display: none !important; }
+  }
+
+  /* ---------- Marco de la maqueta ---------- */
+  .hero__marco {
+    grid-area: 1 / 2;
+    align-self: start;
+    position: relative;
+    height: round(nearest, 35cqi, 80px); /* bordes sobre líneas mayores */
+    margin: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr); /* la maqueta usa todo el marco */
+    touch-action: pan-y; /* arrastre horizontal gira; el vertical hace scroll */
+    cursor: grab;
+  }
+  .hero[data-arrastrando] .hero__marco { cursor: grabbing; }
+  /* Borde por dentro (no suma 1px y no corre la alineación) */
+  .hero__marco::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--linea);
+    pointer-events: none;
+  }
+  .hero__zona { position: relative; display: grid; place-items: center; }
+  .hero__cargando {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--color-text-on-dark);
+    opacity: 0.7;
+  }
+  .hero[data-estado='listo'] .hero__cargando,
+  .hero[data-estado='error'] .hero__cargando { display: none; }
+
+  /* ---------- Lienzo y marcadores ---------- */
+  .hero__escena {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .hero__escena :global(canvas) {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity 240ms ease-out;
   }
+  .hero[data-estado='listo'] .hero__escena :global(canvas) { opacity: 1; }
 
-  /* El dato duro de la primera pantalla, sobre la esquina de la foto */
-  .hero__sello {
+  .hero__marcadores { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  .hero:not([data-estado='listo']) .hero__marcadores { visibility: hidden; }
+  .hero__marcadores :global(.hero__hot) {
+    /* Centrado en su punto con márgenes negativos (mitad del tamaño). El JS lo lleva
+       a su lugar con la propiedad `translate`, que se aplica después de `scale`:
+       así presionar o pasar el mouse lo escala sobre su centro sin moverlo. */
     position: absolute;
-    left: -2rem;
-    bottom: -1.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    margin: 0;
-    padding: 1rem 1.35rem;
-    border-radius: var(--radius-lg);
-    background: var(--color-white);
-    color: var(--color-ink);
-    box-shadow: var(--shadow-lg);
+    left: -17px;
+    top: -17px;
+    pointer-events: auto;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--color-accent-light);
+    border-radius: var(--radius-btn);
+    background: rgba(7, 27, 48, 0.9);
+    color: var(--color-white);
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, scale 160ms var(--ease-out);
+    will-change: translate;
   }
-  .hero__sello span { font-size: 0.9rem; line-height: 1.25; font-weight: 500; }
-  .hero__sello strong {
-    font-family: var(--font-display);
-    font-size: 2.4rem;
-    line-height: 1;
-    font-weight: 600;
-    color: var(--color-brand-blue);
+  .hero__marcadores :global(.hero__hot::after) {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    width: 1px;
+    height: 14px;
+    background: var(--color-accent-light);
+  }
+  .hero__marcadores :global(.hero__hot:active) { scale: 0.94; transition-duration: 150ms, 150ms, 150ms, 150ms, 80ms; }
+  .hero__marcadores :global(.hero__hot svg) { display: block; pointer-events: none; }
+  .hero__marcadores :global(.hero__hot[data-activo]) { background: var(--color-white); color: var(--color-navy); border-color: var(--color-white); }
+  /* Seleccionado (clic): queda marcado con un anillo hasta cerrarlo */
+  .hero__marcadores :global(.hero__hot[data-fijo]) { box-shadow: 0 0 0 3px var(--color-navy-deep), 0 0 0 5px var(--color-white); z-index: 1; }
+  .hero__marcadores :global(.hero__hot:focus-visible) { outline: 2px solid var(--color-white); outline-offset: 2px; }
+  @media (hover: hover) and (pointer: fine) {
+    /* Sin texto de ayuda: el hover deja claro que el ícono se puede tocar */
+    .hero__marcadores :global(.hero__hot:hover) {
+      scale: 1.12;
+      background: var(--color-accent-light);
+      border-color: var(--color-white);
+      color: var(--color-navy);
+      box-shadow: 0 0 0 4px rgba(108, 182, 236, 0.25);
+    }
+    .hero__marcadores :global(.hero__hot[data-fijo]:hover) { box-shadow: 0 0 0 3px var(--color-navy-deep), 0 0 0 5px var(--color-white); }
+    .hero__marcadores :global(.hero__hot:hover:active) { scale: 1; }
   }
 
-  /* ---------- Entrada (una sola vez, al cargar) ---------- */
+  /* ---------- Entrada (una sola vez, rápida) ---------- */
   .hero__entra {
-    animation: hero-entra 0.7s var(--ease, ease-out) both;
+    animation: hero-entra 380ms var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 50ms);
   }
-  .hero__frase.hero__entra { animation-delay: 0.08s; }
-  .hero__acciones.hero__entra { animation-delay: 0.16s; }
-  .hero__visual.hero__entra { animation-delay: 0.12s; }
-  @keyframes hero-entra {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: none; }
-  }
+  @keyframes hero-entra { from { opacity: 0; transform: translateY(8px); } }
   @media (prefers-reduced-motion: reduce) {
     .hero__entra { animation: none; }
+    .hero__escena :global(canvas) { transition: none; }
+    /* Rótulo: solo fundido, sin desplazamiento */
+    .hero__capa > *,
+    .hero__capa[data-fase] > * { transform: none; }
   }
 
-  /* ---------- Tableta y móvil: texto arriba, la foto ocupa lo que queda ---------- */
-  @media (max-width: 1023px) {
-    .hero__grid {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 2rem;
-      padding-block: clamp(2rem, 5vh, 3rem) calc(var(--hero-solape) + 1.5rem);
-    }
-    .hero__visual {
-      flex: 1 1 auto;
-      display: flex;
-      justify-self: stretch;
-      width: 100%;
-      min-height: 180px;
-      max-height: 460px;
-    }
-    .hero__marco { flex: 1; aspect-ratio: auto; }
-    .hero__sello { left: 1rem; bottom: 1rem; padding: 0.75rem 1rem; }
-    .hero__sello strong { font-size: 1.9rem; }
+  /* ---------- Laptop de 1024 a 1439px: columnas parejas (texto y frase caben) ---------- */
+  @media (min-width: 1024px) and (max-width: 1439px) {
+    .hero__lamina { grid-template-columns: minmax(0, 1fr) round(nearest, 50%, 80px); }
+    .hero__marco { height: round(nearest, 32cqi, 80px); }
   }
-  @media (max-width: 640px) {
-    .hero__grid { gap: 1.5rem; }
-    .hero__acciones { flex-direction: column; align-items: stretch; margin-top: 1.75rem; }
+  /* Laptop de poca altura: menos aire */
+  @media (min-width: 1024px) and (max-height: 820px) {
+    .hero__lamina { --libre: 48px; }
+  }
+
+  /* ---------- Celular y tableta vertical: texto arriba, marco debajo ---------- */
+  @media (max-width: 1023px) {
+    .hero__lamina {
+      /* Ancho en múltiplos de 32px: bordes sobre líneas de la cuadrícula chica */
+      width: round(down, 100% - 32px, 32px);
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto;
+      row-gap: 32px;
+      --libre: 74px; /* alto de «Lámina 01» en dos líneas + separación */
+    }
+    .hero__texto { grid-area: auto; padding-right: 0; }
+    .hero__lamina { --titulo-fs: min(10.2cqi, 3rem); }
+    .hero__capa[data-menor] .hero__titulo { font-size: min(8.5cqi, 2.5rem); }
+    .hero__fotos { --casilla: 80px; }
+    .hero__marco {
+      grid-area: auto;
+      height: min(round(nearest, 80cqi, 32px), 512px);
+    }
+  }
+  @media (max-width: 520px) {
+    .hero__acciones { flex-direction: column; align-items: stretch; }
   }
 </style>

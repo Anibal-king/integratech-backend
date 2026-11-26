@@ -173,31 +173,20 @@ export const todasLasFotos: FotoProyecto[] = Array.from(PROYECTOS.keys())
 // ---------- Selección para la portada ----------
 
 /**
- * Inicio de la página (hero): un solo titular y una foto. Para cambiarlos, edita
- * solo este objeto (Hero.astro lo usa tal cual).
+ * Inicio de la página (hero): titular y frase. La imagen del hero es la maqueta 3D
+ * (components/sections/hero-maqueta.js); las fotos de sus fichas son las portadas
+ * de cada servicio en el panel. Para cambiar el texto, edita solo este objeto.
  *  - titulo: el <h1> de la página. Nombra el rubro y el lugar; máximo tres líneas.
  *  - frase:  null = misión de la empresa desde la API (con respaldo).
- *  - foto:   cualquier archivo de src/assets/img/proyectos (sin extensión).
- *  - alt:    describe lo que se ve en la foto.
  */
 export interface HeroInicio {
   titulo: string;
   frase: string | null;
-  foto: ImageMetadata;
-  alt: string;
 }
 
-const fotoHero = (id: string) => {
-  const img = PROYECTOS.get(id);
-  if (!img) throw new Error(`Hero: no existe la foto "${id}" en assets/img/proyectos`);
-  return img;
-};
-
 export const HERO: HeroInicio = {
-  titulo: 'Ingeniería eléctrica y electromecánica en El Salvador',
-  frase: 'Diseñamos, suministramos, instalamos y mantenemos generadores, subestaciones, data centers, UPS y sistemas de automatización para empresas e instituciones.',
-  foto: fotoHero('proyecto_001'),
-  alt: 'Pasillo de un data center con racks de servidores y bandejas de cableado en el techo',
+  titulo: 'Soluciones profesionales para proyectos de ingeniería',
+  frase: 'Cumpliendo con las expectativas de lo más importante: Usted, nuestro cliente.',
 };
 
 /**

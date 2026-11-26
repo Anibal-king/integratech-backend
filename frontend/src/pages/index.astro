@@ -32,7 +32,7 @@ const nombresClientes = [...dataOr(clientes, []), ...dataOr(otros, [])].map((c) 
 
 <Layout>
   {/* Ritmo de color al hacer scroll: cambiar el fondo de una sección es cambiar su variant */}
-  <Hero descripcion={empresa?.mision ?? undefined} />
+  <Hero descripcion={empresa?.mision ?? undefined} servicios={servicios} />
   <StatsBar variant="light" clientes={totalClientes} proyectos={contar(proyectos)} marcas={contar(marcas)} />
   <TrustBar variant="light" nombres={nombresClientes} />
   <ServicesSection variant="muted" servicios={servicios} />
