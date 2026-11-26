@@ -35,6 +35,8 @@ router.use(requireAdmin);
 const subida = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_SUBIDA, files: 1, fields: 0, parts: 2 },
+  // Los navegadores envían el nombre del archivo en UTF-8; sin esto, «Méndez» llega como «MÃ©ndez».
+  defParamCharset: 'utf8',
 });
 
 /**

@@ -109,6 +109,15 @@ test('subida sin autenticación → 401', async () => {
   assert.equal(r.status, 401);
 });
 
+test('el nombre del archivo con tildes se guarda tal cual (UTF-8)', async () => {
+  const cookie = cookieAdmin();
+  const { ticket } = await (await publico(VALIDO)).json();
+  const r = await subir(ticket, 'Chat de WhatsApp con Ana Pérez Núñez.txt', CHAT, cookie);
+  assert.equal(r.status, 201);
+  const { conversacion } = await r.json();
+  assert.equal(conversacion.archivos.at(-1).nombre_original, 'Chat de WhatsApp con Ana Pérez Núñez.txt');
+});
+
 test('subir .txt: separa mensajes, autores y sistema; la misma exportación dos veces no duplica', async () => {
   const cookie = cookieAdmin();
   const { ticket } = await (await publico(VALIDO)).json();

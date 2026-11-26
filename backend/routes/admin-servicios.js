@@ -18,6 +18,8 @@ const MAX_FOTOS_POR_ENVIO = 20;
 const subida = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_BYTES, files: MAX_FOTOS_POR_ENVIO, fields: 5 },
+  // Los navegadores envían el nombre del archivo en UTF-8; sin esto, «Méndez» llega como «MÃ©ndez».
+  defParamCharset: 'utf8',
 });
 
 // ---------- Utilidades ----------
