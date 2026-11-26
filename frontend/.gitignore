@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# Resultados de las pruebas de QA (Playwright)
+tests/resultados/

@@ -10,7 +10,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "node --test 'src/**/*.test.ts'"
+    "test": "node --test 'src/**/*.test.ts'",
+    "test:e2e": "playwright test -c tests/playwright.config.ts"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.6",
@@ -25,5 +26,10 @@
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
+    "@playwright/test": "^1.65.1",
+    "lighthouse": "^13.6.0"
   }
 }
