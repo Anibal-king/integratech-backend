@@ -61,7 +61,8 @@ const CONTACTO = {
     <a href="#contenido" class="saltar">Saltar al contenido</a>
 
     <!-- Franja de contacto (solo escritorio; se desplaza con la página) -->
-    <div class="topbar" transition:name="site-topbar" transition:animate="none">
+    <!-- Región propia: los lectores de pantalla pueden saltar a los datos de contacto -->
+    <aside class="topbar" aria-label="Datos de contacto" transition:name="site-topbar" transition:animate="none">
       <div class="container topbar__inner">
         <ul class="topbar__datos">
           <li><Icono nombre="telefono" tamano={15} /> <a href={CONTACTO.telefono.href}>PBX {CONTACTO.telefono.texto}</a></li>
@@ -70,7 +71,7 @@ const CONTACTO = {
         </ul>
         <p class="topbar__desde">Ingeniería al servicio de El Salvador desde 2003</p>
       </div>
-    </div>
+    </aside>
 
     <Header />
 
