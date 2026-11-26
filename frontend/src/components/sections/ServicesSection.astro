@@ -16,7 +16,7 @@ const { variant } = Astro.props;
 const servicios = Astro.props.servicios ?? (await api.servicios());
 ---
 
-<Section variant={variant} id="servicios" class="section reveal" aria-labelledby="servicios-title" tabindex="-1">
+<Section variant={variant} id="servicios" class="section" aria-labelledby="servicios-title" tabindex="-1">
   <div class="container">
     <div class="section__head section__head--split">
       <div>
@@ -32,8 +32,8 @@ const servicios = Astro.props.servicios ?? (await api.servicios());
     {servicios.status !== 'ok' ? (
       <StatusMessage resultado={servicios} vacio="Pronto publicaremos nuestros servicios aquí." />
     ) : (
-      // 6 servicios, contador y «Ver todos los servicios»; el buscador busca en todos
-      <ServiciosCatalogo servicios={servicios.data} limite={6} />
+      // Hasta 7 servicios, contador y «Ver todos»
+      <ServiciosCatalogo servicios={servicios.data} limite={7} />
     )}
   </div>
 </Section>

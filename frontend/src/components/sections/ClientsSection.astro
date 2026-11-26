@@ -21,7 +21,7 @@ const lista = clientes.status === 'ok' ? clientes.data.filter((c) => c.servicios
 const totalTrabajos = (n: number) => (n === 1 ? '1 trabajo realizado' : `${n} trabajos realizados`);
 ---
 
-<Section variant={variant} id="clientes" class="section reveal" aria-labelledby="clientes-title" tabindex="-1">
+<Section variant={variant} id="clientes" class="section" aria-labelledby="clientes-title" tabindex="-1">
   <div class="container">
     <div class="section__head section__head--split">
       <div>
@@ -92,11 +92,9 @@ const totalTrabajos = (n: number) => (n === 1 ? '1 trabajo realizado' : `${n} tr
   .ref {
     display: grid;
     grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.6fr);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--surface-card);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--sombra-tarjeta);
   }
 
   /* ---------- Pestañas ---------- */
@@ -109,6 +107,7 @@ const totalTrabajos = (n: number) => (n === 1 ? '1 trabajo realizado' : `${n} tr
   }
   :global(.js) .ref__tabs { display: flex; }
   .ref__tab {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -116,7 +115,7 @@ const totalTrabajos = (n: number) => (n === 1 ? '1 trabajo realizado' : `${n} tr
     width: 100%;
     padding: 0.85rem 1rem;
     border: 0;
-    border-radius: var(--radius);
+    border-radius: 0;
     background: transparent;
     color: var(--text);
     font: inherit;
@@ -125,12 +124,28 @@ const totalTrabajos = (n: number) => (n === 1 ? '1 trabajo realizado' : `${n} tr
     line-height: 1.3;
     text-align: left;
     cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 150ms ease, color 150ms ease;
   }
-  .ref__tab:hover { background: var(--surface-card); color: var(--link); }
+  @media (hover: hover) and (pointer: fine) {
+    .ref__tab:hover { background: color-mix(in srgb, var(--surface-card) 60%, transparent); color: var(--heading); }
+  }
+  .ref__tab:active { background: var(--surface-card); }
+  /* Activa: tarjeta blanca con barra de acento a la izquierda (azul solo como acento) */
   .ref__tab[aria-selected='true'] {
-    background: var(--color-brand-blue);
-    color: var(--color-white);
+    background: var(--surface-card);
+    color: var(--heading);
+    font-weight: 600;
+    box-shadow: var(--sombra-tarjeta);
+  }
+  .ref__tab[aria-selected='true']::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--accent);
   }
   .ref__tab:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
   .ref__cuenta {
@@ -138,29 +153,32 @@ const totalTrabajos = (n: number) => (n === 1 ? '1 trabajo realizado' : `${n} tr
     display: grid;
     place-items: center;
     min-width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 999px;
-    background: var(--surface-card);
+    height: 1.5rem;
+    padding-inline: 0.3rem;
+    border: 1px solid var(--border);
     color: var(--text-muted);
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
   }
-  .ref__tab[aria-selected='true'] .ref__cuenta { background: rgba(255, 255, 255, 0.18); color: var(--color-white); }
+  .ref__tab[aria-selected='true'] .ref__cuenta { border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); }
 
   /* ---------- Paneles ---------- */
   .ref__paneles { padding: clamp(1.75rem, 4vw, 3rem); }
   :global(.js) .ref__panel:not(.is-activa) { display: none; }
   .ref__panel + .ref__panel { margin-top: 2.5rem; }
   :global(.js) .ref__panel + .ref__panel { margin-top: 0; }
-  .ref__panel.is-activa { animation: ref-entra 0.4s var(--ease); }
+  .ref__panel.is-activa { animation: ref-entra 180ms ease-out; }
   @keyframes ref-entra {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; }
   }
   .ref__total {
     margin: 0 0 0.5rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--eyebrow);
   }
@@ -188,10 +206,11 @@ const totalTrabajos = (n: number) => (n === 1 ? '1 trabajo realizado' : `${n} tr
   /* ---------- Otros clientes ---------- */
   .otros { margin-top: clamp(2.5rem, 5vw, 3.5rem); }
   .otros h3 {
-    font-family: var(--font-sans);
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-muted);
     margin-bottom: 1rem;
@@ -201,7 +220,6 @@ const totalTrabajos = (n: number) => (n === 1 ? '1 trabajo realizado' : `${n} tr
     margin: 0;
     padding: 0.45rem 0.9rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
     background: var(--surface-card);
     font-size: 0.92rem;
     font-weight: 500;
@@ -223,6 +241,8 @@ const totalTrabajos = (n: number) => (n === 1 ? '1 trabajo realizado' : `${n} tr
       scrollbar-width: thin;
     }
     .ref__tab { width: auto; flex-shrink: 0; white-space: nowrap; }
+    /* En fila, la barra de acento va abajo */
+    .ref__tab[aria-selected='true']::before { top: auto; right: 0; width: auto; height: 2px; }
   }
 </style>
 

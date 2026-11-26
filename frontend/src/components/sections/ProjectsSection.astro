@@ -20,7 +20,7 @@ const recientes = [...proyectos].sort((a, b) => ultimoAnio(b) - ultimoAnio(a) ||
 const mosaico = bandaProyectos.slice(0, 4);
 ---
 
-<Section variant={variant} id="proyectos" class="section reveal proyectos" aria-labelledby="proyectos-title" tabindex="-1">
+<Section variant={variant} id="proyectos" class="section proyectos" aria-labelledby="proyectos-title" tabindex="-1">
   <div class="container">
     <div class="section__head section__head--split">
       <div>
@@ -68,7 +68,19 @@ const mosaico = bandaProyectos.slice(0, 4);
 </Section>
 
 <style>
-  .proyectos { position: relative; overflow: hidden; }
+  /* Cuadrícula de plano del hero (mayor 80px, menor 16px), más tenue y desvanecida */
+  .proyectos {
+    position: relative;
+    overflow: hidden;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+    background-position: calc(50% - 40px) 0;
+  }
+  .proyectos > .container { position: relative; }
 
   .proyectos__grid {
     display: grid;
@@ -89,12 +101,11 @@ const mosaico = bandaProyectos.slice(0, 4);
   }
   .linea li:last-child { border-bottom: 1px solid var(--border); }
   .linea__anio {
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
     color: var(--accent);
-    line-height: 1.6;
+    line-height: 1.6rem; /* alineado con la primera línea del título */
   }
   .linea h3 {
     font-family: var(--font-sans);
@@ -113,11 +124,22 @@ const mosaico = bandaProyectos.slice(0, 4);
     gap: 0.9rem;
   }
   .mosaico__item {
+    position: relative;
     display: block;
     overflow: hidden;
-    border-radius: var(--radius-lg);
     background: var(--surface-muted);
+    transition: transform 120ms var(--ease-out);
   }
+  /* Borde fino del hero, por encima de la foto */
+  .mosaico__item::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(108, 182, 236, 0.4);
+    transition: border-color 200ms ease;
+    pointer-events: none;
+  }
+  .mosaico__item:active { transform: scale(0.985); }
   .mosaico__item--1 { grid-row: 1 / 3; }
   .mosaico__item--2 { grid-row: 1 / 2; }
   .mosaico__item--3 { grid-row: 2 / 4; grid-column: 2; }
@@ -126,9 +148,16 @@ const mosaico = bandaProyectos.slice(0, 4);
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.6s var(--ease);
+    transition: transform 400ms var(--ease-out);
   }
-  .mosaico__item:hover img { transform: scale(1.06); }
+  @media (hover: hover) and (pointer: fine) {
+    .mosaico__item:hover img { transform: scale(1.03); }
+    .mosaico__item:hover::after { border-color: var(--color-accent-light); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mosaico__item, .mosaico__item img { transition: none; }
+    .mosaico__item:active, .mosaico__item:hover img { transform: none; }
+  }
 
   .proyectos__acciones { margin-top: clamp(2.5rem, 5vw, 3.5rem); }
 

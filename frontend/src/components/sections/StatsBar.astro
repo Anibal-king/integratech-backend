@@ -52,9 +52,8 @@ const stats: { valor: string; label: string; icono: NombreIcono }[] = [
     display: grid;
     grid-template-columns: repeat(var(--n), minmax(0, 1fr));
     background: var(--surface-card);
-    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--sombra-tarjeta), 0 18px 40px -20px rgba(7, 27, 48, 0.28);
     overflow: hidden;
   }
   .stats__card li {
@@ -70,11 +69,10 @@ const stats: { valor: string; label: string; icono: NombreIcono }[] = [
     flex-shrink: 0;
     display: grid;
     place-items: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: var(--color-brand-blue-tint);
-    color: var(--color-brand-blue);
+    width: 44px;
+    height: 44px;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    color: var(--accent);
   }
   .stats__card strong {
     display: block;

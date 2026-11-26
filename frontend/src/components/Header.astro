@@ -113,8 +113,9 @@ const activeSection = sectionForPath(pathname);
     background: var(--color-brand-blue);
     color: var(--color-on-brand-blue);
   }
-  .header__cta:hover,
-  .header__cta:active { background: var(--color-brand-blue-hover); }
+  @media (hover: hover) and (pointer: fine) {
+    .header__cta:hover { background: var(--color-brand-blue-hover); }
+  }
 
   /* Entre 1024 y 1279px el logo no deja sitio: se compacta un poco */
   @media (max-width: 1279px) {

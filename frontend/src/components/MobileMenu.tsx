@@ -224,7 +224,6 @@ export default function MobileMenu({ links, cta, pathname }: Props) {
           color: var(--color-on-brand-blue);
           font-weight: 600;
         }
-        .mnav__cta:hover,
         .mnav__cta:active { background: var(--color-brand-blue-hover); }
       `}</style>
     </div>

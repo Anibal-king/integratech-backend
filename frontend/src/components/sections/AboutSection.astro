@@ -28,7 +28,7 @@ const iconoValor = (nombre: string) =>
 const [fotoPrincipal, fotoSecundaria] = fotosNosotros;
 ---
 
-<Section variant={variant} id="nosotros" class="section reveal" aria-labelledby="nosotros-title" tabindex="-1">
+<Section variant={variant} id="nosotros" class="section" aria-labelledby="nosotros-title" tabindex="-1">
   <div class="container">
     <div class="about">
       <div class="about__fotos">
@@ -139,8 +139,7 @@ const [fotoPrincipal, fotoSecundaria] = fotosNosotros;
   .about__foto {
     position: absolute;
     object-fit: cover;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--sombra-tarjeta);
   }
   .about__foto--a { left: 0; top: 0; width: 72%; height: 78%; }
   .about__foto--b {
@@ -148,7 +147,8 @@ const [fotoPrincipal, fotoSecundaria] = fotosNosotros;
     bottom: 0;
     width: 52%;
     height: 54%;
-    border: 6px solid var(--surface);
+    outline: 6px solid var(--surface);
+    box-shadow: var(--sombra-tarjeta-hover);
   }
   .about__anio {
     position: absolute;
@@ -156,13 +156,21 @@ const [fotoPrincipal, fotoSecundaria] = fotosNosotros;
     bottom: 4%;
     display: flex;
     flex-direction: column;
-    padding: 1.1rem 1.4rem;
-    border-radius: var(--radius-lg);
-    background: var(--color-brand-blue);
+    padding: 0.9rem 1.2rem 1rem;
+    border: 1px solid rgba(108, 182, 236, 0.4);
+    background: var(--color-navy-deep);
     color: var(--color-white);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--sombra-tarjeta-hover);
   }
-  .about__anio span { font-size: 0.8rem; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.85; }
+  .about__anio span {
+    margin-bottom: 0.35rem;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-accent-light);
+  }
   .about__anio strong { font-family: var(--font-display); font-size: 2.6rem; font-weight: 600; line-height: 1; }
 
   /* ---------- Texto ---------- */
@@ -172,7 +180,7 @@ const [fotoPrincipal, fotoSecundaria] = fotosNosotros;
   .valores { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
   .valores li {
     display: grid;
-    grid-template-columns: 48px 1fr;
+    grid-template-columns: 44px 1fr;
     gap: 1.1rem;
     margin: 0;
     padding-top: 1.25rem;
@@ -181,11 +189,10 @@ const [fotoPrincipal, fotoSecundaria] = fotosNosotros;
   .valores__icono {
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius);
-    background: var(--color-brand-blue-tint);
-    color: var(--color-brand-blue);
+    width: 44px;
+    height: 44px;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    color: var(--accent);
   }
   .valores h3 { font-size: 1.25rem; margin: 0 0 0.2rem; }
   .valores p { margin: 0; color: var(--text-muted); }
@@ -199,35 +206,77 @@ const [fotoPrincipal, fotoSecundaria] = fotosNosotros;
   }
   .mv article {
     position: relative;
-    padding: 2rem 2rem 2rem 2.25rem;
-    border-radius: var(--radius-lg);
-    background: var(--surface-muted);
-    border-left: 3px solid var(--color-brand-blue);
+    padding: clamp(1.5rem, 3vw, 2rem);
+    background: var(--surface-card);
+    box-shadow: var(--sombra-tarjeta);
+  }
+  /* Acento: trazo corto arriba, como el guion de las etiquetas */
+  .mv article::before {
+    content: '';
+    position: absolute;
+    left: clamp(1.5rem, 3vw, 2rem);
+    top: 0;
+    width: 24px;
+    height: 2px;
+    background: var(--accent);
   }
   .mv__etiqueta {
     display: block;
-    margin-bottom: 0.6rem;
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--heading);
+    margin-bottom: 0.75rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--eyebrow);
   }
-  .mv p { margin: 0; color: var(--text-muted); font-size: 1.05rem; }
+  .mv p { margin: 0; color: var(--text); font-size: 1.05rem; }
 
   /* ---------- Datos legales (desplegable) ---------- */
   .legal-box {
     margin-top: 1.5rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.4rem;
+    background: var(--surface-card);
+    box-shadow: var(--sombra-tarjeta);
   }
   .legal-box summary {
     display: flex;
     align-items: center;
     gap: 0.6rem;
+    min-height: 56px;
+    padding: 0.75rem 1.4rem;
     cursor: pointer;
+    list-style: none;
     font-weight: 600;
     color: var(--heading);
+    transition: background-color 150ms ease;
+  }
+  .legal-box summary::-webkit-details-marker { display: none; }
+  /* Indicador +/–: la barra vertical gira y se esconde al abrir */
+  .legal-box summary::after {
+    content: '';
+    margin-left: auto;
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    background:
+      linear-gradient(currentColor, currentColor) center / 12px 1.5px no-repeat,
+      linear-gradient(currentColor, currentColor) center / 1.5px 12px no-repeat;
+    color: var(--accent);
+    transition: transform 200ms var(--ease-out);
+  }
+  .legal-box[open] summary::after {
+    background: linear-gradient(currentColor, currentColor) center / 12px 1.5px no-repeat;
+    transform: rotate(180deg);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .legal-box summary:hover { background: var(--surface-muted); }
+  }
+  .legal-box summary:focus-visible { outline-offset: -3px; }
+  .legal-box[open] { padding-bottom: 1.4rem; }
+  .legal-box > :not(summary) { margin-inline: 1.4rem; }
+  .legal-box .legal { width: calc(100% - 2.8rem); }
+  @media (prefers-reduced-motion: reduce) {
+    .legal-box summary::after { transition: none; }
   }
   .legal-box summary svg { color: var(--accent); }
   .legal {
@@ -255,7 +304,6 @@ const [fotoPrincipal, fotoSecundaria] = fotosNosotros;
   .doc img {
     width: 100%;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
   }
   .doc figcaption {
     margin-top: 0.4rem;

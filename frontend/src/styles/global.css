@@ -12,10 +12,18 @@
   /* Espaciado / radios / sombra: esquinas sobrias, estilo técnico */
   --radius: 6px;
   --radius-lg: 10px;
+  --radius-btn: 2px; /* botones: casi rectos */
   --shadow-sm: 0 1px 2px rgba(7, 27, 48, 0.05), 0 1px 3px rgba(7, 27, 48, 0.08);
   --shadow-md: 0 10px 30px -12px rgba(7, 27, 48, 0.22);
   --shadow-lg: 0 24px 48px -16px rgba(7, 27, 48, 0.32);
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* entradas y respuesta al presionar */
+
+  /* Mono de las etiquetas (la misma que usa el hero) */
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  /* Tarjetas: profundidad con sombra suave en vez de borde duro */
+  --sombra-tarjeta: 0 0 0 1px rgba(7, 27, 48, 0.06), 0 1px 2px rgba(7, 27, 48, 0.06), 0 4px 12px -4px rgba(7, 27, 48, 0.1);
+  --sombra-tarjeta-hover: 0 0 0 1px rgba(7, 27, 48, 0.08), 0 2px 4px rgba(7, 27, 48, 0.06), 0 14px 28px -10px rgba(7, 27, 48, 0.22);
 
   /* Altura real del header sticky (incluye su borde inferior) */
   --header-height: 80px;
@@ -32,25 +40,17 @@
   html { scroll-behavior: smooth; }
 }
 
+/* Sitio público: esquinas rectas como el hero (el panel /admin conserva las suyas) */
+body:not(.admin) {
+  --radius: 2px;
+  --radius-lg: 0px;
+}
+
 /* Anclas de la landing: el título no queda oculto bajo el header */
 section[id] { scroll-margin-top: var(--header-height); }
 
 /* Las secciones reciben foco tras el salto (tabindex="-1"); sin anillo alrededor de toda la sección */
 section[tabindex='-1']:focus { outline: none; }
-
-/* ---------- Aparición de secciones ----------
-   Solo se ocultan si el JS marcó <html class="js">; sin JS todo queda visible. */
-@media (prefers-reduced-motion: no-preference) {
-  .js .reveal {
-    opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
-  }
-  .js .reveal.is-visible {
-    opacity: 1;
-    transform: none;
-  }
-}
 
 body {
   margin: 0;
@@ -99,10 +99,17 @@ li { margin-bottom: 0.35rem; }
 /* ---------- Utilidades de layout ---------- */
 
 .container {
-  width: 100%;
-  max-width: var(--content-max);
+  /* Mismo ancho que la lámina del hero: múltiplos de 160px hasta 1280px,
+     así todos los bordes del sitio caen sobre las mismas líneas. */
+  width: min(100% - 160px, 1280px);
+  width: round(down, min(100% - 160px, 1280px), 160px);
   margin-inline: auto;
-  padding-inline: clamp(1rem, 4vw, 2.5rem);
+}
+@media (max-width: 1023px) {
+  .container {
+    width: calc(100% - 32px);
+    width: round(down, 100% - 32px, 32px);
+  }
 }
 
 .section {
@@ -140,17 +147,19 @@ li { margin-bottom: 0.35rem; }
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  font-size: 0.8rem;
-  letter-spacing: 0.16em;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--eyebrow);
   margin-bottom: 1rem;
 }
 .eyebrow::before {
   content: '';
-  width: 28px;
-  height: 2px;
+  width: 24px;
+  height: 1px;
   background: currentColor;
 }
 
@@ -160,49 +169,60 @@ li { margin-bottom: 0.35rem; }
   line-height: 1.6;
 }
 
-/* ---------- Botones ---------- */
+/* ---------- Botones ----------
+   Esquinas casi rectas (2px). Principal sólido; secundario
+   discreto (borde fino). Hover solo con mouse; al presionar se hunde un poco. */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
   min-height: 48px;
   padding: 0.75rem 1.5rem;
-  border-radius: var(--radius);
+  border-radius: var(--radius-btn);
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 0.98rem;
   letter-spacing: 0.01em;
   line-height: 1.2;
-  border: 1.5px solid transparent;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 120ms var(--ease-out);
 }
 .btn:hover { text-decoration: none; }
-.btn .btn__arrow { transition: transform 0.2s var(--ease); }
-.btn:hover .btn__arrow { transform: translateX(4px); }
+.btn:active { transform: scale(0.97); }
+.btn .btn__arrow { transition: transform 150ms var(--ease-out); }
 
 .btn--primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-text);
 }
-.btn--primary:hover { background: var(--btn-primary-bg-hover); }
 
 .btn--lg {
-  min-height: 54px;
-  padding-inline: 1.9rem;
-  font-size: 1.05rem;
+  min-height: 52px;
+  padding-inline: 1.6rem;
+  font-size: 1rem;
 }
 .btn--primary.btn--lg { color: var(--btn-primary-text-large); }
 
-/* Secundario: el borde (≥ 3:1) lo separa del fondo en cualquier superficie */
+/* Secundario: borde fino del color del texto; se afirma al pasar el mouse */
 .btn--secondary {
   background: var(--btn-secondary-bg);
   color: var(--btn-secondary-text);
-  border-color: var(--border-strong);
+  border-color: color-mix(in srgb, var(--btn-secondary-text) 32%, transparent);
 }
-.btn--secondary:hover { background: var(--btn-secondary-bg-hover); border-color: var(--btn-secondary-text); }
+
+@media (hover: hover) and (pointer: fine) {
+  .btn--primary:hover { background: var(--btn-primary-bg-hover); }
+  .btn:hover .btn__arrow { transform: translateX(3px); }
+  .btn--secondary:hover { background: var(--btn-secondary-bg-hover); border-color: var(--btn-secondary-text); }
+}
 
 /* Enlace con flecha (acción terciaria) */
 .link-arrow {
@@ -235,14 +255,17 @@ li { margin-bottom: 0.35rem; }
 
 .card {
   background: var(--surface-card);
-  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  box-shadow: var(--sombra-tarjeta);
   padding: 1.75rem;
-  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), border-color 0.25s ease;
+  transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
 }
-.card--link:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
+@media (hover: hover) and (pointer: fine) {
+  .card--link:hover { transform: translateY(-2px); box-shadow: var(--sombra-tarjeta-hover); }
+}
+.card--link:active { transform: translateY(0) scale(0.99); transition-duration: 120ms; }
+@media (prefers-reduced-motion: reduce) {
+  .card--link:hover, .card--link:active { transform: none; }
 }
 .card h3 { margin-bottom: 0.4rem; }
 .card p { color: var(--text-muted); margin-bottom: 0; }
@@ -253,7 +276,7 @@ li { margin-bottom: 0.35rem; }
   font-weight: 600;
   letter-spacing: 0.04em;
   padding: 0.25rem 0.65rem;
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: var(--surface-muted);
   color: var(--text-muted);
 }
