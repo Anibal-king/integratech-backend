@@ -151,6 +151,13 @@ const activeSection = sectionForPath(pathname);
   // Mientras dura un scroll programado, el scrollspy no cambia el activo (evita recorrer los enlaces intermedios).
   let spyLocked = false;
   let teardown: Array<() => void> = [];
+  // Llegada con «atrás»/«adelante»: el router (o el navegador) ya devolvió la página
+  // a donde estaba el visitante; no hay que llevarlo otra vez al inicio de la sección.
+  const navInicial = performance.getEntriesByType?.('navigation')[0] as PerformanceNavigationTiming | undefined;
+  let porHistorial = navInicial?.type === 'back_forward';
+  document.addEventListener('astro:before-preparation', (e) => {
+    porHistorial = (e as Event & { navigationType?: string }).navigationType === 'traverse';
+  });
 
   function setActive(id: string | null, updateUrl = false) {
     if (id !== current) {
@@ -292,6 +299,6 @@ const activeSection = sectionForPath(pathname);
     // Llegada a "/#seccion" (desde una subpágina o un enlace externo): asegurar el
     // aterrizaje (no-op si el navegador ya está ahí) y enfocar la sección.
     const hashId = decodeURIComponent(location.hash.slice(1));
-    if (hashId && document.getElementById(hashId)) goTo(hashId);
+    if (hashId && document.getElementById(hashId) && !porHistorial) goTo(hashId);
   });
 </script>
