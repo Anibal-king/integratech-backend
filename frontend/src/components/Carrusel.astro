@@ -1,0 +1,141 @@
+---
+/**
+ * Carrusel en bucle continuo (el de «Han confiado en nosotros», compartido).
+ *
+ * Recibe los <li> por el slot y los pinta dos veces: la segunda copia es solo
+ * visual (aria-hidden) para que el bucle no tenga cortes y los lectores
+ * de pantalla no lean todo dos veces. Cada lista se desplaza su propio ancho
+ * (-100 %): al terminar, la copia ocupa exactamente el lugar de la original.
+ *
+ * - Se pausa al pasar el mouse. Con `etiqueta`, la franja es una región que se
+ *   puede enfocar con el teclado (y se pausa con el foco). Con `tactil`, tocarla
+ *   en celular la pausa; tocar fuera la reanuda.
+ * - Con «reducir movimiento» no se mueve: `quieto="envolver"` acomoda los
+ *   elementos en varias líneas; `quieto="deslizar"` deja una fila con scroll a mano.
+ */
+interface Props {
+  /** Duración de una vuelta completa (CSS), p. ej. '60s' o 'calc(10 * 4s)'. */
+  duracion: string;
+  /** Avanza hacia la derecha en vez de hacia la izquierda. */
+  reverso?: boolean;
+  /** Separación entre elementos (también entre la última de una copia y la primera de la otra). */
+  separacion?: string;
+  /** Con reducir movimiento: en varias líneas o en una fila deslizable a mano. */
+  quieto?: 'envolver' | 'deslizar';
+  /** Nombre accesible: si se da, la franja es una región enfocable con el teclado. */
+  etiqueta?: string;
+  /** Tocar la franja en pantallas táctiles la pausa. */
+  tactil?: boolean;
+  /** Nunca se detiene: ni con el cursor, ni con el foco, ni al tocar. */
+  continuo?: boolean;
+  class?: string;
+}
+
+const { duracion, reverso = false, separacion = '0px', quieto = 'envolver', etiqueta, tactil = false, continuo = false, class: clase } = Astro.props;
+const elementos = await Astro.slots.render('default');
+---
+
+<div
+  class:list={['carrusel', clase]}
+  data-carrusel
+  data-quieto={quieto}
+  data-tactil={tactil && !continuo ? '' : undefined}
+  data-continuo={continuo ? '' : undefined}
+  role={etiqueta ? 'region' : undefined}
+  aria-label={etiqueta}
+  tabindex={etiqueta ? 0 : undefined}
+  style={`--carrusel-duracion:${duracion};--carrusel-sep:${separacion};--carrusel-dir:${reverso ? 'reverse' : 'normal'}`}
+>
+  <ul class="carrusel__lista" set:html={elementos} />
+  <ul class="carrusel__lista" aria-hidden="true" set:html={elementos} />
+</div>
+
+<style>
+  .carrusel {
+    display: flex;
+    overflow: hidden;
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .carrusel__lista {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--carrusel-sep);
+    list-style: none;
+    margin: 0;
+    /* La separación también va al final: así el empalme entre copias es igual al resto */
+    padding: 0 var(--carrusel-sep) 0 0;
+    animation: carrusel-avance var(--carrusel-duracion) linear infinite var(--carrusel-dir);
+  }
+  .carrusel:not([data-tactil], [data-continuo]):hover .carrusel__lista,
+  /* Foco de teclado (al tocar o hacer clic no cuenta: ahí mandan el cursor y el toque) */
+  .carrusel:not([data-continuo]):focus-visible .carrusel__lista,
+  .carrusel:not([data-continuo]):has(:focus-visible) .carrusel__lista,
+  .carrusel[data-pausa] .carrusel__lista { animation-play-state: paused; }
+  /* En táctiles el «hover» se queda pegado tras tocar: ahí la pausa la lleva el toque */
+  @media (hover: hover) {
+    .carrusel[data-tactil]:hover .carrusel__lista { animation-play-state: paused; }
+  }
+  .carrusel:focus-visible { outline-offset: 4px; }
+  @keyframes carrusel-avance {
+    to { transform: translateX(-100%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .carrusel { mask-image: none; }
+    .carrusel__lista { animation: none; }
+    .carrusel__lista[aria-hidden] { display: none; }
+    .carrusel[data-quieto='envolver'] .carrusel__lista { flex-wrap: wrap; flex-shrink: 1; row-gap: 0.5rem; }
+    /* Fila que se desliza a mano, con imán suave en cada elemento */
+    .carrusel[data-quieto='deslizar'] {
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity;
+      scrollbar-width: thin;
+      padding-bottom: 0.75rem;
+    }
+    .carrusel[data-quieto='deslizar'] .carrusel__lista { padding-right: 0; }
+    .carrusel[data-quieto='deslizar'] .carrusel__lista > :global(*) { scroll-snap-align: start; }
+  }
+</style>
+
+<script>
+  /*
+   * Pausa táctil: un toque (sin arrastrar) sobre la franja la pausa o la reanuda;
+   * un toque fuera la reanuda. Solo en las franjas con data-tactil.
+   */
+  function iniciarCarruseles() {
+    const franjas = [...document.querySelectorAll<HTMLElement>('[data-carrusel][data-tactil]')];
+    if (!franjas.length) return;
+    let inicio: { x: number; y: number; franja: HTMLElement | null } | null = null;
+
+    const abajo = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return;
+      const franja = (e.target as Element).closest<HTMLElement>('[data-carrusel][data-tactil]');
+      inicio = { x: e.clientX, y: e.clientY, franja };
+    };
+    const arriba = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch' || !inicio) return;
+      const toque = Math.hypot(e.clientX - inicio.x, e.clientY - inicio.y) < 10; // un desplazamiento no cuenta
+      const { franja } = inicio;
+      inicio = null;
+      if (!toque) return;
+      for (const f of franjas) {
+        if (f === franja) f.toggleAttribute('data-pausa');
+        else f.removeAttribute('data-pausa');
+      }
+    };
+    document.addEventListener('pointerdown', abajo, { passive: true });
+    document.addEventListener('pointerup', arriba, { passive: true });
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        document.removeEventListener('pointerdown', abajo);
+        document.removeEventListener('pointerup', arriba);
+      },
+      { once: true }
+    );
+  }
+
+  document.addEventListener('astro:page-load', iniciarCarruseles);
+</script>

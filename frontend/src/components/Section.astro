@@ -24,10 +24,15 @@ const { variant, as: Tag = 'section', class: className, ...rest } = Astro.props;
 <style>
   .surface { background: var(--surface); }
 
-  /* Dos superficies iguales seguidas: un borde las separa al hacer scroll */
+  /* Dos superficies iguales seguidas: un borde las separa al hacer scroll.
+     Astro puede dejar el <script> de un componente (p. ej. Carrusel) entre dos
+     secciones: no cuenta como separación. */
   .surface-light + .surface-light,
+  .surface-light + :global(script) + .surface-light,
   .surface-muted + .surface-muted,
-  .surface-dark + .surface-dark {
+  .surface-muted + :global(script) + .surface-muted,
+  .surface-dark + .surface-dark,
+  .surface-dark + :global(script) + .surface-dark {
     border-top: 1px solid var(--border);
   }
 </style>
