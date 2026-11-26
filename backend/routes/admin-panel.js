@@ -31,7 +31,7 @@ const LOCAL = "'-6 hours'";
 // Vista unificada: mismas columnas para ambos orígenes.
 const UNIFICADA = `
   SELECT 'formulario' AS origen, 'formulario' AS canal, id, nombre, empresa, correo, telefono, mensaje,
-         NULL AS tipo_servicio, NULL AS alcance, NULL AS ubicacion, NULL AS plazo, NULL AS presupuesto,
+         tipo_servicio, NULL AS alcance, NULL AS ubicacion, NULL AS plazo, NULL AS presupuesto,
          estado, notas, fecha_creacion, fecha_actualizacion
     FROM mensajes_contacto
   UNION ALL
@@ -75,6 +75,7 @@ function aSolicitud(f) {
           .filter(Boolean)
           .join('\n')
       : (f.mensaje ?? ''),
+    tipo_formulario: chatbot ? null : f.tipo_servicio,
     chatbot: chatbot
       ? { tipo_servicio: f.tipo_servicio, alcance: f.alcance, ubicacion: f.ubicacion, plazo: f.plazo, presupuesto: f.presupuesto }
       : null,

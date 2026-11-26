@@ -11,6 +11,12 @@ const router = express.Router();
 // Longitud máxima de cada campo del formulario
 const MAX = { nombre: 120, correo: 200, telefono: 40, empresa: 150, mensaje: 5000 };
 
+/**
+ * Tipos de solicitud que el sitio puede indicar (clave del payload → texto que se
+ * guarda y se ve en el panel). Cualquier otro valor se rechaza.
+ */
+const TIPOS = { personalizado: 'Servicio personalizado' };
+
 /** @param {Record<string, string>} m */
 function resumenTexto(m) {
   return [
@@ -20,6 +26,7 @@ function resumenTexto(m) {
     `Empresa  : ${m.empresa || '-'}`,
     `Correo   : ${m.correo || '-'}`,
     `Teléfono : ${m.telefono || '-'}`,
+    ...(m.tipo ? [`Tipo     : ${m.tipo}`] : []),
     ``,
     `Mensaje:`,
     m.mensaje,
@@ -41,6 +48,7 @@ function resumenHtml(m) {
       ${fila('Empresa', m.empresa)}
       ${fila('Correo', m.correo)}
       ${fila('Teléfono', m.telefono)}
+      ${m.tipo ? fila('Tipo', m.tipo) : ''}
     </table>
     <p style="margin:16px 0 4px;color:#0b2a4a;"><strong>Mensaje</strong></p>
     <p style="margin:0;white-space:pre-wrap;font-size:14px;">${esc(m.mensaje)}</p>
@@ -60,6 +68,12 @@ router.post('/', rateLimit({ max: 5, ventanaMs: 10 * 60 * 1000 }), async (req, r
       datos[campo] = valor;
     }
     const { nombre, correo, telefono, empresa, mensaje } = datos;
+    // Solo claves propias de TIPOS (nada de 'toString', '__proto__', etc.)
+    const sinTipo = body.tipo === undefined || body.tipo === null || body.tipo === '';
+    if (!sinTipo && !(typeof body.tipo === 'string' && Object.hasOwn(TIPOS, body.tipo))) {
+      return res.status(400).json({ error: 'El tipo de solicitud no es válido.' });
+    }
+    const tipo = sinTipo ? null : TIPOS[/** @type {keyof typeof TIPOS} */ (body.tipo)];
     if (!nombre || !mensaje) {
       return res.status(400).json({ error: 'Los campos "nombre" y "mensaje" son obligatorios.' });
     }
@@ -75,17 +89,17 @@ router.post('/', rateLimit({ max: 5, ventanaMs: 10 * 60 * 1000 }), async (req, r
 
     // 1) Persistencia primero: el mensaje no se pierde aunque falle el correo
     const info = db.prepare(`
-      INSERT INTO mensajes_contacto (nombre, correo, telefono, empresa, mensaje)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(nombre, correo || null, telefono || null, empresa || null, mensaje);
+      INSERT INTO mensajes_contacto (nombre, correo, telefono, empresa, mensaje, tipo_servicio)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(nombre, correo || null, telefono || null, empresa || null, mensaje, tipo);
 
     // 2) Notificación por correo (si SMTP está configurado)
     let correoEnviado = false;
     try {
       const r = await sendMail({
-        subject: `Contacto web — ${nombre}${empresa ? ` (${empresa})` : ''}`,
-        text: resumenTexto(datos),
-        html: resumenHtml(datos),
+        subject: `${tipo ? `${tipo} — ` : 'Contacto web — '}${nombre}${empresa ? ` (${empresa})` : ''}`,
+        text: resumenTexto({ ...datos, tipo: tipo ?? '' }),
+        html: resumenHtml({ ...datos, tipo: tipo ?? '' }),
         replyTo: correo || undefined,
       });
       correoEnviado = r.sent;

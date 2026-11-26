@@ -1,12 +1,12 @@
 ---
 /**
  * Tarjetas de servicios con buscador. Lo usan la sección Servicios del inicio
- * (las primeras `limite` tarjetas, un contador y «Ver todos los servicios») y el
+ * (las primeras `limite` tarjetas y la invitación a pedir un servicio personalizado) y el
  * catálogo /servicios (todas).
  *
  * Todas las tarjetas van en el HTML (visibles para buscadores). Las que pasan del
  * límite llevan `hidden` y solo aparecen al buscar; sin JavaScript se ven las
- * primeras y el botón lleva al catálogo completo.
+ * primeras (el catálogo completo sigue en /servicios).
  *
  * Cada tarjeta es un <article>: el enlace del título la cubre entera (toda la
  * tarjeta es clicable) y «+N servicios más» es un enlace propio encima de él.
@@ -15,7 +15,7 @@ import { mediaUrl, mediaSrcset, type CategoriaServicio } from '../lib/api';
 
 interface Props {
   servicios: CategoriaServicio[];
-  /** Tarjetas visibles sin buscar, con contador y «Ver todos los servicios» debajo. Sin límite: todas. */
+  /** Tarjetas visibles sin buscar, con la invitación «Solicitar servicio personalizado» debajo (y el contador al buscar). Sin límite: todas. */
   limite?: number;
   /** Nivel del título de cada tarjeta (3 bajo el h2 de la sección; 2 bajo el h1 del catálogo). */
   nivelTitulo?: 2 | 3;
@@ -152,12 +152,17 @@ for (const sv of servicios) {
 
   {conPie && (
     <div class="svc-pie">
-      <p class="svc-pie__texto" data-svc-contador data-inicial={`Mostrando ${visibles} de ${total} líneas de servicio`}>
-        Mostrando {visibles} de {total} líneas de servicio
-      </p>
-      <a href="/servicios" class="btn btn--primary svc-pie__boton" data-svc-todos>
-        Ver todos los servicios <span aria-hidden="true">→</span>
-      </a>
+      <!-- Contador: solo mientras hay una búsqueda activa (el script lo llena y lo muestra) -->
+      <p class="svc-pie__texto" data-svc-contador hidden></p>
+      <!-- Invitación a pedir un servicio que no está en la lista: mismo flujo que
+           «Solicitar cotización» del hero (formulario de contacto), marcado como personalizado -->
+      <div class="svc-pie__invitacion" data-svc-invitacion>
+        <p class="svc-pie__titulo">¿Necesita un servicio que no aparece aquí?</p>
+        <p class="svc-pie__texto">Cuéntenos qué necesita y le preparamos una propuesta a la medida.</p>
+        <a href="/#contacto" class="btn btn--primary svc-pie__boton" data-svc-personalizado>
+          Solicitar servicio personalizado <span aria-hidden="true">→</span>
+        </a>
+      </div>
     </div>
   )}
 </div>
@@ -181,7 +186,7 @@ for (const sv of servicios) {
     min-height: 48px;
     padding: 0.7rem 3rem 0.7rem 2.7rem;
     border: 1px solid var(--border-strong);
-    border-radius: 999px;
+    border-radius: var(--radius-btn);
     background: var(--input-bg);
     color: var(--text);
     font: inherit;
@@ -203,7 +208,7 @@ for (const sv of servicios) {
     width: 36px;
     height: 36px;
     border: 0;
-    border-radius: 50%;
+    border-radius: var(--radius-btn);
     background: transparent;
     color: var(--text-muted);
     cursor: pointer;
@@ -285,6 +290,28 @@ for (const sv of servicios) {
     gap: 1.75rem;
     align-items: stretch;
   }
+  /* La última tarjeta, si queda sola en su fila, ocupa toda la fila en horizontal
+     (foto a la izquierda): sin huecos vacíos. Se calcula sobre las visibles. */
+  @media (min-width: 1024px) {
+    .svc-grid > .svc-card:not([hidden]):nth-child(3n + 1 of .svc-card:not([hidden])):nth-last-child(1 of .svc-card:not([hidden])) {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: calc((100% - 2 * 1.75rem) / 3 + 0px) minmax(0, 1fr);
+    }
+    .svc-grid > .svc-card:not([hidden]):nth-child(3n + 1 of .svc-card:not([hidden])):nth-last-child(1 of .svc-card:not([hidden])) .svc-card__media { aspect-ratio: auto; position: relative; min-height: 220px; }
+    .svc-grid > .svc-card:not([hidden]):nth-child(3n + 1 of .svc-card:not([hidden])):nth-last-child(1 of .svc-card:not([hidden])) .svc-card__media img { position: absolute; inset: 0; }
+    .svc-grid > .svc-card:not([hidden]):nth-child(3n + 1 of .svc-card:not([hidden])):nth-last-child(1 of .svc-card:not([hidden])) .svc-card__body { padding: 2rem 2.25rem; }
+  }
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .svc-grid > .svc-card:not([hidden]):nth-child(2n + 1 of .svc-card:not([hidden])):nth-last-child(1 of .svc-card:not([hidden])) {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: calc((100% - 1.75rem) / 2) minmax(0, 1fr);
+    }
+    .svc-grid > .svc-card:not([hidden]):nth-child(2n + 1 of .svc-card:not([hidden])):nth-last-child(1 of .svc-card:not([hidden])) .svc-card__media { aspect-ratio: auto; position: relative; min-height: 220px; }
+    .svc-grid > .svc-card:not([hidden]):nth-child(2n + 1 of .svc-card:not([hidden])):nth-last-child(1 of .svc-card:not([hidden])) .svc-card__media img { position: absolute; inset: 0; }
+    .svc-grid > .svc-card:not([hidden]):nth-child(2n + 1 of .svc-card:not([hidden])):nth-last-child(1 of .svc-card:not([hidden])) .svc-card__body { padding: 2rem 2.25rem; }
+  }
   @media (max-width: 1023px) {
     .svc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
@@ -295,12 +322,12 @@ for (const sv of servicios) {
     position: relative;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--surface-card);
     color: var(--text);
-    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s ease;
+    box-shadow: var(--sombra-tarjeta);
+    transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
   }
   /* Línea de acento que crece en la parte superior al pasar el mouse */
   .svc-card::before {
@@ -312,12 +339,19 @@ for (const sv of servicios) {
     background: var(--color-brand-blue);
     transform: scaleX(0);
     transform-origin: left;
-    transition: transform 0.35s var(--ease);
+    transition: transform 260ms var(--ease-out);
   }
-  .svc-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-md);
+  @media (hover: hover) and (pointer: fine) {
+    .svc-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--sombra-tarjeta-hover);
+    }
+    .svc-card:hover::before { transform: scaleX(1); }
+    .svc-card:hover .svc-card__media img { transform: scale(1.03); }
+    .svc-card:hover .svc-card__cta span { transform: translateX(4px); }
   }
+  /* Al presionar la tarjeta (no los enlaces internos) se asienta un poco */
+  .svc-card:has(.svc-card__enlace:active) { transform: scale(0.99); transition-duration: 120ms; }
   /* El enlace del título cubre toda la tarjeta */
   .svc-card__enlace { color: inherit; text-decoration: none; }
   .svc-card__enlace::after {
@@ -330,20 +364,18 @@ for (const sv of servicios) {
   .svc-card__enlace:hover { text-decoration: none; }
   .svc-card__enlace:focus-visible { outline: none; }
   .svc-card__enlace:focus-visible::after { outline: 3px solid var(--focus-ring); outline-offset: -3px; }
-  .svc-card:hover::before { transform: scaleX(1); }
   .svc-card__num {
     position: absolute;
     top: 1rem;
     left: 1rem;
     z-index: 2;
-    padding: 0.2rem 0.55rem;
-    border-radius: 4px;
-    background: color-mix(in srgb, var(--color-navy-deep) 70%, transparent);
-    backdrop-filter: blur(4px);
+    padding: 0.2rem 0.45rem;
+    border: 1px solid rgba(108, 182, 236, 0.4);
+    background: rgba(7, 27, 48, 0.9);
     color: var(--color-white);
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    line-height: 1rem;
     letter-spacing: 0.08em;
   }
   .svc-card__media {
@@ -355,9 +387,8 @@ for (const sv of servicios) {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.6s var(--ease);
+    transition: transform 400ms var(--ease-out);
   }
-  .svc-card:hover .svc-card__media img { transform: scale(1.05); }
   .svc-card__body { padding: 1.6rem 1.6rem 1.75rem; display: flex; flex-direction: column; flex: 1; }
   .svc-card__titulo { font-size: 1.45rem; margin-bottom: 0.5rem; }
   /* Descripción: máximo 3 líneas */
@@ -411,11 +442,11 @@ for (const sv of servicios) {
   .svc-mas:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
   /* «Ver detalle» siempre al fondo, aunque el servicio tenga poco texto */
   .svc-card__cta { margin-top: auto; font-weight: 600; color: var(--link); }
-  .svc-card__cta span { display: inline-block; transition: transform 0.2s var(--ease); }
-  .svc-card:hover .svc-card__cta span { transform: translateX(4px); }
+  .svc-card__cta span { display: inline-block; transition: transform 200ms var(--ease-out); }
   @media (prefers-reduced-motion: reduce) {
     .svc-card, .svc-card::before, .svc-card__media img, .svc-card__cta span { transition: none; }
-    .svc-card:hover, .svc-card:hover .svc-card__media img, .svc-card:hover .svc-card__cta span { transform: none; }
+    .svc-card:hover, .svc-card:hover .svc-card__media img, .svc-card:hover .svc-card__cta span,
+    .svc-card:has(.svc-card__enlace:active) { transform: none; }
   }
 
   /* ---------- Debajo de la grilla (solo en el inicio) ---------- */
@@ -428,6 +459,23 @@ for (const sv of servicios) {
     text-align: center;
   }
   .svc-pie__texto { margin: 0; font-size: 15px; color: var(--text-muted); }
+  .svc-pie__texto[hidden], .svc-pie__invitacion[hidden] { display: none; }
+  .svc-pie__invitacion {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .svc-pie__titulo {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--heading);
+    text-wrap: balance;
+  }
+  .svc-pie__invitacion .svc-pie__boton { margin-top: 0.85rem; }
   .svc-pie__boton {
     min-height: 52px;
     padding-inline: 32px;
@@ -436,6 +484,7 @@ for (const sv of servicios) {
   .svc-pie__boton:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
   .svc-pie__boton[hidden] { display: none; }
   @media (max-width: 639px) {
+    .svc-pie__invitacion { align-self: stretch; }
     .svc-pie__boton { width: 100%; }
   }
 </style>
@@ -453,6 +502,8 @@ for (const sv of servicios) {
 
   const MAX_SUGERENCIAS = 6;
   const CLAVE_PRELLENAR = 'svc:cotizar';
+  /** Lo lee el formulario de contacto al activarse: marca la solicitud como servicio personalizado. */
+  const CLAVE_TIPO = 'contacto:tipo';
 
   interface Sugerencia {
     t: string;
@@ -530,7 +581,7 @@ for (const sv of servicios) {
     const estado = raiz.querySelector<HTMLElement>('[data-svc-estado]')!;
     const vacio = raiz.querySelector<HTMLElement>('[data-svc-vacio]')!;
     const contador = raiz.querySelector<HTMLElement>('[data-svc-contador]');
-    const todos = raiz.querySelector<HTMLElement>('[data-svc-todos]');
+    const invitacion = raiz.querySelector<HTMLElement>('[data-svc-invitacion]');
     const tarjetas = [...raiz.querySelectorAll<HTMLElement>('[data-svc-card]')];
     const datos: Sugerencia[] = JSON.parse(raiz.querySelector('[data-svc-sugerencias]')!.textContent || '[]').map(
       (x: { t: string; s: string | null }) => ({ ...x, palabras: normalizar(x.t).split(' ') })
@@ -552,11 +603,11 @@ for (const sv of servicios) {
         t.hidden = !ver;
         if (ver) visibles++;
       }
-      if (todos) todos.hidden = buscando;
+      // Sin resultados, el aviso de arriba ya invita a cotizar: no se repite abajo.
+      if (invitacion) invitacion.hidden = buscando && visibles === 0;
       if (contador) {
-        contador.textContent = buscando
-          ? `${visibles} ${visibles === 1 ? 'resultado' : 'resultados'} para «${texto}»`
-          : contador.dataset.inicial!;
+        contador.hidden = !buscando;
+        contador.textContent = buscando ? `${visibles} ${visibles === 1 ? 'resultado' : 'resultados'} para «${texto}»` : '';
       }
       limpiar.hidden = input.value === '';
       vacio.hidden = visibles > 0;
@@ -722,6 +773,31 @@ for (const sv of servicios) {
       }
       // En el inicio el header hace el desplazamiento; aquí solo se espera al formulario.
       if (location.pathname === '/') prellenarContacto();
+    });
+
+    // «Solicitar servicio personalizado»: el header lleva a #contacto y enfoca la sección;
+    // después se pone el cursor en el mensaje del formulario.
+    raiz.querySelector('[data-svc-personalizado]')?.addEventListener('click', () => {
+      try {
+        sessionStorage.setItem(CLAVE_TIPO, 'personalizado');
+      } catch {
+        /* sin almacenamiento: el evento de abajo basta si el formulario ya está activo */
+      }
+      window.dispatchEvent(new CustomEvent('contacto:tipo', { detail: 'personalizado' }));
+      const seccion = document.getElementById('contacto');
+      if (location.pathname !== '/' || !seccion) return;
+      let listo = false;
+      // El campo ya está en el HTML aunque el formulario no se haya activado: al enfocarlo
+      // el navegador lo trae a la vista (en móvil queda debajo), el formulario se activa
+      // y lee la marca de sessionStorage. React conserva el foco al activarse.
+      const enfocar = () => {
+        if (listo) return;
+        listo = true;
+        seccion.querySelector<HTMLTextAreaElement>('textarea[name="mensaje"]')?.focus();
+      };
+      // El header enfoca la sección al terminar el desplazamiento; si no lo hace, se enfoca igual.
+      seccion.addEventListener('focus', enfocar, { once: true });
+      setTimeout(enfocar, 2000);
     });
 
     caja.hidden = false;

@@ -135,6 +135,8 @@ CREATE TABLE IF NOT EXISTS mensajes_contacto (
   telefono TEXT,
   empresa TEXT,
   mensaje TEXT NOT NULL,
+  -- Tipo de solicitud elegido en el sitio (p. ej. 'Servicio personalizado'); NULL si no se indicó
+  tipo_servicio TEXT,
   fecha_creacion TEXT DEFAULT (datetime('now')),
   -- Seguimiento en el panel (ver ESTADOS_SOLICITUD en db/index.js)
   estado TEXT NOT NULL DEFAULT 'nuevo'

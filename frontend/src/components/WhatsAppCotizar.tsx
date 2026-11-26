@@ -27,7 +27,6 @@ const TIPOS_RESPALDO = [
   'Soluciones Energía Renovable y Calidad',
   'Auditorías Energéticas',
   'Mantenimiento de Infraestructura',
-  'Asesoría para Ahorro Energético',
 ];
 const PRESUPUESTOS = ['Menos de $1,000', '$1,000 – $5,000', '$5,000 – $20,000', 'Más de $20,000', 'Aún no lo sé'];
 
@@ -323,7 +322,7 @@ export default function WhatsAppCotizar() {
           min-height: 56px;
           font-size: 1.1rem; font-weight: 700;
           background: #25d366; color: #fff;
-          border-radius: var(--radius);
+          border-radius: var(--radius-btn);
           text-decoration: none;
         }
         .wa-continuar:hover { filter: brightness(1.05); color: #fff; }

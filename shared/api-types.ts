@@ -103,6 +103,8 @@ export interface ContactoPayload {
   telefono?: string;
   empresa?: string;
   mensaje: string;
+  /** Tipo de solicitud: 'personalizado' desde «Solicitar servicio personalizado». */
+  tipo?: 'personalizado';
 }
 
 export interface ContactoRespuesta {
@@ -157,6 +159,8 @@ export interface SolicitudAdmin {
   telefono: string | null;
   /** Mensaje del formulario, o resumen de las respuestas del chatbot. */
   mensaje: string;
+  /** Tipo de solicitud del formulario (p. ej. 'Servicio personalizado'); null si no se indicó o es del chatbot. */
+  tipo_formulario: string | null;
   /** Respuestas del chatbot por separado (null para el formulario). */
   chatbot: {
     tipo_servicio: string | null;

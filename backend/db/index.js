@@ -23,6 +23,8 @@ const COLUMNAS_NUEVAS = {
     estado: `TEXT NOT NULL DEFAULT 'nuevo' CHECK (estado IN (${ESTADOS_SOLICITUD.map((e) => `'${e}'`).join(', ')}))`,
     notas: 'TEXT',
     fecha_actualizacion: 'TEXT',
+    // Tipo de solicitud elegido en el sitio («Solicitar servicio personalizado»)
+    tipo_servicio: 'TEXT',
   },
   leads_chatbot: {
     estado: `TEXT NOT NULL DEFAULT 'nuevo' CHECK (estado IN (${ESTADOS_SOLICITUD.map((e) => `'${e}'`).join(', ')}))`,

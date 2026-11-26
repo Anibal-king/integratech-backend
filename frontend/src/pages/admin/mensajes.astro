@@ -68,6 +68,7 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
         <p class="detalle__meta">
           <strong class="detalle__ticket" data-d="ticket" hidden></strong>
           <span data-d="origen"></span>
+          <span class="marca-tipo" data-d="tipo_formulario" hidden></span>
           <span data-d="estado"></span>
           <span class="detalle__fecha" data-d="fecha"></span>
         </p>
@@ -484,6 +485,12 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
       marca.className = 'marca-nueva';
       nombre.append(marca);
     }
+    // Formulario marcado desde «Solicitar servicio personalizado»
+    if (s.tipo_formulario) {
+      const tipo = texto('span', s.tipo_formulario);
+      tipo.className = 'marca-tipo';
+      nombre.append(tipo);
+    }
     const contacto = [s.correo && texto('span', s.correo), s.telefono && texto('small', s.telefono)].filter(Boolean) as Node[];
     const ver = document.createElement('button');
     ver.type = 'button';
@@ -587,6 +594,9 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     ticket.hidden = s.origen !== 'chatbot';
     ticket.textContent = `Cotización #${s.id}`;
     $('[data-d="origen"]', dialogo).replaceChildren(chipOrigen(s.canal));
+    const tipoForm = $('[data-d="tipo_formulario"]', dialogo);
+    tipoForm.hidden = !s.tipo_formulario;
+    tipoForm.textContent = s.tipo_formulario ?? '';
     $('[data-d="estado"]', dialogo).replaceChildren(chipEstado(s.estado));
     poner('fecha', `Recibida el ${fechaHora(s.fecha_creacion)}`);
     poner('empresa', s.empresa);
