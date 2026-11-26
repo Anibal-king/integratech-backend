@@ -111,7 +111,7 @@ for (const sv of servicios) {
           hidden={extra}
         >
           <span class="svc-card__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-          {portada && (
+          {portada ? (
             <div class="svc-card__media">
               <img
                 src={mediaUrl(portada.src)}
@@ -124,6 +124,9 @@ for (const sv of servicios) {
                 decoding="async"
               />
             </div>
+          ) : (
+            // Sin foto en el panel: la misma lámina de plano del hero ocupa su lugar
+            <div class="svc-card__media svc-card__media--vacia" aria-hidden="true" />
           )}
           <div class="svc-card__body">
             <Titulo class="svc-card__titulo">
@@ -382,6 +385,15 @@ for (const sv of servicios) {
     aspect-ratio: 16 / 10;
     overflow: hidden;
     background: var(--surface-muted);
+  }
+  .svc-card__media--vacia {
+    background-color: var(--color-navy-deep);
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+      linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
   }
   .svc-card__media img {
     width: 100%;
