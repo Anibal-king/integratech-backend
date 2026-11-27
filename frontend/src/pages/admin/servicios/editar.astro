@@ -110,7 +110,7 @@ import Icono from '../../../components/admin/Icono.astro';
           <span>Texto alternativo</span>
           <input type="text" maxlength="200" data-foto-alt />
         </label>
-        <p class="foto__estado" data-foto-estado></p>
+        <p class="foto__estado" data-foto-estado role="status"></p>
         <div class="foto__acciones">
           <button type="button" class="icono-btn" data-foto-izq><Icono nombre="izquierda" tamano={16} /></button>
           <button type="button" class="icono-btn" data-foto-der><Icono nombre="derecha" tamano={16} /></button>
@@ -236,6 +236,9 @@ import Icono from '../../../components/admin/Icono.astro';
   .galeria-admin :global(.foto__estado.is-error) { color: var(--danger-text); }
   .galeria-admin :global(.foto__acciones) { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
   .galeria-admin :global(.foto__acciones [data-foto-eliminar]) { margin-left: auto; }
+
+  /* Que la barra fija de acciones no tape el campo enfocado ni su mensaje (al tabular o al mostrar un error). */
+  .editor :global(:is(input, textarea, select, .foto__estado)) { scroll-margin-bottom: 7rem; }
 
   /* Acciones */
   .acciones {
@@ -523,8 +526,9 @@ import Icono from '../../../components/admin/Icono.astro';
     estado.classList.remove('is-error');
     if (!valor) {
       input.setAttribute('aria-invalid', 'true');
-      estado.textContent = 'Describe brevemente lo que muestra la foto.';
+      estado.textContent = 'Escribe un texto alternativo que describa la foto.';
       estado.classList.add('is-error');
+      estado.scrollIntoView({ block: 'nearest' });
       return;
     }
     input.removeAttribute('aria-invalid');
@@ -540,6 +544,7 @@ import Icono from '../../../components/admin/Icono.astro';
       if (esSesionExpirada(err)) return;
       estado.textContent = err instanceof AdminError && err.status === 400 ? err.message : mensajeError(err, 'No se pudo guardar el texto.');
       estado.classList.add('is-error');
+      estado.scrollIntoView({ block: 'nearest' });
     }
   }
 

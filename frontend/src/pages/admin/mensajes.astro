@@ -134,7 +134,7 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
             Al terminar, exporta el chat desde WhatsApp Business («Exportar chat» → «Sin archivos») y súbelo aquí:
             .txt o .zip, máx. 10 MB. Si subes otra exportación del mismo chat, solo se agregan los mensajes nuevos.
           </p>
-          <form class="conv__subir" data-conv-subir>
+          <form class="conv__subir" data-conv-subir novalidate>
             <label>
               <span class="sr-only">Archivo del chat</span>
               <input type="file" name="archivo" accept=".txt,.zip,text/plain,application/zip" required />
@@ -142,7 +142,7 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
             <button type="submit" class="btn btn--primary btn--sm">Subir chat</button>
           </form>
           <p class="conv__estado" data-conv-estado role="status"></p>
-          <form class="conv__autor" data-conv-autor hidden>
+          <form class="conv__autor" data-conv-autor hidden novalidate>
             <label>
               ¿Cuál autor del chat es IntegraTech?
               <select name="autor" required></select>
@@ -803,7 +803,8 @@ import { ESTADOS, ORIGENES } from '../../lib/admin-ui';
     e.preventDefault();
     if (!actual) return;
     const autor = (formAutor.elements.namedItem('autor') as HTMLSelectElement).value;
-    if (!autor) return;
+    // novalidate: el mensaje es el del panel, no el globo del navegador (que sale en su idioma).
+    if (!autor) return mostrarEstadoConv('Elige uno de los autores de la conversación.', true);
     try {
       pintarConversacion(await admin.elegirAutorIntegraTech(actual.id, autor));
       mostrarEstadoConv(`Listo: «${autor}» es IntegraTech.`);
